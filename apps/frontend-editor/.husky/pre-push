@@ -1,0 +1,17 @@
+# Define colors
+BLUE='\033[0;34m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+
+echo "${BLUE}Running tests before push...🧪${NC}"
+npm test
+
+if [ $? -ne 0 ]; then 
+  echo "${RED}Test failed! Push aborted.❌${NC}"
+  exit 1
+fi
+
+
+echo "${GREEN}All tests passed. Proceeding with push...🚀${NC}"
