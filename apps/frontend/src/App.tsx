@@ -1,4 +1,4 @@
-import Home from './pages/Home';
+import Home from '@/pages/Home';
 import ApiTest from '@/pages/Apitest';
 import Login from '@/pages/Login';
 import { Person } from '@/pages/Person';
