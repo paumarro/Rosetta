@@ -1,7 +1,30 @@
+import useStore from '@/store/useStore';
+
+function Counter() {
+  const counter = useStore((state) => state.count);
+  return <h1>{counter} pilatus around here...</h1>;
+}
+
+function CounterButtons() {
+  const increment = useStore((state) => state.increment);
+  const decrement = useStore((state) => state.decrement);
+  const reset = useStore((state) => state.reset);
+  return (
+    <div>
+      <button onClick={increment}>Increment</button>
+      <button onClick={decrement}>Decrement</button>
+      <button onClick={reset}>Reset</button>
+    </div>
+  );
+}
+
 function Home() {
   return (
     <div>
       <h1>HOME</h1>
+      <h2>Zustand test</h2>
+      <Counter />
+      <CounterButtons />
     </div>
   );
 }
