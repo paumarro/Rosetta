@@ -1,4 +1,5 @@
 import useStore from '@/store/useStore';
+import { Button } from '@/components/ui/button';
 
 function Counter() {
   const counter = useStore((state) => state.count);
@@ -11,9 +12,9 @@ function CounterButtons() {
   const reset = useStore((state) => state.reset);
   return (
     <div>
-      <button onClick={increment}>Increment</button>
-      <button onClick={decrement}>Decrement</button>
-      <button onClick={reset}>Reset</button>
+      <Button onClick={increment}>Increment</Button>
+      <Button onClick={decrement}>Decrement</Button>
+      <Button onClick={reset}>Reset</Button>
     </div>
   );
 }
@@ -22,9 +23,7 @@ function Home() {
   return (
     <div className="bg-background">
       <h1 className="text-text-primary-strong text-2xl">HOME</h1>
-      <h2 className="text-text-primary-weak text-xl mb-4 bg-red-500">
-        Zustand test
-      </h2>
+      <h2 className="text-text-primary-weak text-xl mb-4">Zustand test</h2>
       <Counter />
       <CounterButtons />
     </div>
