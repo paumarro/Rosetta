@@ -1,4 +1,6 @@
 @import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
 @config "../tailwind.config.js";
 
 @font-face {
@@ -7,7 +9,6 @@
   font-weight: 200 800;
   font-style: normal;
 }
-
 
 @layer base {
   :root {
@@ -35,7 +36,6 @@
     --primitives-carbyte-orange-1400: #170406;
     --primitives-carbyte-orange-1500: #000000;
 
-
     --primitives-neutral-100: #F2F2F2;
     --primitives-neutral-200: #E8E8E8;
     --primitives-neutral-300: #D9D9D9;
@@ -51,7 +51,6 @@
     --primitives-neutral-1300: #272727;
     --primitives-neutral-1400: #1A1A1A;
     --primitives-neutral-1500: #0D0D0D;
-
 
     --primitives-red-100: #F2E3E3;
     --primitives-red-200: #EAECEC;
@@ -69,7 +68,6 @@
     --primitives-red-1400: #2D1515;
     --primitives-red-1500: #1A0D0D;
 
-
     --primitives-yellow-100: #F2EADA;
     --primitives-yellow-200: #EEDEBE;
     --primitives-yellow-300: #E9CC92;
@@ -85,7 +83,6 @@
     --primitives-yellow-1300: #49391F;
     --primitives-yellow-1400: #312716;
     --primitives-yellow-1500: #1A150D;
-
 
     --primitives-green-100: #E6F2EF;
     --primitives-green-200: #CBE1DB;
@@ -103,8 +100,6 @@
     --primitives-green-1400: #13211E;
     --primitives-green-1500: #0F1816;
 
-
-
     --primitives-blue-100: #DAE1F2;
     --primitives-blue-200: #BECBE9;
     --primitives-blue-300: #A2B4E0;
@@ -120,7 +115,6 @@
     --primitives-blue-1300: #1A243B;
     --primitives-blue-1400: #141B2A;
     --primitives-blue-1500: #0D111A;
-
 
     /* TEXT COLORS */
 
@@ -196,14 +190,9 @@
     --figma-stroke-info-strong: var(--primitives-blue-800);
     --figma-stroke-info-weak: var(--primitives-blue-200);
 
-
-
-
-
     /* START OF TO BE DELETED */
     /* START OF TO BE DELETED */
     /* START OF TO BE DELETED */
-
 
     /* Background colors */
     --color-background-primary: var(--primitives-neutral-100);
@@ -259,17 +248,6 @@
 
     --radius: 0.5rem;
 
-
-
-
-
-
-
-
-
-
-
-
     --primitives-permanent-white: #ffffff;
     --primitives-permanent-black: #000000;
     --primitives-permanent-brand: #fe3b1f;
@@ -307,7 +285,6 @@
     --primitives-success-1400: #02120f;
     --primitives-success-1500: #02100d;
 
-
     /* Error Red */
     --primitives-error-100: #fefcfc;
     --primitives-error-200: #fefcfc;
@@ -341,9 +318,6 @@
     --primitives-warning-1300: #4f360e;
     --primitives-warning-1400: #3e2a0b;
     --primitives-warning-1500: #35240a;
-
-
-
 
     /* Primary Colors */
     /* Primary Background */
@@ -461,16 +435,9 @@
     --stroke-active-weak-default: var(--primitives-accent-900);
     --stroke-active-weak-hover: var(--primitives-accent-1000);
 
-
-
     /* END OF TO BE DELETED */
     /* END OF TO BE DELETED */
     /* END OF TO BE DELETED */
-
-
-
-
-
 
     /* Collection: border radius */
     --border-radius-sm: 4px;
@@ -494,7 +461,6 @@
     --height-lg: 48px;
 
     /* Collection: Fonts */
-
 
     --font-family: 'Manrope', 'Inter', sans-serif;
     --size-xs: 10px;
@@ -635,12 +601,6 @@
     --primitives-blue-1400: #BECBE9;
     --primitives-blue-1500: #DAE1F2;
 
-
-
-
-
-
-
     /* TEXT COLORS */
 
     /* primary */
@@ -715,23 +675,9 @@
     --figma-stroke-info-strong: var(--primitives-blue-800);
     --figma-stroke-info-weak: var(--primitives-blue-400);
 
-
-
-
-
-
-
-
     /* START OF TO BE DELETED */
     /* START OF TO BE DELETED */
     /* START OF TO BE DELETED */
-
-
-
-
-
-
-
 
     /* Background colors */
     --color-background-primary: var(--primitives-neutral-100);
@@ -785,9 +731,6 @@
     --color-text-primary-strong: var(--primitives-permanent-white-100);
     --color-text-primary-weak: var(--primitives-permanent-white-70);
 
-
-
-
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
@@ -818,7 +761,6 @@
 
     /* Figma colors */
     /* Primitive Colors */
-
 
     --primitives-accent-100: #260905;
     --primitives-accent-200: #4a1109;
@@ -852,7 +794,6 @@
     --primitives-success-1300: #e4e5e5;
     --primitives-success-1400: #ecedec;
     --primitives-success-1500: #f0f1f0;
-
 
     /* Error Red */
     --primitives-error-100: #360606;
@@ -888,19 +829,9 @@
     --primitives-warning-1400: #fffdfc;
     --primitives-warning-1500: #fffefd;
 
-
-
-
-
-
     /* END OF TO BE DELETED */
     /* END OF TO BE DELETED */
     /* END OF TO BE DELETED */
-
-
-
-
-
 
   }
 }
@@ -914,7 +845,6 @@
     @apply bg-background-primary text-text-primary;
   }
 }
-
 
 /* :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -984,3 +914,119 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 } */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
