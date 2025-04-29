@@ -5,7 +5,7 @@
 
 @font-face {
   font-family: 'Manrope';
-  src: url('/public/fonts/Manrope-VariableFont_wght.ttf') format('truetype');
+  src: url('/fonts/Manrope-VariableFont_wght.ttf') format('truetype');
   font-weight: 200 800;
   font-style: normal;
 }
@@ -842,6 +842,7 @@
   }
 
   body {
+    font-family: var(--font-family);
     @apply bg-background-primary text-text-primary;
   }
 }
@@ -1022,11 +1023,13 @@ button:focus-visible {
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-@layer base {
+/* @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
+    font-family: var(--font-family);
     @apply bg-background text-foreground;
   }
-}
+} */
