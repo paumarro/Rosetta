@@ -20,9 +20,11 @@ function CounterButtons() {
 
 function Home() {
   return (
-    <div>
-      <h1>HOME</h1>
-      <h2>Zustand test</h2>
+    <div className="bg-background">
+      <h1 className="text-text-primary-strong text-2xl">HOME</h1>
+      <h2 className="text-text-primary-weak text-xl mb-4 bg-red-500">
+        Zustand test
+      </h2>
       <Counter />
       <CounterButtons />
     </div>
