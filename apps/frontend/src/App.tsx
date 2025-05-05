@@ -5,19 +5,22 @@ import { Person } from '@/pages/Person';
 import Editor from '@/pages/Editor';
 import './App.css';
 import { Routes, Route } from 'react-router-dom';
+import { NavigationProvider } from '@/components/nav-provider';
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-background">
-      <Routes>
-        {/* Public route - anyone can access */}
-        <Route path="/login" element={<Login />} />
-        {/* Protected routes - only logged-in users */}
-        <Route path="/home" element={<Home />} />
-        <Route path="/test" element={<ApiTest />} />
-        <Route path="/person" element={<Person />} />
-        <Route path="/editor" element={<Editor />} />
-      </Routes>
-    </div>
+    <NavigationProvider>
+      <div className="min-h-screen bg-background">
+        <Routes>
+          {/* Public route - anyone can access */}
+          <Route path="/login" element={<Login />} />
+          {/* Protected routes - only logged-in users */}
+          <Route path="/home" element={<Home />} />
+          <Route path="/test" element={<ApiTest />} />
+          <Route path="/person" element={<Person />} />
+          <Route path="/editor" element={<Editor />} />
+        </Routes>
+      </div>
+    </NavigationProvider>
   );
 }

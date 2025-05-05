@@ -1,4 +1,5 @@
 import { SidebarIcon } from 'lucide-react';
+import { useNavigation } from '@/contexts/NavigationContext';
 
 import { SearchForm } from '@/components/search-form';
 import {
@@ -15,6 +16,7 @@ import { useSidebar } from '@/components/ui/sidebar';
 
 export function SiteHeader() {
   const { toggleSidebar } = useSidebar();
+  const { navigation } = useNavigation();
 
   return (
     <header className="bg-background sticky top-0 z-50 flex w-full items-center border-b">
@@ -31,14 +33,27 @@ export function SiteHeader() {
         <Breadcrumb className="hidden sm:block">
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href="#">
-                Building Your Application
-              </BreadcrumbLink>
+              <BreadcrumbLink href="/home">Home</BreadcrumbLink>
             </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-            </BreadcrumbItem>
+            {navigation.section && (
+              <>
+                <BreadcrumbSeparator />
+                {/* Fix: Should redirect to URL of the section, not to section name */}
+                <BreadcrumbLink href={`/${navigation.section}`}>
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>{navigation.section}</BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbLink>
+              </>
+            )}
+            {navigation.subSection && (
+              <>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{navigation.subSection}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </>
+            )}
           </BreadcrumbList>
         </Breadcrumb>
         <SearchForm className="w-full sm:ml-auto sm:w-auto" />
