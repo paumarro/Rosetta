@@ -3,6 +3,7 @@ import ApiTest from '@/pages/Apitest';
 import Login from '@/pages/Login';
 import { Person } from '@/pages/Person';
 import Editor from '@/pages/Editor';
+import WelcomePage from '@/pages/Welcome';
 import './App.css';
 import { Routes, Route } from 'react-router-dom';
 import { NavigationProvider } from '@/components/nav-provider';
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/test" element={<ApiTest />} />
           <Route path="/person" element={<Person />} />
           <Route path="/editor" element={<Editor />} />
+          <Route path="/welcome" element={<WelcomePage />} />
         </Routes>
       </div>
     </NavigationProvider>
