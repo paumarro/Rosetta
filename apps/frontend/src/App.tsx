@@ -7,6 +7,7 @@ import WelcomePage from '@/pages/Welcome';
 import './App.css';
 import { Routes, Route } from 'react-router-dom';
 import { NavigationProvider } from '@/components/nav-provider';
+import PathDesigenr from './components/dashboard/PathDesigner';
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/person" element={<Person />} />
           <Route path="/editor" element={<Editor />} />
           <Route path="/welcome" element={<WelcomePage />} />
+          <Route path="/path-design" element={<PathDesigenr />} />
         </Routes>
       </div>
     </NavigationProvider>
