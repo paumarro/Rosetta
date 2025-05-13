@@ -36,7 +36,6 @@ export function NavMain({
   }[];
 }) {
   const location = useLocation();
-  console.log(location.pathname);
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Learning Hub</SidebarGroupLabel>
