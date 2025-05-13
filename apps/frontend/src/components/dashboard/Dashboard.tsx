@@ -1,6 +1,6 @@
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
-export default function PathDesigenr() {
+export default function Dashboard() {
   return (
     <DashboardLayout>
       <div className="grid auto-rows-min gap-4 md:grid-cols-3">
