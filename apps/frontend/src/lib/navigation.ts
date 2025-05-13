@@ -1,11 +1,12 @@
 import {
   // BookOpen,
   // Bot,
-  Frame,
+  // Frame,
   LifeBuoy,
-  Map,
-  PieChart,
+  // Map,
+  // PieChart,
   Send,
+  PenTool,
   // Settings2,
   // SquareTerminal,
   Route,
@@ -18,26 +19,36 @@ export const data = {
     avatar: '/avatars/shadcn.jpg',
   },
   navMain: [
+    // {
+    //   title: 'Learning Paths',
+    //   url: '#',
+    //   icon: Route,
+    //   isActive: true,
+    //   items: [
+    //     {
+    //       title: 'cariad',
+    //       url: '#',
+    //     },
+    //     {
+    //       title: 'e2e',
+    //       url: '#',
+    //     },
+    //     {
+    //       title: 'cicd',
+    //       url: '#',
+    //     },
+    //   ],
+    // },
     {
-      title: 'Learning Paths',
-      url: '#',
+      title: 'Dashboard',
+      url: '/home',
       icon: Route,
-      isActive: true,
-      items: [
-        {
-          title: 'cariad',
-          url: '#',
-        },
-        {
-          title: 'e2e',
-          url: '#',
-        },
-        {
-          title: 'cicd',
-          url: '#',
-        },
-      ],
     },
+    // {
+    //   title: 'Creators',
+    //   url: '/creators',
+    //   icon: PenTool,
+    // },
     // {
     //   title: 'Models',
     //   url: '#',
@@ -118,19 +129,19 @@ export const data = {
   ],
   projects: [
     {
-      name: 'Design Engineering',
-      url: '#',
-      icon: Frame,
+      name: 'Path Designer',
+      url: '/creators',
+      icon: PenTool,
     },
-    {
-      name: 'Sales & Marketing',
-      url: '#',
-      icon: PieChart,
-    },
-    {
-      name: 'Travel',
-      url: '#',
-      icon: Map,
-    },
+    // {
+    //   name: 'Sales & Marketing',
+    //   url: '#',
+    //   icon: PieChart,
+    // },
+    // {
+    //   name: 'Travel',
+    //   url: '#',
+    //   icon: Map,
+    // },
   ],
 };
