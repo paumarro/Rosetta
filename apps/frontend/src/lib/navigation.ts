@@ -41,7 +41,7 @@ export const data = {
     // },
     {
       title: 'Learning Paths',
-      url: '/home',
+      url: '/hub/learning-path',
       icon: Route,
     },
     // {
@@ -130,7 +130,7 @@ export const data = {
   projects: [
     {
       name: 'Path Designer',
-      url: '/path-design',
+      url: '/creator/path-design',
       icon: PenTool,
     },
     // {

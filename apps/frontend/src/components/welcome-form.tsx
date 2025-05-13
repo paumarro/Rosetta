@@ -58,7 +58,7 @@ export default function WelcomeForm({
       console.log('Form submitted:', formData);
       await Promise.resolve(); // Simulate API call
       //Redirect to home page
-      return void navigate('/home');
+      return void navigate('/');
     } catch (error) {
       console.error('Error submitting form:', error);
     }
