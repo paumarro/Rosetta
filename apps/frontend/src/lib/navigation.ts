@@ -40,7 +40,7 @@ export const data = {
     //   ],
     // },
     {
-      title: 'Dashboard',
+      title: 'Learning Paths',
       url: '/home',
       icon: Route,
     },
@@ -130,7 +130,7 @@ export const data = {
   projects: [
     {
       name: 'Path Designer',
-      url: '/creators',
+      url: '/path-design',
       icon: PenTool,
     },
     // {
