@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { BookmarkIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 
 function NewBadge() {
   return (
@@ -33,6 +34,47 @@ function BookMarkButton({ isBookmarked }: { isBookmarked: boolean }) {
         {isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
       </span>
     </Button>
+  );
+}
+
+interface LearningPath {
+  id: number;
+  title: string;
+  isPopular?: boolean;
+  isBookmarked: boolean;
+  isNew?: boolean;
+  knowledgeAreas: string[];
+}
+
+function PathCard({ path }: { path: LearningPath }) {
+  return (
+    <Card
+      key={path.id}
+      className="relative bg-card  hover:bg-secondary/50 cursor-pointer  transition-colors p-2"
+    >
+      <BookMarkButton isBookmarked={path.isBookmarked} />
+      <CardContent className="px-4 py-8 flex flex-col justify-center h-full">
+        <div>{path.title}</div>
+        {/* Knowledge area badges - positioned absolutely */}
+        <div className=" absolute bottom-3 left-4 flex flex-wrap gap-1.5 max-w-[80%]">
+          {path.knowledgeAreas.slice(0, 4).map((area, index) => (
+            <Badge
+              key={index}
+              variant="secondary"
+              className="text-xs py-0.5 px-2"
+            >
+              {area}
+            </Badge>
+          ))}
+          {path.knowledgeAreas.length > 4 && (
+            <Badge variant="outline" className="text-xs py-0.5 px-2">
+              +{path.knowledgeAreas.length - 4}
+            </Badge>
+          )}
+        </div>
+        {path.isNew && <NewBadge />}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -82,47 +124,46 @@ export default function LearningPaths() {
       isPopular: true,
       isBookmarked: false,
       isNew: true,
-      knowledgeAreas: [''],
+      knowledgeAreas: [],
+    },
+    {
+      id: 7,
+      title: 'Mobile Development',
+      isPopular: false,
+      isBookmarked: false,
+      knowledgeAreas: ['React Native', 'Flutter', 'Swift', 'Kotlin'],
+    },
+    {
+      id: 8,
+      title: 'Cloud Architecture',
+      isPopular: true,
+      isBookmarked: false,
+      knowledgeAreas: ['AWS', 'Azure', 'GCP', 'Terraform'],
+    },
+    {
+      id: 9,
+      title: 'Cybersecurity',
+      isPopular: false,
+      isBookmarked: false,
+      isNew: true,
+      knowledgeAreas: ['Network Security', 'Cryptography', 'Threat Analysis'],
     },
   ];
   return (
     <DashboardLayout>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         <div className="mt-8">
           <h2 className="text-xl font-semibold mb-4">
-            Community learning paths
+            Community Learning Paths
           </h2>
+
+          {/* Recently viewed section */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {learningPaths.map((path) => (
-              <Card
-                key={path.id}
-                className="relative bg-card  hover:bg-secondary/50 cursor-pointer  transition-colors p-2"
-              >
-                <BookMarkButton isBookmarked={path.isBookmarked} />
-                <CardContent className="px-4 py-8 flex flex-col justify-center h-full">
-                  <div>{path.title}</div>
-                  {/* Knowledge area badges - positioned absolutely */}
-                  <div className=" absolute bottom-3 left-4 flex flex-wrap gap-1.5 max-w-[80%]">
-                    {path.knowledgeAreas.slice(0, 4).map((area, index) => (
-                      <Badge
-                        key={index}
-                        variant="secondary"
-                        className="text-xs py-0.5 px-2"
-                      >
-                        {area}
-                      </Badge>
-                    ))}
-                    {path.knowledgeAreas.length > 4 && (
-                      <Badge variant="outline" className="text-xs py-0.5 px-2">
-                        +{path.knowledgeAreas.length - 4}
-                      </Badge>
-                    )}
-                  </div>
-                  {path.isNew && <NewBadge />}
-                </CardContent>
-              </Card>
+              <PathCard key={path.id} path={path} />
             ))}
           </div>
+          <Separator />
         </div>
       </div>
     </DashboardLayout>
