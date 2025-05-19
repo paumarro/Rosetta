@@ -1,7 +1,14 @@
 import { cn } from '@/lib/utils';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
-import { BookmarkIcon } from 'lucide-react';
+import {
+  BookmarkIcon,
+  CircleChevronRight,
+  CircleChevronLeft,
+  LayoutGrid,
+  LayoutList,
+  ChevronDown,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -149,21 +156,68 @@ export default function LearningPaths() {
       knowledgeAreas: ['Network Security', 'Cryptography', 'Threat Analysis'],
     },
   ];
+
+  const recentlyViewedPaths = learningPaths.slice(0, 3);
   return (
     <DashboardLayout>
-      <div className="flex flex-col gap-6">
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">
-            Community Learning Paths
-          </h2>
-
+      <div className="flex flex-col gap-4 h-full">
+        <h2 className="text-xl font-semibold">Community Learning Paths</h2>
+        <div>
           {/* Recently viewed section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {learningPaths.map((path) => (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm text-muted-foreground">
+                Recently viewed
+              </div>
+              <div className="flex items-center">
+                <div className="">
+                  <Button size="icon" variant="ghost" aria-label="Previous">
+                    <CircleChevronLeft className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                  <Button size="icon" variant="ghost" aria-label="Next">
+                    <CircleChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-muted p-4 rounded-2xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recentlyViewedPaths.map((path) => (
               <PathCard key={path.id} path={path} />
             ))}
           </div>
-          <Separator />
+        </div>
+        <Separator />
+        {/* Fillters and sorting */}
+        <div className="flex flex-col flex-1 h-full">
+          <div className="text-sm flex items-center justify-end text-muted-foreground gap-2 mb-2">
+            <div className="flex items-center gap-2">
+              All <ChevronDown className="h-3 w-3" />
+            </div>
+            <div className="flex items-center gap-2">
+              Alphabethical
+              <ChevronDown className="h-3 w-3" />
+            </div>
+            <div className="flex items-center gap-2">
+              Newest first <ChevronDown className="h-3 w-3" />
+            </div>
+
+            <div className="bg-muted border rounded-md">
+              <Button
+                variant="ghost"
+                size="icon"
+                data-state="active"
+                className="data-[state=active]:bg-white"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon">
+                <LayoutList className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="bg-muted rounded-2xl flex-1"></div>
         </div>
       </div>
     </DashboardLayout>
