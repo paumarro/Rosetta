@@ -19,12 +19,14 @@ function BookMarkButton({ isBookmarked }: { isBookmarked: boolean }) {
     <Button
       variant="ghost"
       size="icon"
-      className="absolute top-1 right-1  hover:opacity-100"
+      className="absolute top-1 right-1  hover:opacity-100 group cursor-pointer"
     >
       <BookmarkIcon
         className={cn(
-          'h-5 w-5 text-muted-foreground',
-          isBookmarked ? 'fill-accent-foreground' : 'fill-none',
+          'h-5 w-5 text-muted-foreground transition-transform duration-200 group-hover:scale-115',
+          isBookmarked
+            ? 'fill-accent-foreground text-accent-foreground'
+            : 'fill-none',
         )}
       />{' '}
       <span className="sr-only">
