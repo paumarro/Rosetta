@@ -3,8 +3,6 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   BookmarkIcon,
-  CircleChevronRight,
-  CircleChevronLeft,
   LayoutGrid,
   LayoutList,
   ChevronDown,
@@ -12,6 +10,15 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  // type CarouselApi,
+} from '@/components/ui/carousel';
+// import { useState, useEffect } from 'react';
 
 function NewBadge() {
   return (
@@ -157,7 +164,20 @@ export default function LearningPaths() {
     },
   ];
 
-  const recentlyViewedPaths = learningPaths.slice(0, 3);
+  const recentlyViewedPaths = learningPaths.slice(0, 9);
+  // const [api, setApi] = useState<CarouselApi>();
+  // const [current, setCurrent] = useState(0);
+  // const [count, setCount] = useState(0);
+
+  // useEffect(() => {
+  //   if (!api) return;
+  //   setCount(api.scrollSnapList().length);
+  //   setCurrent(api.selectedScrollSnap() + 1);
+
+  //   api.on('select', () => {
+  //     setCurrent(api.selectedScrollSnap() + 1);
+  //   });
+  // }, [api]);
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-4 h-full">
@@ -169,7 +189,7 @@ export default function LearningPaths() {
               <div className="text-sm text-muted-foreground">
                 Recently viewed
               </div>
-              <div className="flex items-center">
+              {/* <div className="flex items-center">
                 <div className="">
                   <Button size="icon" variant="ghost" aria-label="Previous">
                     <CircleChevronLeft className="h-4 w-4 text-muted-foreground" />
@@ -178,14 +198,35 @@ export default function LearningPaths() {
                     <CircleChevronRight className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </div>
-              </div>
+              </div> */}
+            </div>
+            <div className="bg-muted p-4 rounded-2xl ">
+              <Carousel
+                // setApi={setApi}
+                className="w-full "
+              >
+                <CarouselContent className="-ml-4">
+                  {recentlyViewedPaths.map((path) => (
+                    <CarouselItem
+                      key={path.id}
+                      className="pl-4 md:basis-1/2 lg:basis-1/3"
+                    >
+                      <PathCard path={path} />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <div className="mt-2 flex justify-between">
+                  <CarouselPrevious className="relative left-0 right-auto translate-y-0 position-static" />
+                  <CarouselNext className="relative right-0 left-auto translate-y-0 position-static" />
+                </div>
+              </Carousel>
             </div>
           </div>
-          <div className="bg-muted p-4 rounded-2xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* <div className="bg-muted p-4 rounded-2xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {recentlyViewedPaths.map((path) => (
               <PathCard key={path.id} path={path} />
             ))}
-          </div>
+          </div> */}
         </div>
         <Separator />
         {/* Fillters and sorting */}
