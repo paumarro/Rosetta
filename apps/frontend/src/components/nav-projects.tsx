@@ -1,10 +1,5 @@
-import {
-  Folder,
-  MoreHorizontal,
-  Share,
-  Trash2,
-  type LucideIcon,
-} from 'lucide-react';
+import { Folder, MoreHorizontal, Share, Trash2 } from 'lucide-react';
+import { routes } from '@/lib/routes';
 
 import {
   DropdownMenu,
@@ -25,31 +20,30 @@ import {
 import { useLocation } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 
-export function NavProjects({
-  projects,
-}: {
-  projects: {
-    name: string;
-    url: string;
-    icon: LucideIcon;
-  }[];
-}) {
+export function NavProjects() {
   const { isMobile } = useSidebar();
   const location = useLocation();
+
+  // Get Creator routes
+  const creatorRoutes = routes.find((r) => r.id === 'creator')?.children || [];
+
+  // Helper function to check if a route is active
+  const isRouteActive = (path: string) => {
+    return (
+      location.pathname === path || location.pathname.startsWith(`${path}/`)
+    );
+  };
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel>Creator Studio</SidebarGroupLabel>
       <SidebarMenu>
-        {projects.map((item) => (
-          <SidebarMenuItem key={item.name}>
-            <SidebarMenuButton
-              asChild
-              isActive={location.pathname === item.url}
-            >
-              <Link to={item.url}>
-                <item.icon />
-                <span>{item.name}</span>
+        {creatorRoutes.map((route) => (
+          <SidebarMenuItem key={route.id}>
+            <SidebarMenuButton asChild isActive={isRouteActive(route.path)}>
+              <Link to={route.path}>
+                {route.icon && <route.icon />}
+                <span>{route.title}</span>
               </Link>
             </SidebarMenuButton>
             <DropdownMenu>
@@ -81,12 +75,12 @@ export function NavProjects({
             </DropdownMenu>
           </SidebarMenuItem>
         ))}
-        <SidebarMenuItem>
+        {/* <SidebarMenuItem>
           <SidebarMenuButton>
             <MoreHorizontal />
             <span>More</span>
           </SidebarMenuButton>
-        </SidebarMenuItem>
+        </SidebarMenuItem> */}
       </SidebarMenu>
     </SidebarGroup>
   );

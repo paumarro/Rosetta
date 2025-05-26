@@ -1,8 +1,9 @@
 'use client';
 
-import { ChevronRight, type LucideIcon } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Link } from 'react-router-dom';
+import { routes } from '@/lib/routes';
 
 import {
   Collapsible,
@@ -21,41 +22,35 @@ import {
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 
-export function NavMain({
-  items,
-}: {
-  items: {
-    title: string;
-    url: string;
-    icon: LucideIcon;
-    isActive?: boolean;
-    items?: {
-      title: string;
-      url: string;
-    }[];
-  }[];
-}) {
+export function NavMain() {
   const location = useLocation();
+  //Get Learning Hub Routes
+  const hubRoutes = routes.find((r) => r.id === 'hub')?.children || [];
+  //Helper function to check if a route is active
+  const isRouteActive = (path: string) => {
+    return (
+      location.pathname === path || location.pathname.startsWith(`${path}/`)
+    );
+  };
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Learning Hub</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item) => (
-          <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
+        {hubRoutes.map((route) => (
+          <Collapsible key={route.title} asChild>
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                tooltip={item.title}
-                isActive={location.pathname === item.url}
+                tooltip={route.title}
+                isActive={isRouteActive(route.path)}
               >
-                <Link to={item.url}>
-                  {/* <a href={item.url}> */}
-                  <item.icon />
-                  <span>{item.title}</span>
-                  {/* </a> */}
+                <Link to={route.path}>
+                  {route.icon && <route.icon />}
+                  <span>{route.title}</span>
                 </Link>
               </SidebarMenuButton>
-              {item.items?.length ? (
+              {route.children?.length ? (
                 <>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuAction className="data-[state=open]:rotate-90">
@@ -65,12 +60,12 @@ export function NavMain({
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {item.items?.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
+                      {route.children.map((subRoute) => (
+                        <SidebarMenuSubItem key={subRoute.title}>
                           <SidebarMenuSubButton asChild>
-                            <a href={subItem.url}>
-                              <span>{subItem.title}</span>
-                            </a>
+                            <Link to={subRoute.path}>
+                              <span>{subRoute.title}</span>
+                            </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       ))}
