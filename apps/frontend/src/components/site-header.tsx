@@ -1,6 +1,6 @@
 import { SidebarIcon } from 'lucide-react';
 import { useNavigation } from '@/contexts/NavigationContext';
-
+import { Fragment } from 'react';
 import { SearchForm } from '@/components/search-form';
 import {
   Breadcrumb,
@@ -33,30 +33,22 @@ export function SiteHeader() {
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb className="hidden sm:block">
           <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link to="/">Home</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            {navigation.section && (
-              <>
-                <BreadcrumbSeparator />
-                {/* Fix: Should redirect to URL of the section, not to section name */}
-                <BreadcrumbLink href={`/${navigation.section}`}>
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>{navigation.section}</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbLink>
-              </>
-            )}
-            {navigation.subSection && (
-              <>
-                <BreadcrumbSeparator />
+            {navigation.breadcrumbs.map((item, index) => (
+              <Fragment key={item.id}>
+                {index > 0 && <BreadcrumbSeparator />}
                 <BreadcrumbItem>
-                  <BreadcrumbPage>{navigation.subSection}</BreadcrumbPage>
+                  {index === navigation.breadcrumbs.length - 1 ? (
+                    <BreadcrumbPage>{item.title}</BreadcrumbPage>
+                  ) : (
+                    <>
+                      <BreadcrumbLink asChild>
+                        <Link to={item.path}>{item.title}</Link>
+                      </BreadcrumbLink>
+                    </>
+                  )}
                 </BreadcrumbItem>
-              </>
-            )}
+              </Fragment>
+            ))}
           </BreadcrumbList>
         </Breadcrumb>
         <SearchForm className="w-full sm:ml-auto sm:w-auto" />
