@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -8,7 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { SearchForm } from '@/components/search-form';
+import { SearchSkillForm } from '@/components/welcome/search-skill-form';
 import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -38,10 +39,18 @@ export function CountdownTimer({
 export default function WelcomeForm({
   className,
   ...props
-}: React.ComponentProps<'div'>) {
+}: React.ComponentPropsWithoutRef<'div'>) {
   const [isTimerActive, setIsTimerActive] = useState(true);
   const [skills, setSkills] = useState<string[]>([]);
   const navigate = useNavigate();
+  const [searchValue, setSearchValue] = useState('');
+
+  const handleSearchSubmit = (value: string) => {
+    if (value.trim() && !skills.includes(value.trim())) {
+      setSkills([...skills, value.trim()]);
+      setSearchValue(''); //Clear the input after adding
+    }
+  };
 
   const handleTimerComplete = () => {
     setIsTimerActive(false);
@@ -80,7 +89,13 @@ export default function WelcomeForm({
               <div className="flex flex-col gap-4">
                 <div className="grid gap-6">
                   <div className="grid gap-3">
-                    <SearchForm className="w-full" />
+                    <SearchSkillForm
+                      className="w-full"
+                      inputValue={searchValue}
+                      onInputChange={setSearchValue}
+                      onSearch={handleSearchSubmit}
+                      placeholder="Add a skill"
+                    />
                   </div>
                 </div>
               </div>
@@ -93,15 +108,31 @@ export default function WelcomeForm({
               {/* Selected skills */}
               <div className="grid gap-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline" className="cursor-pointer">
-                    JavaScript
-                  </Badge>
-                  <Badge variant="outline" className="cursor-pointer">
-                    React
-                  </Badge>
-                  <Badge variant="outline" className="cursor-pointer">
-                    TypeScript
-                  </Badge>
+                  {skills.length > 0 ? (
+                    skills.map((skill, index) => (
+                      <div key={index} className="relative group inline-block">
+                        <Badge
+                          key={index}
+                          variant="outline"
+                          className="cursor-pointer"
+                          onClick={() => {
+                            //Remove skill when clicked
+                            setSkills(skills.filter((s) => s !== skill));
+                          }}
+                          title="Click to remove"
+                        >
+                          {skill}
+                          <span className="absolute rounded-full bg-background text-muted-foreground border border-border w-4 h-4 flex items-center justify-center -right-1 -top-1  opacity-0 group-hover:opacity-100 transition-opacity">
+                            <X className="size-2" />
+                          </span>
+                        </Badge>
+                      </div>
+                    ))
+                  ) : (
+                    <span className="text-sm text-muted-foreground">
+                      No skills added yet
+                    </span>
+                  )}
                 </div>
               </div>
 
