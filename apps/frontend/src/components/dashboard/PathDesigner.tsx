@@ -2,18 +2,24 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import OwnPaths from '@/components/creator-studio/own-paths';
 import PathContributions from '@/components/creator-studio/path-contributions';
+import { Button } from '@/components/ui/button';
 export default function PathDesigner() {
   return (
     <DashboardLayout>
-      <Tabs defaultValue="account" className="">
-        <TabsList>
-          <TabsTrigger value="account">My paths</TabsTrigger>
-          <TabsTrigger value="password">Contributions</TabsTrigger>
-        </TabsList>
-        <TabsContent value="account">
+      <Tabs defaultValue="my-paths" className="w-full">
+        <div className="flex justify-between">
+          <TabsList>
+            <TabsTrigger value="my-paths">My paths</TabsTrigger>
+            <TabsTrigger value="path-contributions">Contributions</TabsTrigger>
+          </TabsList>
+          <Button className="relative overflow-hidden cursor-pointer before:absolute before:inset-0 before:rounded-[inherit] before:bg-[linear-gradient(135deg,transparent_25%,rgba(255,255,255,0.2)_50%,transparent_75%,transparent_100%)] before:bg-[length:250%_250%,100%_100%] before:bg-no-repeat before:[animation:shine_3000ms_linear_infinite]">
+            Create New Path
+          </Button>
+        </div>
+        <TabsContent value="my-paths">
           <OwnPaths />
         </TabsContent>
-        <TabsContent value="password">
+        <TabsContent value="path-contributions">
           <PathContributions />
         </TabsContent>
       </Tabs>
