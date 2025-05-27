@@ -16,9 +16,7 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-  // type CarouselApi,
 } from '@/components/ui/carousel';
-// import { useState, useEffect } from 'react';
 
 function NewBadge() {
   return (
@@ -165,19 +163,7 @@ export default function LearningPaths() {
   ];
 
   const recentlyViewedPaths = learningPaths.slice(0, 9);
-  // const [api, setApi] = useState<CarouselApi>();
-  // const [current, setCurrent] = useState(0);
-  // const [count, setCount] = useState(0);
 
-  // useEffect(() => {
-  //   if (!api) return;
-  //   setCount(api.scrollSnapList().length);
-  //   setCurrent(api.selectedScrollSnap() + 1);
-
-  //   api.on('select', () => {
-  //     setCurrent(api.selectedScrollSnap() + 1);
-  //   });
-  // }, [api]);
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-4 h-full">
@@ -189,22 +175,9 @@ export default function LearningPaths() {
               <div className="text-sm text-muted-foreground">
                 Recently viewed
               </div>
-              {/* <div className="flex items-center">
-                <div className="">
-                  <Button size="icon" variant="ghost" aria-label="Previous">
-                    <CircleChevronLeft className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                  <Button size="icon" variant="ghost" aria-label="Next">
-                    <CircleChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                </div>
-              </div> */}
             </div>
             <div className="bg-muted p-4 rounded-2xl ">
-              <Carousel
-                // setApi={setApi}
-                className="w-full "
-              >
+              <Carousel className="w-full ">
                 <CarouselContent className="-ml-4">
                   {recentlyViewedPaths.map((path) => (
                     <CarouselItem
@@ -222,11 +195,6 @@ export default function LearningPaths() {
               </Carousel>
             </div>
           </div>
-          {/* <div className="bg-muted p-4 rounded-2xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recentlyViewedPaths.map((path) => (
-              <PathCard key={path.id} path={path} />
-            ))}
-          </div> */}
         </div>
         <Separator />
         {/* Fillters and sorting */}
@@ -258,7 +226,24 @@ export default function LearningPaths() {
             </div>
           </div>
 
-          <div className="bg-muted rounded-2xl flex-1"></div>
+          <div className="bg-muted rounded-2xl flex-1">
+            <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Placeholder for learning paths call */}
+              {Array(30)
+                .fill(0)
+                .map((_, index) => {
+                  // Just use the existing paths and cycle through them
+                  const path = learningPaths[index % learningPaths.length];
+                  // Use a unique key by combining the original ID with the index
+                  return (
+                    <PathCard
+                      key={`${String(path.id)}-${String(index)}`}
+                      path={path}
+                    />
+                  );
+                })}
+            </div>
+          </div>
         </div>
       </div>
     </DashboardLayout>
