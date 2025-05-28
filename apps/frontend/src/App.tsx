@@ -9,6 +9,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { NavigationProvider } from '@/components/nav-provider';
 import PathDesigner from '@/components/dashboard/PathDesigner';
 import LearningPaths from '@/components/dashboard/LearningPaths';
+import CreateNewPath from '@/components/creator-studio/CreateNewPath';
 export default function App() {
   return (
     <NavigationProvider>
@@ -28,7 +29,8 @@ export default function App() {
 
           {/* Creator sections */}
           <Route path="/creator">
-            <Route path="path-design" element={<PathDesigner />} />
+            <Route path="path-design" element={<PathDesigner />}></Route>
+            <Route path="path-design/create-new" element={<CreateNewPath />} />
           </Route>
 
           {/* Test and not implemented routes */}
