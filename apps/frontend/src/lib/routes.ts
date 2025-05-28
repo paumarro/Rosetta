@@ -47,6 +47,13 @@ export const routes: RouteItem[] = [
         icon: PenTool,
         parent: 'creator',
         component: undefined,
+        children: [
+          {
+            id: 'create-new',
+            title: 'Create New',
+            path: '/creator/path-design/create-new',
+          },
+        ],
       },
     ],
   },
