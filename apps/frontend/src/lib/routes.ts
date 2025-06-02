@@ -52,6 +52,7 @@ export const routes: RouteItem[] = [
             id: 'create-new',
             title: 'Create New',
             path: '/creator/path-design/create-new',
+            parent: 'path-design',
           },
         ],
       },
