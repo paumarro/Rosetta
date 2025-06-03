@@ -7,6 +7,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/handler"
+	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/initializer"
 	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/middleware"
 )
 
@@ -15,6 +16,7 @@ func init() {
 	if err != nil {
 		log.Println("Error loading environment variables")
 	}
+	initializer.ConnectToDB()
 }
 func main() {
 
