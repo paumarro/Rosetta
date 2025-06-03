@@ -3,7 +3,7 @@ services:
   rosetta-be:
     build: .
     ports:
-      - "3000:8080"
+      - "8080:8080"
     environment:
       PG_DB_URL: ${PG_DB_URL}
     depends_on:
