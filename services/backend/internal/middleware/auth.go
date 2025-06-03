@@ -12,20 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// var (
-// 	clientID      = os.Getenv("CLIENT_ID")
-// 	tenantID      = os.Getenv("TENANT_ID")
-// 	rosettaDomain = os.Getenv("ROSETTA_DOMAIN")
-// 	redirectURL   = fmt.Sprintf("http://%s/callback", rosettaDomain)
-
-// 	loginURL = fmt.Sprintf(
-// 		"https://login.microsoftonline.com/%s/oauth2/v2.0/authorize?client_id=%s&response_type=code&redirect_uri=%s&scope=api://academy-dev/GeneralAccess openid profile email offline_access",
-// 		tenantID,
-// 		clientID,
-// 		redirectURL,
-// 	)
-// )
-
 func redirectToLogin(c *gin.Context, originalURL string) {
 	clientID := os.Getenv("CLIENT_ID")
 	tenantID := os.Getenv("TENANT_ID")
