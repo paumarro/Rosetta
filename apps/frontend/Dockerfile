@@ -24,13 +24,13 @@ FROM nginx:stable-alpine AS production
 
 
 # Copy the nginx configuration inside conf.d folder
-# COPY --from=build /app/nginx /etc/nginx/conf.d
+COPY nginx/ /etc/nginx/conf.d/
 
 # Copy the build output from the dist folder into the Nginx html directory
 COPY --from=build /app/dist /usr/share/nginx/html
 
 
 
-#Expose port: Informs Docker that the container listens on port 8000 at runtime.
+#Expose port: Informs Docker that the container listens on port 80 at runtime.
 EXPOSE 80
 
