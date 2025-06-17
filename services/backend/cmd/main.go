@@ -40,6 +40,7 @@ func main() {
 	r.GET("/callback", handler.Callback)
 	r.GET("/auth/check", handler.AuthCheck) // This endpoint ONLY checks, never redirects
 	r.GET("/auth/logout", handler.Logout)
+	r.GET("/auth/login", handler.Login)
 
 	if err := r.Run(":8080"); err != nil {
 		log.Fatalf("Failed to start server: %v", err)

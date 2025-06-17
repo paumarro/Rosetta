@@ -21,13 +21,18 @@ func Callback(c *gin.Context) {
 		return
 	}
 
-	originalURL := c.Query("state")
+	// Get the redirect domain from state (this is now the domain, not a path)
+	state := c.Query("state")
+	redirectDomain, err := url.QueryUnescape(state)
+	if err != nil || redirectDomain == "" {
+		rosettaDomain := os.Getenv("ROSETTA_DOMAIN")
+		redirectDomain = fmt.Sprintf("http://%s", rosettaDomain)
+	}
 
 	clientID := os.Getenv("CLIENT_ID")
 	clientSecret := os.Getenv("CLIENT_SECRET")
 	tenantID := os.Getenv("TENANT_ID")
 	rosettaDomain := os.Getenv("ROSETTA_DOMAIN")
-	frontendURL := os.Getenv("ROSETTA_FE")
 
 	redirectURL := fmt.Sprintf("http://%s/callback", rosettaDomain)
 	tokenURL := fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", tenantID)
@@ -87,15 +92,23 @@ func Callback(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("refresh_token", refreshToken, 3600*24, "/", rosettaDomain, true, true)
+	// Determine cookie domain based on the redirect domain
+	var cookieDomain string
+	if parsedDomain, err := url.Parse(redirectDomain); err == nil {
+		cookieDomain = parsedDomain.Hostname()
+	} else {
+		cookieDomain = rosettaDomain
+	}
+	// Optional: Add logging for debugging
+	fmt.Printf("Callback - State: %s, Redirect Domain: %s\n", state, redirectDomain)
 
-	c.SetCookie("access_token", accessToken, 3600, "/", rosettaDomain, true, true)
+	c.SetCookie("refresh_token", refreshToken, 3600*24, "/", cookieDomain, true, true)
+
+	c.SetCookie("access_token", accessToken, 3600, "/", cookieDomain, true, true)
+
+	fmt.Printf("Access and refresh tokens set in cookies for domain: %s\n", cookieDomain)
 
 	fmt.Printf("Access and refresh tokens set in cookies\n")
 
-	if originalURL != "" {
-		c.Redirect(http.StatusFound, frontendURL)
-	} else {
-		c.JSON(http.StatusOK, gin.H{"message": "Token stored in cookie"})
-	}
+	c.Redirect(http.StatusFound, redirectDomain)
 }
