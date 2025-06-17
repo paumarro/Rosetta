@@ -23,7 +23,7 @@ export function LoginForm({
 }: React.ComponentProps<'div'>) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   useEffect(() => {
-    fetch('http://localhost:8080/auth/check', { credentials: 'include' })
+    fetch('/api/auth/check', { credentials: 'include' })
       .then((res) => res.json()) //Parse JSON response
       .then((res) => {
         const result = AuthCheckSchema.parse(res);
@@ -39,7 +39,7 @@ export function LoginForm({
   }, []);
 
   const handleMicrosoftLogin = () => {
-    window.location.href = 'http://localhost:8080';
+    window.location.href = '/api/';
   };
 
   return (

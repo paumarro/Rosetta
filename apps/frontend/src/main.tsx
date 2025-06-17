@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 function AuthWrapper() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   useEffect(() => {
-    fetch('http://localhost:8080/auth/check', { credentials: 'include' })
+    fetch('/api/auth/check', { credentials: 'include' })
       .then((res) => {
         setIsAuthenticated(res.ok);
       })
