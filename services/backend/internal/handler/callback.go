@@ -27,6 +27,7 @@ func Callback(c *gin.Context) {
 	clientSecret := os.Getenv("CLIENT_SECRET")
 	tenantID := os.Getenv("TENANT_ID")
 	rosettaDomain := os.Getenv("ROSETTA_DOMAIN")
+	frontendURL := os.Getenv("ROSETTA_FE")
 
 	redirectURL := fmt.Sprintf("http://%s/callback", rosettaDomain)
 	tokenURL := fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", tenantID)
@@ -93,7 +94,7 @@ func Callback(c *gin.Context) {
 	fmt.Printf("Access and refresh tokens set in cookies\n")
 
 	if originalURL != "" {
-		c.Redirect(http.StatusFound, originalURL)
+		c.Redirect(http.StatusFound, frontendURL)
 	} else {
 		c.JSON(http.StatusOK, gin.H{"message": "Token stored in cookie"})
 	}
