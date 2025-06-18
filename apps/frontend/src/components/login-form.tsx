@@ -40,7 +40,7 @@ export function LoginForm({
   }, []);
 
   const handleMicrosoftLogin = () => {
-    window.location.href = '/api/';
+    window.location.href = '/api/auth/login';
   };
 
   return (
