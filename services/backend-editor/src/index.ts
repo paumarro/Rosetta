@@ -4,6 +4,7 @@ const app = express()
 const PORT = process.env.PORT || 3001
 
 app.get("/", (req: Request, res: Response) => {
+  console.log("Requested: ", req.url)
   res.sendStatus(200)
 })
 
