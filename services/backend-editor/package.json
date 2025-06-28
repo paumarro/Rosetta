@@ -1,10 +1,12 @@
 {
   "name": "carbyte-academy-be-editor",
   "version": "1.0.0",
-  "description": "TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project.",
-  "main": "index.ts",
+  "description": "Backend for the collaborative editor of learning paths",
   "type": "module",
   "scripts": {
+    "dev": "tsx watch --clear-screen=false -r tsconfig-paths/register ./src/index.ts",
+    "build": "rm -rf dist && tsc && tsc-alias",
+    "start": "node ./dist/src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
