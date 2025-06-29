@@ -7,11 +7,12 @@
     "dev": "tsx watch --clear-screen=false -r tsconfig-paths/register ./src/index.ts",
     "build": "rm -rf dist && tsc && tsc-alias",
     "start": "node ./dist/src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "echo \"Test to be implemented..🧪\" ",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --check ./**/*.{ts,json}",
-    "format:fix": "prettier --write ./**/*.{ts,json}"
+    "format:fix": "prettier --write ./**/*.{ts,json}",
+    "prepare": "husky || true"
   },
   "author": "",
   "license": "ISC",
