@@ -3,13 +3,14 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 import json from "@eslint/json";
 import markdown from "@eslint/markdown";
+import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 
 
 export default tseslint.config(
   { ignores: ['dist', '.husky', 'node_modules', 'package-lock.json'] },
   {
-    extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked],
-    files: ['**/*.{ts}'],
+    extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked, eslintPluginPrettierRecommended],
+    files: ['**/*.ts'],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.node,
@@ -19,19 +20,32 @@ export default tseslint.config(
       },
     },
     rules: {
-
+      "prettier/prettier": "warn"
     },
   },
   {
-    extends: [js.configs.recommended],
+    extends: [js.configs.recommended, eslintPluginPrettierRecommended],
     files: ['**/*.{js,mjs,cjs}'],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.node,
     },
+    rules: {
+      "prettier/prettier": "warn"
+    },
   },
-  { files: ["**/*.json"], language: "json/json", extends: [json.configs.recommended] },
-  { files: ["**/*.jsonc", "**/tsconfig.json"], language: "json/jsonc", extends: [json.configs.recommended] },
+  {
+    files: ["**/*.json"], language: "json/json", extends: [json.configs.recommended, eslintPluginPrettierRecommended],
+    rules: {
+      "prettier/prettier": "warn"
+    },
+  },
+  {
+    files: ["**/*.jsonc", "**/tsconfig.json"], language: "json/jsonc", extends: [json.configs.recommended],
+    rules: {
+      "prettier/prettier": "off"
+    },
+  },
   {
     files: ["**/*.md"],
     plugins: { markdown },
@@ -40,5 +54,5 @@ export default tseslint.config(
     rules: {
       "markdown/no-multiple-h1": "warn",
     }
-  }
+  },
 );
