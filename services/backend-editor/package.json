@@ -24,6 +24,8 @@
     "@types/morgan": "^1.9.10",
     "@types/node": "^24.0.7",
     "eslint": "^9.30.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.5.1",
     "globals": "^16.2.0",
     "prettier": "^3.6.2",
     "tsc-alias": "^1.8.16",
