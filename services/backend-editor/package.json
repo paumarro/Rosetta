@@ -10,8 +10,8 @@
     "test": "echo \"Test to be implemented..🧪\" ",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --check ./**/*.{ts,json}",
-    "format:fix": "prettier --write ./**/*.{ts,json}",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
     "prepare": "husky || true"
   },
   "lint-staged": {
