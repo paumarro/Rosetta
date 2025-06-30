@@ -1,26 +1,37 @@
-import js from "@eslint/js";
-import globals from "globals";
-import tseslint from "typescript-eslint";
-import json from "@eslint/json";
-import markdown from "@eslint/markdown";
-import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
-
+import js from '@eslint/js';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
+import json from '@eslint/json';
+import markdown from '@eslint/markdown';
+import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 
 export default tseslint.config(
-  { ignores: ['dist', '.husky', 'node_modules', 'package-lock.json', 'tsconfig.json'] },
   {
-    extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked, eslintPluginPrettierRecommended],
+    ignores: [
+      'dist',
+      '.husky',
+      'node_modules',
+      'package-lock.json',
+      'tsconfig.json',
+    ],
+  },
+  {
+    extends: [
+      js.configs.recommended,
+      ...tseslint.configs.strictTypeChecked,
+      eslintPluginPrettierRecommended,
+    ],
     files: ['**/*.ts'],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.node,
       parserOptions: {
         project: './tsconfig.json',
-        tsconfigRootDir: import.meta.dirname
+        tsconfigRootDir: import.meta.dirname,
       },
     },
     rules: {
-      "prettier/prettier": "warn"
+      'prettier/prettier': 'warn',
     },
   },
   {
@@ -31,28 +42,32 @@ export default tseslint.config(
       globals: globals.node,
     },
     rules: {
-      "prettier/prettier": "warn"
+      'prettier/prettier': 'warn',
     },
   },
   {
-    files: ["**/*.json"], language: "json/json", extends: [json.configs.recommended, eslintPluginPrettierRecommended],
+    files: ['**/*.json'],
+    language: 'json/json',
+    extends: [json.configs.recommended, eslintPluginPrettierRecommended],
     rules: {
-      "prettier/prettier": "warn"
+      'prettier/prettier': 'warn',
     },
   },
   {
-    files: ["**/*.jsonc"], language: "json/jsonc", extends: [json.configs.recommended],
+    files: ['**/*.jsonc'],
+    language: 'json/jsonc',
+    extends: [json.configs.recommended],
     rules: {
-      "prettier/prettier": "off"
+      'prettier/prettier': 'off',
     },
   },
   {
-    files: ["**/*.md"],
+    files: ['**/*.md'],
     plugins: { markdown },
-    language: "markdown/commonmark",
+    language: 'markdown/commonmark',
     extends: [markdown.configs.recommended],
     rules: {
-      "markdown/no-multiple-h1": "warn",
-    }
+      'markdown/no-multiple-h1': 'warn',
+    },
   },
 );
