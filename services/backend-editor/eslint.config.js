@@ -7,7 +7,7 @@ import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended"
 
 
 export default tseslint.config(
-  { ignores: ['dist', '.husky', 'node_modules', 'package-lock.json'] },
+  { ignores: ['dist', '.husky', 'node_modules', 'package-lock.json', 'tsconfig.json'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked, eslintPluginPrettierRecommended],
     files: ['**/*.ts'],
@@ -41,7 +41,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["**/*.jsonc", "**/tsconfig.json"], language: "json/jsonc", extends: [json.configs.recommended],
+    files: ["**/*.jsonc"], language: "json/jsonc", extends: [json.configs.recommended],
     rules: {
       "prettier/prettier": "off"
     },
