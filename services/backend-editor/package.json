@@ -14,6 +14,13 @@
     "format:fix": "prettier --write ./**/*.{ts,json}",
     "prepare": "husky || true"
   },
+  "lint-staged": {
+    "**/*.{ts,js}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "**/*.{json,md}": "prettier --write"
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {
