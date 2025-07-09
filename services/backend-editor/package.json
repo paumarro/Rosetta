@@ -4,9 +4,9 @@
   "description": "Backend for the collaborative editor of learning paths",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --clear-screen=false -r tsconfig-paths/register ./src/index.ts",
+    "dev": "tsx watch --clear-screen=false -r tsconfig-paths/register ./src/server.ts",
     "build": "rm -rf dist && tsc && tsc-alias",
-    "start": "node ./dist/src/index.js",
+    "start": "node ./dist/server.js",
     "test": "echo \"Test to be implemented..🧪\" ",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -24,9 +24,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/mongoose": "^5.11.96",
+    "cors": "^2.8.5",
     "express": "^5.1.0",
     "lint-staged": "^16.1.2",
-    "morgan": "^1.10.0"
+    "mongoose": "^8.16.2",
+    "morgan": "^1.10.0",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.0",
@@ -34,13 +38,15 @@
     "@eslint/markdown": "^6.6.0",
     "@types/express": "^5.0.3",
     "@types/morgan": "^1.9.10",
-    "@types/node": "^24.0.7",
+    "@types/node": "^24.0.10",
+    "@types/socket.io": "^3.0.1",
     "eslint": "^9.30.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.5.1",
     "globals": "^16.2.0",
     "husky": "^9.1.7",
     "prettier": "^3.6.2",
+    "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.20.3",
