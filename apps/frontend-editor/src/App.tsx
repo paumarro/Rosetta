@@ -1,11 +1,25 @@
-import Home from '@/pages/Home';
+import { Routes, Route, useParams } from 'react-router-dom';
+import DiagramEditor from './components/DiagramEditor';
+import DiagramsPage from './pages/Diagrams';
+import Index from './pages/Index';
+import NotFound from './pages/NotFound';
 import './App.css';
-import { Routes, Route } from 'react-router-dom';
 
-export default function App() {
+function App() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={<Index />} />
+      <Route path="/diagrams" element={<DiagramsPage />} />
+      <Route path="/editor/:diagramName" element={<DiagramEditorWrapper />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
+
+// Wrapper component to handle diagram name from URL
+function DiagramEditorWrapper() {
+  const { diagramName } = useParams<{ diagramName: string }>();
+  return <DiagramEditor diagramName={diagramName} />;
+}
+
+export default App;
