@@ -16,10 +16,10 @@
     "prepare": "husky || true"
   },
   "lint-staged": {
-    "./src/**/*.{ts, tsx}": [
+    "./src/**/*.{ts,tsx}": [
       "eslint --fix"
     ],
-    "./**/*.{ts, tsx, json}": [
+    "./**/*.{ts,tsx,json}": [
       "prettier --write"
     ]
   },
