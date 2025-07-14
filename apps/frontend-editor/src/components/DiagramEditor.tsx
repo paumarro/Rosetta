@@ -12,6 +12,10 @@ import {
   Node,
   NodeTypes,
   Panel,
+  NodeChange,
+  EdgeChange,
+  ReactFlowInstance,
+  BackgroundVariant,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { io, Socket } from 'socket.io-client';
@@ -22,12 +26,6 @@ import CustomNode from './nodes/customNode';
 const nodeTypes: NodeTypes = {
   custom: CustomNode,
 };
-
-interface User {
-  userId: string;
-  userName: string;
-  color: string;
-}
 
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
@@ -43,15 +41,15 @@ export default function DiagramEditor({
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [connectedUsers, setConnectedUsers] = useState<User[]>([]);
   const [currentUser] = useState({
-    userId: Math.random().toString(36).substr(2, 9),
-    userName: `User-${Math.random().toString(36).substr(2, 4)}`,
+    userId: Math.random().toString(36).substring(2, 9),
+    userName: `User-${Math.random().toString(36).substring(2, 4)}`,
   });
   const [isLoading, setIsLoading] = useState(true);
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  const [reactFlowInstance, setReactFlowInstance] =
+    useState<ReactFlowInstance | null>(null);
 
   // Load diagram data
   useEffect(() => {
@@ -61,7 +59,10 @@ export default function DiagramEditor({
           `http://localhost:3001/api/diagrams/${diagramName}`,
         );
         if (response.ok) {
-          const data = await response.json();
+          const data = (await response.json()) as {
+            nodes: Node[];
+            edges: Edge[];
+          };
           setNodes(data.nodes);
           setEdges(data.edges);
         }
@@ -72,7 +73,7 @@ export default function DiagramEditor({
       }
     };
 
-    loadDiagram();
+    void loadDiagram();
   }, [diagramName, setNodes, setEdges]);
 
   // Initialize WebSocket connection
@@ -117,12 +118,12 @@ export default function DiagramEditor({
       setEdges(updatedEdges);
     });
 
-    newSocket.on('nodes-change', (changes: any) => {
+    newSocket.on('nodes-change', (changes: NodeChange[]) => {
       // Apply changes received from other users
       onNodesChange(changes);
     });
 
-    newSocket.on('edges-change', (changes: any) => {
+    newSocket.on('edges-change', (changes: EdgeChange[]) => {
       // Apply changes received from other users
       onEdgesChange(changes);
     });
@@ -144,7 +145,7 @@ export default function DiagramEditor({
 
   // Handle local changes and broadcast to other users
   const handleNodesChange = useCallback(
-    (changes: any) => {
+    (changes: NodeChange[]) => {
       onNodesChange(changes);
       if (socket && isConnected) {
         socket.emit('nodes-change', changes);
@@ -154,7 +155,7 @@ export default function DiagramEditor({
   );
 
   const handleEdgesChange = useCallback(
-    (changes: any) => {
+    (changes: EdgeChange[]) => {
       onEdgesChange(changes);
       if (socket && isConnected) {
         socket.emit('edges-change', changes);
@@ -184,7 +185,7 @@ export default function DiagramEditor({
       setEdges((eds) =>
         addEdge(
           {
-            id: `e${source}${sourceHandle}-${target}${targetHandle}`,
+            id: `e${source}${sourceHandle ?? ''}-${target}${targetHandle ?? ''}`,
             source,
             target,
             sourceHandle,
@@ -200,7 +201,7 @@ export default function DiagramEditor({
   const addNode = useCallback(
     (type: string) => {
       const newNode: Node = {
-        id: `${type}-${Date.now()}`,
+        id: `${type}-${String(Date.now())}`,
         type: 'custom',
         position: {
           x: Math.random() * 400,
@@ -228,8 +229,8 @@ export default function DiagramEditor({
 
       const payload = {
         name: diagramName,
-        nodes: nodes || [],
-        edges: edges || [],
+        nodes: nodes,
+        edges: edges,
       };
 
       console.log('Sending payload:', payload);
@@ -266,7 +267,7 @@ export default function DiagramEditor({
     (event: React.DragEvent) => {
       event.preventDefault();
 
-      if (!reactFlowWrapper.current || !reactFlowInstance) {
+      if (!reactFlowWrapper.current) {
         return;
       }
 
@@ -277,13 +278,16 @@ export default function DiagramEditor({
         return;
       }
 
-      const position = reactFlowInstance.project({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
-      });
+      let position = { x: 0, y: 0 };
+      if (reactFlowInstance) {
+        position = reactFlowInstance.screenToFlowPosition({
+          x: event.clientX - reactFlowBounds.left,
+          y: event.clientY - reactFlowBounds.top,
+        });
+      }
 
       const newNode: Node = {
-        id: `${type}-${Date.now()}`,
+        id: `${type}-${String(Date.now())}`,
         type: 'custom',
         position,
         data: {
@@ -325,7 +329,7 @@ export default function DiagramEditor({
         >
           <Controls />
           {/* <MiniMap /> */}
-          <Background variant={'dots' as any} gap={12} size={1} />
+          <Background variant={'dots' as BackgroundVariant} gap={12} size={1} />
 
           {/* Status Panel */}
           <Panel position="top-left">
@@ -369,7 +373,7 @@ export default function DiagramEditor({
                 Sub Topic
               </Button>
               <Button
-                onClick={saveDiagram}
+                onClick={() => void saveDiagram()}
                 variant="outline"
                 size="sm"
                 className="flex items-center gap-2"
