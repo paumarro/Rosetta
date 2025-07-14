@@ -10,8 +10,8 @@
     "test": "echo 'Test to be implemented..🧪'",
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint ./src/**/*.{ts, tsx} --fix",
-    "format": "prettier --write ./**/*.{ts, tsx, json}",
+    "lint": "eslint ./src/**/*.{ts,tsx} --fix",
+    "format": "prettier --write ./**/*.{ts,tsx,json}",
     "preview": "vite preview",
     "prepare": "husky || true"
   },
