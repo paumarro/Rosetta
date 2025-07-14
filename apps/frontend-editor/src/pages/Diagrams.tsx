@@ -21,7 +21,7 @@ export default function DiagramsPage() {
       try {
         const response = await fetch('http://localhost:3001/api/diagrams');
         if (response.ok) {
-          const data = await response.json();
+          const data = (await response.json()) as Diagram[];
           setDiagrams(data);
         }
       } catch (error) {
@@ -31,7 +31,7 @@ export default function DiagramsPage() {
       }
     };
 
-    loadDiagrams();
+    void loadDiagrams();
   }, []);
 
   const createNewDiagram = async () => {
@@ -51,7 +51,7 @@ export default function DiagramsPage() {
       });
 
       if (response.ok) {
-        const newDiagram = await response.json();
+        const newDiagram = (await response.json()) as Diagram;
         setDiagrams([...diagrams, newDiagram]);
         setNewDiagramName('');
         setIsCreating(false);
@@ -100,7 +100,7 @@ export default function DiagramsPage() {
               className="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <Button
-              onClick={createNewDiagram}
+              onClick={() => void createNewDiagram()}
               disabled={!newDiagramName.trim()}
             >
               Create
@@ -122,7 +122,7 @@ export default function DiagramsPage() {
           <div
             key={diagram.name}
             className="p-6 bg-white rounded-lg shadow-md border hover:shadow-lg transition-shadow cursor-pointer"
-            onClick={() => navigate(`/editor/${diagram.name}`)}
+            onClick={() => void navigate(`/editor/${diagram.name}`)}
           >
             <h2 className="text-xl font-semibold mb-2">{diagram.name}</h2>
             <div className="text-sm text-gray-500">
