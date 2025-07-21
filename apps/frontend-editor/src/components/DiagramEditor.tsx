@@ -20,7 +20,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { io, Socket } from 'socket.io-client';
 import { Button } from './ui/button';
-import { Circle, Diamond, Save } from 'lucide-react';
+import { Circle, Diamond } from 'lucide-react';
 import CustomNode from './nodes/customNode';
 import { LoadingOverlay } from './ui/loading-overlay';
 
@@ -53,7 +53,7 @@ export default function DiagramEditor({
     nodes: Node[];
     edges: Edge[];
   } | null>(null);
-
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] =
     useState<ReactFlowInstance | null>(null);
@@ -61,6 +61,7 @@ export default function DiagramEditor({
   // Load diagram data
   useEffect(() => {
     const loadDiagram = async () => {
+      setIsLoading(true);
       try {
         const response = await fetch(
           `http://localhost:3001/api/diagrams/${diagramName}`,
@@ -72,22 +73,21 @@ export default function DiagramEditor({
           };
           setNodes(data.nodes);
           setEdges(data.edges);
-          setLastLoadedData(data); // Store the last successfully loaded data
-          setIsLoading(false);
+          setLastLoadedData(data);
         }
       } catch (error) {
         console.error('Error loading diagram:', error);
-        // If we have last loaded data, use it as fallback
         if (lastLoadedData) {
           setNodes(lastLoadedData.nodes);
           setEdges(lastLoadedData.edges);
-          setIsLoading(false);
         }
+      } finally {
+        setIsLoading(false);
       }
     };
 
     void loadDiagram();
-  }, [diagramName, setNodes, setEdges]);
+  }, [diagramName]);
 
   // Initialize WebSocket connection
   useEffect(() => {
@@ -105,8 +105,6 @@ export default function DiagramEditor({
     newSocket.on('connect', () => {
       setIsConnected(true);
       setIsReconnecting(false);
-      // Request latest diagram data upon reconnection
-      newSocket.emit('request-diagram-data', diagramName);
       console.log('[Socket] Connected to server', {
         socketId: newSocket.id,
         userId: currentUser.userId,
@@ -132,7 +130,6 @@ export default function DiagramEditor({
     // Handle real-time updates
     newSocket.on('nodes-updated', (updatedNodes: Node[]) => {
       if (updatedNodes.length > 0) {
-        // Only update if we received actual nodes
         setNodes(updatedNodes);
         setLastLoadedData((prev) => ({
           nodes: updatedNodes,
@@ -143,7 +140,6 @@ export default function DiagramEditor({
 
     newSocket.on('edges-updated', (updatedEdges: Edge[]) => {
       if (updatedEdges.length > 0) {
-        // Only update if we received actual edges
         setEdges(updatedEdges);
         setLastLoadedData((prev) => ({
           nodes: prev?.nodes || [],
@@ -152,25 +148,20 @@ export default function DiagramEditor({
       }
     });
 
-    newSocket.on('diagram-data', (data: { nodes: Node[]; edges: Edge[] }) => {
-      if (data.nodes.length > 0 || data.edges.length > 0) {
-        setNodes(data.nodes);
-        setEdges(data.edges);
-        setLastLoadedData(data);
-      }
-    });
-
     setSocket(newSocket);
 
     return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
       newSocket.close();
     };
   }, [
     currentUser.userId,
     currentUser.userName,
     diagramName,
-    setNodes,
     setEdges,
+    setNodes,
   ]);
 
   // Handle local changes and broadcast to other users
@@ -178,54 +169,66 @@ export default function DiagramEditor({
     (changes: NodeChange[]) => {
       onNodesChange(changes);
       if (socket && isConnected) {
-        socket.emit('nodes-change', changes);
+        const hasNonSelectionChange = changes.some(
+          (change) => change.type !== 'select',
+        );
+        if (hasNonSelectionChange) {
+          if (updateTimeoutRef.current) {
+            clearTimeout(updateTimeoutRef.current);
+          }
+          updateTimeoutRef.current = setTimeout(() => {
+            socket.emit('nodes-updated', nodes, diagramName);
+          }, 500);
+        }
       }
     },
-    [onNodesChange, socket, isConnected],
+    [onNodesChange, socket, isConnected, nodes, diagramName],
   );
 
   const handleEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
       onEdgesChange(changes);
       if (socket && isConnected) {
-        socket.emit('edges-change', changes);
+        const hasNonSelectionChange = changes.some(
+          (change) => change.type !== 'select',
+        );
+        if (hasNonSelectionChange) {
+          if (updateTimeoutRef.current) {
+            clearTimeout(updateTimeoutRef.current);
+          }
+          updateTimeoutRef.current = setTimeout(() => {
+            socket.emit('edges-updated', edges, diagramName);
+          }, 500);
+        }
       }
     },
-    [onEdgesChange, socket, isConnected],
+    [onEdgesChange, socket, isConnected, edges, diagramName],
   );
-
-  // Sync full state periodically and after reconnection
-  useEffect(() => {
-    if (socket && isConnected && nodes.length > 0) {
-      socket.emit('nodes-updated', nodes);
-    }
-  }, [nodes, socket, isConnected]);
-
-  useEffect(() => {
-    if (socket && isConnected && edges.length > 0) {
-      socket.emit('edges-updated', edges);
-    }
-  }, [edges, socket, isConnected]);
 
   const onConnect = useCallback(
     (params: Connection) => {
       const { source, target, sourceHandle, targetHandle } = params;
       if (!source || !target) return;
 
-      setEdges((eds) =>
-        addEdge(
+      setEdges((eds) => {
+        const updatedEdges = addEdge(
           {
             id: `e${source}${sourceHandle ?? ''}-${target}${targetHandle ?? ''}`,
             source,
             target,
-            sourceHandle,
-            targetHandle,
+            sourceHandle: sourceHandle ?? null,
+            targetHandle: targetHandle ?? null,
           },
           eds,
-        ),
-      );
+        );
+
+        if (socket && isConnected) {
+          socket.emit('edges-updated', updatedEdges, diagramName);
+        }
+        return updatedEdges;
+      });
     },
-    [setEdges],
+    [setEdges, socket, isConnected, diagramName],
   );
 
   const addNode = useCallback(
@@ -242,51 +245,16 @@ export default function DiagramEditor({
         },
       };
 
-      setNodes((nds) => [...nds, newNode]);
+      setNodes((nds) => {
+        const updatedNodes = [...nds, newNode];
+        if (socket && isConnected) {
+          socket.emit('nodes-updated', updatedNodes, diagramName);
+        }
+        return updatedNodes;
+      });
     },
-    [setNodes],
+    [setNodes, socket, isConnected, diagramName],
   );
-
-  const saveDiagram = useCallback(async () => {
-    try {
-      console.log('Saving diagram with data:', { diagramName, nodes, edges });
-
-      // First try to find if the diagram exists
-      const checkResponse = await fetch(
-        `http://localhost:3001/api/diagrams/${diagramName}`,
-      );
-      const method = checkResponse.ok ? 'PUT' : 'POST';
-
-      const payload = {
-        name: diagramName,
-        nodes: nodes,
-        edges: edges,
-      };
-
-      console.log('Sending payload:', payload);
-
-      const response = await fetch(
-        method === 'PUT'
-          ? `http://localhost:3001/api/diagrams/${diagramName}`
-          : 'http://localhost:3001/api/diagrams',
-        {
-          method,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to save diagram');
-      }
-
-      console.log('Diagram saved successfully');
-    } catch (error) {
-      console.error('Error saving diagram:', error);
-    }
-  }, [diagramName, nodes, edges]);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -325,9 +293,15 @@ export default function DiagramEditor({
         },
       };
 
-      setNodes((nds) => [...nds, newNode]);
+      setNodes((nds) => {
+        const updatedNodes = [...nds, newNode];
+        if (socket && isConnected) {
+          socket.emit('nodes-updated', updatedNodes, diagramName);
+        }
+        return updatedNodes;
+      });
     },
-    [reactFlowInstance, setNodes],
+    [reactFlowInstance, setNodes, socket, isConnected, diagramName],
   );
 
   // Show loading overlay when loading or reconnecting
@@ -398,15 +372,6 @@ export default function DiagramEditor({
               >
                 <Diamond className="w-4 h-4" />
                 Sub Topic
-              </Button>
-              <Button
-                onClick={() => void saveDiagram()}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <Save className="w-4 h-4" />
-                Save
               </Button>
             </div>
           </Panel>
