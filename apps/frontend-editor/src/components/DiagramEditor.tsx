@@ -22,6 +22,7 @@ import { io, Socket } from 'socket.io-client';
 import { Button } from './ui/button';
 import { Circle, Diamond, Save } from 'lucide-react';
 import CustomNode from './nodes/customNode';
+import { LoadingOverlay } from './ui/loading-overlay';
 
 const nodeTypes: NodeTypes = {
   custom: CustomNode,
@@ -46,6 +47,12 @@ export default function DiagramEditor({
     userName: `User-${Math.random().toString(36).substring(2, 4)}`,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState('Loading diagram...');
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  const [lastLoadedData, setLastLoadedData] = useState<{
+    nodes: Node[];
+    edges: Edge[];
+  } | null>(null);
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] =
@@ -65,11 +72,17 @@ export default function DiagramEditor({
           };
           setNodes(data.nodes);
           setEdges(data.edges);
+          setLastLoadedData(data); // Store the last successfully loaded data
+          setIsLoading(false);
         }
       } catch (error) {
         console.error('Error loading diagram:', error);
-      } finally {
-        setIsLoading(false);
+        // If we have last loaded data, use it as fallback
+        if (lastLoadedData) {
+          setNodes(lastLoadedData.nodes);
+          setEdges(lastLoadedData.edges);
+          setIsLoading(false);
+        }
       }
     };
 
@@ -91,6 +104,9 @@ export default function DiagramEditor({
 
     newSocket.on('connect', () => {
       setIsConnected(true);
+      setIsReconnecting(false);
+      // Request latest diagram data upon reconnection
+      newSocket.emit('request-diagram-data', diagramName);
       console.log('[Socket] Connected to server', {
         socketId: newSocket.id,
         userId: currentUser.userId,
@@ -102,30 +118,46 @@ export default function DiagramEditor({
     newSocket.on('connect_error', (error) => {
       console.error('[Socket] Connection error:', error);
       setIsConnected(false);
+      setIsReconnecting(true);
+      setLoadingMessage('Reconnecting to server...');
     });
 
     newSocket.on('disconnect', (reason) => {
       setIsConnected(false);
+      setIsReconnecting(true);
+      setLoadingMessage(`Connection lost. Reconnecting... (${reason})`);
       console.log('[Socket] Disconnected from server:', reason);
     });
 
     // Handle real-time updates
     newSocket.on('nodes-updated', (updatedNodes: Node[]) => {
-      setNodes(updatedNodes);
+      if (updatedNodes.length > 0) {
+        // Only update if we received actual nodes
+        setNodes(updatedNodes);
+        setLastLoadedData((prev) => ({
+          nodes: updatedNodes,
+          edges: prev?.edges || [],
+        }));
+      }
     });
 
     newSocket.on('edges-updated', (updatedEdges: Edge[]) => {
-      setEdges(updatedEdges);
+      if (updatedEdges.length > 0) {
+        // Only update if we received actual edges
+        setEdges(updatedEdges);
+        setLastLoadedData((prev) => ({
+          nodes: prev?.nodes || [],
+          edges: updatedEdges,
+        }));
+      }
     });
 
-    newSocket.on('nodes-change', (changes: NodeChange[]) => {
-      // Apply changes received from other users
-      onNodesChange(changes);
-    });
-
-    newSocket.on('edges-change', (changes: EdgeChange[]) => {
-      // Apply changes received from other users
-      onEdgesChange(changes);
+    newSocket.on('diagram-data', (data: { nodes: Node[]; edges: Edge[] }) => {
+      if (data.nodes.length > 0 || data.edges.length > 0) {
+        setNodes(data.nodes);
+        setEdges(data.edges);
+        setLastLoadedData(data);
+      }
     });
 
     setSocket(newSocket);
@@ -139,8 +171,6 @@ export default function DiagramEditor({
     diagramName,
     setNodes,
     setEdges,
-    onNodesChange,
-    onEdgesChange,
   ]);
 
   // Handle local changes and broadcast to other users
@@ -164,15 +194,15 @@ export default function DiagramEditor({
     [onEdgesChange, socket, isConnected],
   );
 
-  // Sync full state periodically
+  // Sync full state periodically and after reconnection
   useEffect(() => {
-    if (socket && isConnected) {
+    if (socket && isConnected && nodes.length > 0) {
       socket.emit('nodes-updated', nodes);
     }
   }, [nodes, socket, isConnected]);
 
   useEffect(() => {
-    if (socket && isConnected) {
+    if (socket && isConnected && edges.length > 0) {
       socket.emit('edges-updated', edges);
     }
   }, [edges, socket, isConnected]);
@@ -300,12 +330,9 @@ export default function DiagramEditor({
     [reactFlowInstance, setNodes],
   );
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        Loading diagram...
-      </div>
-    );
+  // Show loading overlay when loading or reconnecting
+  if (isLoading || isReconnecting) {
+    return <LoadingOverlay message={loadingMessage} />;
   }
 
   return (
