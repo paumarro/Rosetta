@@ -25,10 +25,10 @@ func main() {
 
 	// Add CORS middleware
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{frontendURL}, // Your frontend URL
+		AllowOrigins:     []string{frontendURL}, 
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept", "X-Requested-With"},
-		AllowCredentials: true, // Important for cookies
+		AllowCredentials: true, 
 	}))
 
 	authRoutes := r.Group("/")
@@ -38,7 +38,7 @@ func main() {
 	}
 
 	r.GET("/callback", handler.Callback)
-	r.GET("/auth/check", handler.AuthCheck) // This endpoint ONLY checks, never redirects
+	r.GET("/auth/check", handler.AuthCheck) 
 	r.GET("/auth/logout", handler.Logout)
 	r.GET("/auth/login", handler.Login)
 
