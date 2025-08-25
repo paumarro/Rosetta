@@ -22,10 +22,17 @@ export const createDiagram = async (
   req: Request<object, object, DiagramBody>,
   res: Response,
 ) => {
-  const { name, nodes, edges } = req.body;
-  const diagram = new DiagramModel({ name, nodes, edges });
-  await diagram.save();
-  res.status(201).json(diagram);
+  try {
+    const { name, nodes, edges } = req.body;
+    const diagram = new DiagramModel({ name, nodes, edges });
+    await diagram.save();
+    res.status(201).json(diagram);
+  } catch (err) {
+    if (err instanceof Error) {
+      res.status(500);
+      throw new Error(`Error: ${err.message}`);
+    }
+  }
 };
 
 export const updateDiagram = async (

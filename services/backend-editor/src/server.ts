@@ -13,11 +13,11 @@ const server = createServer(app);
 
 const io = new Server(server, { cors: { origin: true, credentials: true } });
 
+app.use(express.json());
+
 app.use(corsMiddleware);
 
 app.use('/api', diagramRoutes);
-
-app.use(express.json());
 
 diagramSocket(io);
 
