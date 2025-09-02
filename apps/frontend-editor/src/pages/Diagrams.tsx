@@ -2,63 +2,37 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Plus } from 'lucide-react';
-
-interface Diagram {
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import { useDiagramStore } from '@/lib/stores';
 
 export default function DiagramsPage() {
-  const [diagrams, setDiagrams] = useState<Diagram[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // const [diagrams, setDiagrams] = useState<Diagram[]>([]);
+  // const [isLoading, setIsLoading] = useState(true);
   const [newDiagramName, setNewDiagramName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const navigate = useNavigate();
 
+  const { diagrams, isLoading, error, fetchDiagrams, addDiagram, setError } =
+    useDiagramStore();
+
   useEffect(() => {
-    const loadDiagrams = async () => {
-      try {
-        const response = await fetch('http://localhost:3001/api/diagrams');
-        if (response.ok) {
-          const data = (await response.json()) as Diagram[];
-          setDiagrams(data);
-        }
-      } catch (error) {
-        console.error('Error loading diagrams:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    void fetchDiagrams();
+  }, [fetchDiagrams]);
 
-    void loadDiagrams();
-  }, []);
-
-  const createNewDiagram = async () => {
+  const handleCreateNewDiagram = async () => {
     if (!newDiagramName.trim()) return;
+    await addDiagram(newDiagramName);
 
-    try {
-      const response = await fetch('http://localhost:3001/api/diagrams', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: newDiagramName,
-          nodes: [],
-          edges: [],
-        }),
-      });
-
-      if (response.ok) {
-        const newDiagram = (await response.json()) as Diagram;
-        setDiagrams([...diagrams, newDiagram]);
-        setNewDiagramName('');
-        setIsCreating(false);
-      }
-    } catch (error) {
-      console.error('Error creating diagram:', error);
+    //Reset form after sucessfull creation (only if no error)
+    if (!error) {
+      setNewDiagramName('');
+      setIsCreating(false);
     }
+  };
+
+  const handleCancelCreate = () => {
+    setIsCreating(false);
+    setNewDiagramName('');
+    setError(null);
   };
 
   if (isLoading) {
@@ -86,6 +60,22 @@ export default function DiagramsPage() {
         </Button>
       </div>
 
+      {/* Errro display */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600">{error}</p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setError(null);
+            }}
+          >
+            Dismiss
+          </Button>
+        </div>
+      )}
+
       {isCreating && (
         <div className="mb-8 p-4 border rounded-lg bg-white">
           <h2 className="text-lg font-semibold mb-4">Create New Diagram</h2>
@@ -98,19 +88,19 @@ export default function DiagramsPage() {
               }}
               placeholder="Enter diagram name"
               className="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  void handleCreateNewDiagram();
+                }
+              }}
             />
             <Button
-              onClick={() => void createNewDiagram()}
+              onClick={() => void handleCreateNewDiagram()}
               disabled={!newDiagramName.trim()}
             >
               Create
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsCreating(false);
-              }}
-            >
+            <Button variant="outline" onClick={handleCancelCreate}>
               Cancel
             </Button>
           </div>
