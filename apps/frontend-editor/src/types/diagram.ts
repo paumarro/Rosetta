@@ -1,6 +1,5 @@
 import type { BaseEntity, BaseStore } from './base.ts';
 import type { DiagramNode, DiagramEdge } from './reactflow.ts';
-
 // Core diagram type
 export interface Diagram extends BaseEntity {
   name: string;
