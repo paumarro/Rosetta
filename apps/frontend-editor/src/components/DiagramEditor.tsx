@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
+import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
 import {
   ReactFlow,
   Background,
@@ -38,6 +39,20 @@ interface DiagramEditorProps {
 export default function DiagramEditor({
   diagramName = 'default',
 }: DiagramEditorProps) {
+  // Test the collaborative store
+  const {
+    initializeCollaboration,
+    isInitializing,
+    cleanup,
+    socket: storeSocket,
+    isConnected: storeIsConnected,
+    connectedUsers,
+    currentUser: storeCurrentUser,
+    nodes: storeNodes,
+    edges: storeEdges,
+    diagramName: storeDiagramName,
+  } = useCollaborativeStore();
+
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -57,6 +72,44 @@ export default function DiagramEditor({
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] =
     useState<ReactFlowInstance | null>(null);
+
+  // Test initialization of collaborative store
+  useEffect(() => {
+    const testCollaborativeStore = async () => {
+      console.log('[Store Test] Initializing collaborative store...');
+      await initializeCollaboration(diagramName, currentUser);
+      console.log('[Store Test] Initialization complete');
+    };
+
+    void testCollaborativeStore();
+    return () => {
+      console.log('Cleaning up collaborative store...');
+      cleanup();
+    };
+  }, [diagramName, currentUser, initializeCollaboration, cleanup]);
+
+  // Log store state changes
+  useEffect(() => {
+    console.log('[Store Test] Store state updated:', {
+      isInitializing,
+      storeSocket: storeSocket?.id,
+      storeIsConnected,
+      connectedUsers: connectedUsers.length,
+      storeCurrentUser,
+      storeNodes: storeNodes.length,
+      storeEdges: storeEdges.length,
+      storeDiagramName,
+    });
+  }, [
+    isInitializing,
+    storeSocket,
+    storeIsConnected,
+    connectedUsers,
+    storeCurrentUser,
+    storeNodes,
+    storeEdges,
+    storeDiagramName,
+  ]);
 
   // Load diagram data
   useEffect(() => {
