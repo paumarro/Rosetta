@@ -367,8 +367,8 @@ export default function DiagramEditor({
       {/* React Flow Editor */}
       <div className="flex-1" ref={reactFlowWrapper}>
         <ReactFlow
-          nodes={nodes}
-          edges={edges}
+          nodes={storeNodes}
+          edges={storeEdges}
           onNodesChange={handleNodesChange}
           onEdgesChange={handleEdgesChange}
           onConnect={onConnect}
