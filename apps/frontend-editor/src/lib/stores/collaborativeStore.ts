@@ -90,7 +90,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         currentState.isInitializing ||
         (currentState.socket && currentState.diagramName === diagramName)
       ) {
-        console.log('[Store Test] Already initialized, skipping...');
+        console.log('[Store] Already initialized, skipping...');
         return;
       }
       // Cleanup existing connections
@@ -127,11 +127,12 @@ export const useCollaborativeStore = create<CollaborativeState>()(
 
         // 3. Setup socket event listeners
         newSocket.on('connect', () => {
-          console.log('Connected to collaboration server', {
+          console.log('[Store] Connected to collaboration server', {
             socketId: newSocket.id,
             userId: user.userId,
             userName: user.userName,
             diagramName: diagramName,
+            nodes: currentState.nodes,
           });
           set({ isConnected: true });
         });
@@ -181,7 +182,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     cleanup: () => {
       const { socket } = get();
       if (socket) {
-        console.log('[Store Test] Cleaning up socket connection');
+        console.log('[Store Cleanup] Cleaning up socket connection');
         socket.disconnect();
         set({
           socket: null,
@@ -194,8 +195,20 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     },
 
     // React Flow Actions
-    setNodes: () => {},
-    setEdges: () => {},
+    setNodes: (
+      nodes: DiagramNode[] | ((nodes: DiagramNode[]) => DiagramNode[]),
+    ) => {
+      set((state) => ({
+        nodes: typeof nodes === 'function' ? nodes(state.nodes) : nodes,
+      }));
+    },
+    setEdges: (
+      edges: DiagramEdge[] | ((edges: DiagramEdge[]) => DiagramEdge[]),
+    ) => {
+      set((state) => ({
+        edges: typeof edges === 'function' ? edges(state.edges) : edges,
+      }));
+    },
     onNodeChange: () => {},
     onEdgeChange: () => {},
     onConnect: () => {},
