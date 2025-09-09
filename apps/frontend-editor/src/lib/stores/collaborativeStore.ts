@@ -248,8 +248,23 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       }));
       console.log('[Store Test] Edge connected:', source, '->', target);
     },
-    addNode: () => {},
-
+    addNode: (type, position) => {
+      const newNode: DiagramNode = {
+        id: `${type}-${String(Date.now())}`,
+        type: 'custom',
+        position: position || {
+          x: Math.random() * 400,
+          y: Math.random() * 400,
+        },
+        data: {
+          label: `What's the ${type.charAt(0).toUpperCase() + type.slice(1)} about?`,
+        },
+      };
+      set((state) => ({
+        nodes: [...state.nodes, newNode],
+      }));
+      console.log('[Store] Added new node:', newNode.id);
+    },
     // Collaboration Actions
     updateCursor: () => {},
     updateSelection: () => {},

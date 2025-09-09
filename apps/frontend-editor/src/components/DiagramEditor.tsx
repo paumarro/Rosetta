@@ -53,6 +53,7 @@ export default function DiagramEditor({
     onNodeChange,
     onEdgeChange,
     onConnect,
+    addNode,
     diagramName: storeDiagramName,
   } = useCollaborativeStore();
   //  eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -287,31 +288,6 @@ export default function DiagramEditor({
   //   },
   //   [setEdges, socket, isConnected, diagramName],
   // );
-
-  const addNode = useCallback(
-    (type: string) => {
-      const newNode: Node = {
-        id: `${type}-${String(Date.now())}`,
-        type: 'custom',
-        position: {
-          x: Math.random() * 400,
-          y: Math.random() * 400,
-        },
-        data: {
-          label: `What's the ${type.charAt(0).toUpperCase() + type.slice(1)} about?`,
-        },
-      };
-
-      setNodes((nds) => {
-        const updatedNodes = [...nds, newNode];
-        if (socket && isConnected) {
-          socket.emit('nodes-updated', updatedNodes, diagramName);
-        }
-        return updatedNodes;
-      });
-    },
-    [setNodes, socket, isConnected, diagramName],
-  );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
