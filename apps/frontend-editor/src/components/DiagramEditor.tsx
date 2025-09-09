@@ -5,16 +5,16 @@ import {
   Background,
   Controls,
   // MiniMap,
-  addEdge,
+  // addEdge,
   useNodesState,
   useEdgesState,
-  Connection,
+  // Connection,
   Edge,
   Node,
   NodeTypes,
   Panel,
-  NodeChange,
-  EdgeChange,
+  // NodeChange,
+  // EdgeChange,
   ReactFlowInstance,
   BackgroundVariant,
 } from '@xyflow/react';
@@ -50,10 +50,14 @@ export default function DiagramEditor({
     currentUser: storeCurrentUser,
     nodes: storeNodes,
     edges: storeEdges,
+    onNodeChange,
+    onEdgeChange,
+    onConnect,
     diagramName: storeDiagramName,
   } = useCollaborativeStore();
-
+  //  eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  //  eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -218,71 +222,71 @@ export default function DiagramEditor({
   ]);
 
   // Handle local changes and broadcast to other users
-  const handleNodesChange = useCallback(
-    (changes: NodeChange[]) => {
-      onNodesChange(changes);
-      if (socket && isConnected) {
-        const hasNonSelectionChange = changes.some(
-          (change) => change.type !== 'select',
-        );
-        if (hasNonSelectionChange) {
-          if (updateTimeoutRef.current) {
-            clearTimeout(updateTimeoutRef.current);
-          }
-          updateTimeoutRef.current = setTimeout(() => {
-            socket.emit('nodes-updated', nodes, diagramName);
-          }, 500);
-        }
-      }
-    },
-    [onNodesChange, socket, isConnected, nodes, diagramName],
-  );
+  // const handleNodesChange = useCallback(
+  //   (changes: NodeChange[]) => {
+  //     onNodesChange(changes);
+  //     if (socket && isConnected) {
+  //       const hasNonSelectionChange = changes.some(
+  //         (change) => change.type !== 'select',
+  //       );
+  //       if (hasNonSelectionChange) {
+  //         if (updateTimeoutRef.current) {
+  //           clearTimeout(updateTimeoutRef.current);
+  //         }
+  //         updateTimeoutRef.current = setTimeout(() => {
+  //           socket.emit('nodes-updated', nodes, diagramName);
+  //         }, 500);
+  //       }
+  //     }
+  //   },
+  //   [onNodesChange, socket, isConnected, nodes, diagramName],
+  // );
 
-  const handleEdgesChange = useCallback(
-    (changes: EdgeChange[]) => {
-      onEdgesChange(changes);
-      if (socket && isConnected) {
-        const hasNonSelectionChange = changes.some(
-          (change) => change.type !== 'select',
-        );
-        if (hasNonSelectionChange) {
-          if (updateTimeoutRef.current) {
-            clearTimeout(updateTimeoutRef.current);
-          }
-          updateTimeoutRef.current = setTimeout(() => {
-            socket.emit('edges-updated', edges, diagramName);
-          }, 500);
-        }
-      }
-    },
-    [onEdgesChange, socket, isConnected, edges, diagramName],
-  );
+  // const handleEdgesChange = useCallback(
+  //   (changes: EdgeChange[]) => {
+  //     onEdgesChange(changes);
+  //     if (socket && isConnected) {
+  //       const hasNonSelectionChange = changes.some(
+  //         (change) => change.type !== 'select',
+  //       );
+  //       if (hasNonSelectionChange) {
+  //         if (updateTimeoutRef.current) {
+  //           clearTimeout(updateTimeoutRef.current);
+  //         }
+  //         updateTimeoutRef.current = setTimeout(() => {
+  //           socket.emit('edges-updated', edges, diagramName);
+  //         }, 500);
+  //       }
+  //     }
+  //   },
+  //   [onEdgesChange, socket, isConnected, edges, diagramName],
+  // );
 
-  const onConnect = useCallback(
-    (params: Connection) => {
-      const { source, target, sourceHandle, targetHandle } = params;
-      if (!source || !target) return;
+  // const onConnect = useCallback(
+  //   (params: Connection) => {
+  //     const { source, target, sourceHandle, targetHandle } = params;
+  //     if (!source || !target) return;
 
-      setEdges((eds) => {
-        const updatedEdges = addEdge(
-          {
-            id: `e${source}${sourceHandle ?? ''}-${target}${targetHandle ?? ''}`,
-            source,
-            target,
-            sourceHandle: sourceHandle ?? null,
-            targetHandle: targetHandle ?? null,
-          },
-          eds,
-        );
+  //     setEdges((eds) => {
+  //       const updatedEdges = addEdge(
+  //         {
+  //           id: `e${source}${sourceHandle ?? ''}-${target}${targetHandle ?? ''}`,
+  //           source,
+  //           target,
+  //           sourceHandle: sourceHandle ?? null,
+  //           targetHandle: targetHandle ?? null,
+  //         },
+  //         eds,
+  //       );
 
-        if (socket && isConnected) {
-          socket.emit('edges-updated', updatedEdges, diagramName);
-        }
-        return updatedEdges;
-      });
-    },
-    [setEdges, socket, isConnected, diagramName],
-  );
+  //       if (socket && isConnected) {
+  //         socket.emit('edges-updated', updatedEdges, diagramName);
+  //       }
+  //       return updatedEdges;
+  //     });
+  //   },
+  //   [setEdges, socket, isConnected, diagramName],
+  // );
 
   const addNode = useCallback(
     (type: string) => {
@@ -369,8 +373,8 @@ export default function DiagramEditor({
         <ReactFlow
           nodes={storeNodes}
           edges={storeEdges}
-          onNodesChange={handleNodesChange}
-          onEdgesChange={handleEdgesChange}
+          onNodesChange={onNodeChange}
+          onEdgesChange={onEdgeChange}
           onConnect={onConnect}
           onInit={setReactFlowInstance}
           onDrop={onDrop}
