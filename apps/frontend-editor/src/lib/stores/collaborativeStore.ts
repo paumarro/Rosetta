@@ -4,11 +4,11 @@ import { FullDiagram } from '@/types/diagram';
 import { DiagramNode, DiagramEdge } from '@/types/reactflow';
 import {
   Connection,
-  // addEdge,
+  addEdge,
   NodeChange,
   EdgeChange,
-  // applyNodeChanges,
-  // applyEdgeChanges,
+  applyNodeChanges,
+  applyEdgeChanges,
 } from '@xyflow/react';
 import { io, Socket } from 'socket.io-client';
 
@@ -209,9 +209,45 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         edges: typeof edges === 'function' ? edges(state.edges) : edges,
       }));
     },
-    onNodeChange: () => {},
-    onEdgeChange: () => {},
-    onConnect: () => {},
+    onNodeChange: (changes) => {
+      const { nodes } = get();
+      const updatedNodes = applyNodeChanges(changes, nodes);
+      set({ nodes: updatedNodes });
+      console.log(
+        '[Store Update Test] Nodes changed:',
+        changes.length,
+        'changes',
+      );
+    },
+    onEdgeChange: (changes) => {
+      const { edges } = get();
+      const updatedEdges = applyEdgeChanges(changes, edges);
+      set({ edges: updatedEdges });
+      console.log(
+        '[Store Update Test] Edges changed:',
+        changes.length,
+        'changes',
+      );
+    },
+    onConnect: (params) => {
+      const { source, target, sourceHandle, targetHandle } = params;
+      if (!source || !target) return;
+
+      set((state) => ({
+        edges: addEdge(
+          {
+            id: `e${source}${sourceHandle ?? ''}-${target}${targetHandle ?? ''}`,
+            source,
+            target,
+            sourceHandle: sourceHandle ?? null,
+            targetHandle: targetHandle ?? null,
+          },
+
+          state.edges,
+        ),
+      }));
+      console.log('[Store Test] Edge connected:', source, '->', target);
+    },
     addNode: () => {},
 
     // Collaboration Actions
