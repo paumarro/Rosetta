@@ -123,17 +123,23 @@ export const useCollaborativeStore = create<CollaborativeState>()(
             userName: user.userName,
             diagramName: diagramName,
           },
+          reconnection: true,
+          reconnectionAttempts: 5,
+          reconnectionDelay: 1000,
         });
 
         // 3. Setup socket event listeners
         newSocket.on('connect', () => {
-          console.log('[Store] Connected to collaboration server', {
-            socketId: newSocket.id,
-            userId: user.userId,
-            userName: user.userName,
-            diagramName: diagramName,
-            nodes: currentState.nodes,
-          });
+          console.log(
+            '[CollavorativeStore] Connected to collaboration server',
+            {
+              socketId: newSocket.id,
+              userId: user.userId,
+              userName: user.userName,
+              diagramName: diagramName,
+              nodes: currentState.nodes,
+            },
+          );
           set({ isConnected: true });
         });
 
@@ -214,7 +220,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       const updatedNodes = applyNodeChanges(changes, nodes);
       set({ nodes: updatedNodes });
       console.log(
-        '[Store Update Test] Nodes changed:',
+        '[CollaborativeStore] Nodes changed:',
         changes.length,
         'changes',
       );
@@ -224,7 +230,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       const updatedEdges = applyEdgeChanges(changes, edges);
       set({ edges: updatedEdges });
       console.log(
-        '[Store Update Test] Edges changed:',
+        '[CollaborativeStore] Edges changed:',
         changes.length,
         'changes',
       );
@@ -246,7 +252,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
           state.edges,
         ),
       }));
-      console.log('[Store Test] Edge connected:', source, '->', target);
+      console.log('[CollaborativeStore] Edge connected:', source, '->', target);
     },
     addNode: (type, position) => {
       const newNode: DiagramNode = {
@@ -263,7 +269,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       set((state) => ({
         nodes: [...state.nodes, newNode],
       }));
-      console.log('[Store] Added new node:', newNode.id);
+      console.log('[CollaborativeStore] Added new node:', newNode.id);
     },
     // Collaboration Actions
     updateCursor: () => {},
