@@ -6,8 +6,11 @@ services:
       - "8080:8080"
     environment:
       PG_DB_URL: ${PG_DB_URL}
+
+      EDITOR_BASE_URL: ${EDITOR_BASE_URL}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - rosetta-net
 
@@ -23,6 +26,11 @@ services:
       - db-data:/var/lib/postgresql/data
     networks:
       - rosetta-net
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "admin", "-d", "rosetta_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 networks:
   rosetta-net:

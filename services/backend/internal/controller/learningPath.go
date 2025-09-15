@@ -33,3 +33,24 @@ func (res *LearningPathController) Index(c *gin.Context) {
 
 	c.JSON(http.StatusOK, paths)
 }
+
+type CreateLearningPathRequest struct {
+	PathName string   `json:"pathName" binding:"required"`
+	Skills   []string `json:"skills"`
+}
+
+func (res *LearningPathController) Create(c *gin.Context) {
+	var req CreateLearningPathRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondWithError(c, http.StatusBadRequest, "Invalid request format", err)
+		return
+	}
+
+	learningPath, err := res.LearningPathService.CreateLearningPath(c, req.PathName, "", true, "")
+	if err != nil {
+		respondWithError(c, http.StatusInternalServerError, "Failed to create learning path", err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, learningPath)
+}
