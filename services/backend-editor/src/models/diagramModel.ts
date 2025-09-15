@@ -23,6 +23,7 @@ interface IEdge {
 }
 
 interface IDiagram {
+  learningPathId: string;
   name: string;
   nodes: INode[];
   edges: IEdge[];
@@ -64,6 +65,11 @@ const edgeSchema = new mongoose.Schema(
 
 const diagramSchema = new mongoose.Schema<IDiagram>(
   {
+    learningPathId: {
+      type: String,
+      required: true,
+      unique: true,
+    },
     name: {
       type: String,
       required: true,
