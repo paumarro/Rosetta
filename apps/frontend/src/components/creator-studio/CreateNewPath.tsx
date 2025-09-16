@@ -15,8 +15,8 @@ import { ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { SearchSkillForm } from '@/components/welcome/search-skill-form';
 import { useState, FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
+// import axiosLib from 'axios';
 
 export default function CreateNewPath({
   className,
@@ -27,7 +27,6 @@ export default function CreateNewPath({
     useState<number>(0);
   const [skills, setSkills] = useState<string[]>([]);
   const [searchValue, setSearchValue] = useState('');
-  const navigate = useNavigate();
   const handleSearchSubmit = (value: string) => {
     if (value.trim() && !skills.includes(value.trim())) {
       setSkills([...skills, value.trim()]);
@@ -42,13 +41,27 @@ export default function CreateNewPath({
     };
 
     try {
-      //Placeholder for API call
-      console.log('Form submitted:', formData);
-      await Promise.resolve(); // Simulate API call
-      //Redirect to home page
-      return void navigate('/');
-    } catch (error) {
-      console.error('Error submitting form:', error);
+      const response = await fetch('http://localhost:8080/api/learning-paths', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      console.log('response:', response);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status.toString()}`);
+      }
+
+      window.location.href = 'http://localhost:5173/';
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error('Error submitting form:', err.message);
+      } else {
+        console.error('Unknown error submitting form:', err);
+      }
     }
   };
 
@@ -62,7 +75,7 @@ export default function CreateNewPath({
             <Card>
               <CardHeader className="text-center">
                 <CardTitle className="text-xl">
-                  Create a game-changing <br /> Learning Path
+                  Create a Learning Path
                 </CardTitle>
                 <CardDescription>
                   Share your experience, empower the community
@@ -78,7 +91,7 @@ export default function CreateNewPath({
                     <div className="grid gap-3">
                       <Label htmlFor="path-name">Learning Path Name</Label>
                       <p className="text-sm text-muted-foreground">
-                        Give your path an inspiring name for the community ✨
+                        Give your path an inspiring name for the community
                       </p>
                       <Input
                         id="path-name"
