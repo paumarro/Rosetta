@@ -32,6 +32,7 @@ export interface DiagramBody {
   name: string;
   nodes: DiagramNode[];
   edges: DiagramEdge[];
+  learningPathId?: string;
 }
 
 export interface DiagramResponse {
