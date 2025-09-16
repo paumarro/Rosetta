@@ -84,17 +84,17 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     // Setup Actions
 
     initializeCollaboration: async (diagramName: string, user: User) => {
-      const currentState = get();
+      const state = get();
       // Prevent multiple initializations
       if (
-        currentState.isInitializing ||
-        (currentState.socket && currentState.diagramName === diagramName)
+        state.isInitializing ||
+        (state.socket && state.diagramName === diagramName)
       ) {
         console.log('[Store] Already initialized, skipping...');
         return;
       }
       // Cleanup existing connections
-      if (currentState.socket) {
+      if (state.socket) {
         console.log('[Store] Cleaning up existing connection...');
         get().cleanup(); // Disconnects AND cleanup state
       }
@@ -137,7 +137,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
               userId: user.userId,
               userName: user.userName,
               diagramName: diagramName,
-              nodes: currentState.nodes,
+              nodes: state.nodes,
             },
           );
           set({ isConnected: true });
@@ -216,7 +216,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       }));
     },
     onNodeChange: (changes) => {
-      const { nodes } = get();
+      const { nodes, socket, isConnected, diagramName } = get();
       const updatedNodes = applyNodeChanges(changes, nodes);
       set({ nodes: updatedNodes });
       console.log(
@@ -224,9 +224,23 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         changes.length,
         'changes',
       );
+      // Broadcasting changes to other users
+      if (socket && isConnected) {
+        const hasNonSelectionChange = changes.some(
+          (change) => change.type !== 'select',
+        );
+        if (hasNonSelectionChange) {
+          socket.emit('nodes-updated', updatedNodes, diagramName);
+          console.log(
+            '[CollaborativeStore] Broadcasting Nodes changed:',
+            changes.length,
+            'changes',
+          );
+        }
+      }
     },
     onEdgeChange: (changes) => {
-      const { edges } = get();
+      const { edges, socket, isConnected, diagramName } = get();
       const updatedEdges = applyEdgeChanges(changes, edges);
       set({ edges: updatedEdges });
       console.log(
@@ -234,25 +248,49 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         changes.length,
         'changes',
       );
+      // Broadcasting changes to other users
+      if (socket && isConnected) {
+        const hasNonSelectionChange = changes.some(
+          (change) => change.type !== 'select',
+        );
+        if (hasNonSelectionChange) {
+          socket.emit('edges-updated', updatedEdges, diagramName);
+          console.log(
+            '[CollaborativeStore] Broadcasting Edges changed:',
+            changes.length,
+            'changes',
+          );
+        }
+      }
     },
     onConnect: (params) => {
       const { source, target, sourceHandle, targetHandle } = params;
       if (!source || !target) return;
+      const { edges, socket, isConnected, diagramName } = get();
 
-      set((state) => ({
-        edges: addEdge(
-          {
-            id: `e${source}${sourceHandle ?? ''}-${target}${targetHandle ?? ''}`,
-            source,
-            target,
-            sourceHandle: sourceHandle ?? null,
-            targetHandle: targetHandle ?? null,
-          },
-
-          state.edges,
-        ),
-      }));
+      // Create the edge object
+      const updatedEdges = addEdge(
+        {
+          id: `e${source}${sourceHandle ?? ''}-${target}${targetHandle ?? ''}`,
+          source,
+          target,
+          sourceHandle: sourceHandle ?? null,
+          targetHandle: targetHandle ?? null,
+        },
+        edges,
+      );
+      set({ edges: updatedEdges });
       console.log('[CollaborativeStore] Edge connected:', source, '->', target);
+      // Broadcasting changes to other users
+      if (socket && isConnected) {
+        socket.emit('edges-updated', updatedEdges, diagramName);
+        console.log(
+          '[CollaborativeStore]... Broadcasting Edge connected:',
+          source,
+          '->',
+          target,
+        );
+      }
     },
     addNode: (type, position) => {
       const newNode: DiagramNode = {
@@ -269,6 +307,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       set((state) => ({
         nodes: [...state.nodes, newNode],
       }));
+
       console.log('[CollaborativeStore] Added new node:', newNode.id);
     },
     // Collaboration Actions
