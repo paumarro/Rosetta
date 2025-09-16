@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/model"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -31,4 +32,20 @@ func ConnectToDB() {
 	}
 
 	log.Println("Database connection established successfully!")
+
+	// Auto-migrate the database schema
+	err = DB.AutoMigrate(
+		&model.User{},
+		&model.Skill{},
+		&model.Role{},
+		&model.LearningPath{},
+		&model.UserSkill{},
+		&model.UserLP{},
+		&model.LPSkill{},
+	)
+	if err != nil {
+		log.Fatalf("Failed to auto-migrate database: %v", err)
+	}
+
+	log.Println("Database schema migrated successfully!")
 }
