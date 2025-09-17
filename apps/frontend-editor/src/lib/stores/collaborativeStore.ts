@@ -296,18 +296,26 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       }
     },
     addNode: (type, position) => {
+      const { nodes } = get();
+      const nodeCount = nodes.length;
+
+      // Auto-calculate zigzag position if not provided
+      const isEven = nodeCount % 2 === 0;
+      const levelY = nodeCount * 100 + 200;
+      const autoPosition = {
+        x: isEven ? (nodes.length === 0 ? 0 : -200) : 200,
+        y: levelY,
+      };
       const newNode: DiagramNode = {
         id: `${type}-${String(Date.now())}`,
         type: type === 'Start' ? 'start' : 'custom',
-        position: position || {
-          x: Math.random() * 400,
-          y: Math.random() * 400,
-        },
+        position: position || autoPosition,
         data: {
           label:
             type === 'start'
               ? 'Start here'
               : type.charAt(0).toUpperCase() + type.slice(1),
+          type: type.toLowerCase(),
         },
       };
       set((state) => ({
