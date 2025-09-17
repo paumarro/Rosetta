@@ -82,6 +82,14 @@ export default function DiagramEditor({
     duration: 800,
   };
 
+  //Calculate title position based on nodes
+  const getTitlePosition = () => {
+    const centerX = 0;
+    const minY = Math.min(...storeNodes.map((node) => node.position.y));
+    const titleWidth = title.length * 18.6; // Approximate width based on character count
+    return { x: centerX - titleWidth / 2, y: minY - 100 };
+  };
+
   return (
     <div className="h-screen w-full flex flex-col bg-gray-50">
       {/* React Flow Editor */}
@@ -159,7 +167,15 @@ export default function DiagramEditor({
             </div>
           </Panel>
           <ViewportPortal>
-            <div className="text-5xl font-bold">Diagram Title: {title}</div>
+            <div
+              className="absolute pointer-events-none select-none"
+              style={{
+                left: getTitlePosition().x,
+                top: getTitlePosition().y,
+              }}
+            >
+              <h1 className="text-5xl font-bold">{title}</h1>
+            </div>
           </ViewportPortal>
         </ReactFlow>
       </div>

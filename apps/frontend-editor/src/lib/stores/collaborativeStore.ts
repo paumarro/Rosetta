@@ -116,7 +116,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
           set({
             nodes: diagram.nodes,
             edges: diagram.edges,
-            title: 'Untitled Diagram',
+            title: diagramName,
           });
         }
         // 2. Initialize Websocket
