@@ -26,6 +26,7 @@ interface CollaborativeState {
   // react Flow State
   nodes: DiagramNode[];
   edges: DiagramEdge[];
+  title: string;
 
   //Connection State
   socket: Socket | null;
@@ -80,6 +81,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     currentUser: null,
     diagramName: '',
     isInitializing: false,
+    title: '',
 
     // Setup Actions
 
@@ -114,6 +116,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
           set({
             nodes: diagram.nodes,
             edges: diagram.edges,
+            title: 'Untitled Diagram',
           });
         }
         // 2. Initialize Websocket
@@ -295,13 +298,16 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     addNode: (type, position) => {
       const newNode: DiagramNode = {
         id: `${type}-${String(Date.now())}`,
-        type: 'custom',
+        type: type === 'Start' ? 'start' : 'custom',
         position: position || {
           x: Math.random() * 400,
           y: Math.random() * 400,
         },
         data: {
-          label: `What's the ${type.charAt(0).toUpperCase() + type.slice(1)} about?`,
+          label:
+            type === 'start'
+              ? 'Start here'
+              : type.charAt(0).toUpperCase() + type.slice(1),
         },
       };
       set((state) => ({

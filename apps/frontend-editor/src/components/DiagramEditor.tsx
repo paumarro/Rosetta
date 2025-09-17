@@ -7,15 +7,18 @@ import {
   NodeTypes,
   Panel,
   BackgroundVariant,
+  ViewportPortal,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Button } from './ui/button';
-import { Circle, Diamond } from 'lucide-react';
+import { Circle, Diamond, Play } from 'lucide-react';
 import CustomNode from './nodes/customNode';
+import StartNode from './nodes/startNode';
 import { LoadingOverlay } from './ui/loading-overlay';
 
 const nodeTypes: NodeTypes = {
   custom: CustomNode,
+  start: StartNode,
 };
 
 interface DiagramEditorProps {
@@ -33,6 +36,7 @@ export default function DiagramEditor({
     isConnected: storeIsConnected,
     nodes: storeNodes,
     edges: storeEdges,
+    title,
     onNodeChange,
     onEdgeChange,
     onConnect,
@@ -73,6 +77,11 @@ export default function DiagramEditor({
     return <LoadingOverlay message="Loading diagram" />;
   }
 
+  const fitViewOptions = {
+    padding: 0.2,
+    duration: 800,
+  };
+
   return (
     <div className="h-screen w-full flex flex-col bg-gray-50">
       {/* React Flow Editor */}
@@ -89,13 +98,15 @@ export default function DiagramEditor({
           nodeTypes={nodeTypes}
           snapToGrid={true}
           snapGrid={[15, 15]}
-          fitView
+          fitView={true}
+          fitViewOptions={fitViewOptions}
+          minZoom={0.8}
+          maxZoom={1}
           attributionPosition="top-right"
         >
           <Controls />
           {/* <MiniMap /> */}
           <Background variant={'dots' as BackgroundVariant} gap={12} size={1} />
-
           {/* Status Panel */}
           <Panel position="top-left">
             <div className="bg-white p-3 rounded-lg shadow-md border">
@@ -111,10 +122,18 @@ export default function DiagramEditor({
               <p className="text-sm text-gray-600">Diagram: {diagramName}</p>
             </div>
           </Panel>
-
           {/* Toolbar */}
           <Panel position="top-right">
             <div className="flex gap-2">
+              <Button
+                onClick={() => {
+                  addNode('Start');
+                }}
+              >
+                <Play className="w-4 h-4" />
+                Start
+              </Button>
+
               <Button
                 onClick={() => {
                   addNode('Topic');
@@ -139,6 +158,9 @@ export default function DiagramEditor({
               </Button>
             </div>
           </Panel>
+          <ViewportPortal>
+            <div className="text-5xl font-bold">Diagram Title: {title}</div>
+          </ViewportPortal>
         </ReactFlow>
       </div>
     </div>
