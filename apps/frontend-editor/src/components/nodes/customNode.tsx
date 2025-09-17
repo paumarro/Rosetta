@@ -1,10 +1,19 @@
 import { Handle, Position } from '@xyflow/react';
 
-const CustomNode = ({ data, selected }: { data: any; selected: boolean }) => (
+interface CustomNodeData {
+  label: string;
+}
+
+const CustomNode = ({
+  data,
+  selected,
+}: {
+  data: CustomNodeData;
+  selected: boolean;
+}) => (
   <div
-    className={`px-4 py-2 shadow-md rounded-md border-2  ${
-      selected ? 'bg-gray-900' : 'bg-black'
-    }`}
+    className={`px-4 py-2 shadow-md rounded-md border-2 
+       ${selected ? 'bg-gray-900' : 'bg-black'}`}
   >
     <Handle type="target" position={Position.Top} id="t" />
     <Handle type="target" position={Position.Left} id="l" />
