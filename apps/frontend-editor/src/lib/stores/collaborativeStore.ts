@@ -11,6 +11,7 @@ import {
   applyEdgeChanges,
 } from '@xyflow/react';
 import { io, Socket } from 'socket.io-client';
+import TemplateData from '@/lib/templates/newDiagram.json';
 
 // TODO: Move types to the types folder later
 
@@ -113,11 +114,28 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         );
         if (response.ok) {
           const diagram = (await response.json()) as FullDiagram;
-          set({
-            nodes: diagram.nodes,
-            edges: diagram.edges,
-            title: diagramName,
-          });
+          console.log('[CollavorativeStore] Loaded diagram:', diagram);
+          if (diagram.nodes.length === 0) {
+            console.log(
+              '[CollaborativeStore] Diagram is new and has no nodes, using template',
+            );
+            set({
+              nodes: TemplateData.nodes,
+              edges: TemplateData.edges,
+              title: diagramName,
+            });
+          } else {
+            set({
+              nodes: diagram.nodes,
+              edges: diagram.edges,
+              title: diagramName,
+            });
+          }
+        } else {
+          console.error(
+            '[CollavorativeStore] Failed to load diagram, status:',
+            response.status,
+          );
         }
         // 2. Initialize Websocket
         const newSocket = io('http://localhost:3001', {
@@ -144,6 +162,13 @@ export const useCollaborativeStore = create<CollaborativeState>()(
             },
           );
           set({ isConnected: true });
+          // BROADCAST TEMPLATE AFTER CONNECTION
+          const currentState = get();
+          if (currentState.nodes.length > 0) {
+            console.log('[Store] Broadcasting template nodes after connection');
+            newSocket.emit('nodes-updated', currentState.nodes, diagramName);
+            newSocket.emit('edges-updated', currentState.edges, diagramName);
+          }
         });
 
         newSocket.on('disconnect', (reason) => {
