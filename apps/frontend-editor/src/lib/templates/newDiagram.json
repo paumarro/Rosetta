@@ -1,0 +1,41 @@
+{
+  "nodes": [
+    {
+      "id": "start-template",
+      "type": "start",
+      "position": {
+        "x": 0,
+        "y": 200
+      },
+      "data": {
+        "label": "Start Here",
+        "type": "start"
+      }
+    },
+    {
+      "id": "topic-1-template",
+      "type": "custom",
+      "position": {
+        "x": -200,
+        "y": 300
+      },
+      "data": {
+        "label": "Topic 1",
+        "type": "topic"
+      }
+    },
+    {
+      "id": "topic-2-template",
+      "type": "custom",
+      "position": {
+        "x": 200,
+        "y": 400
+      },
+      "data": {
+        "label": "Topic 2",
+        "type": "topic"
+      }
+    }
+  ],
+  "edges": []
+}

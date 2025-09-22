@@ -84,10 +84,14 @@ export default function DiagramEditor({
 
   //Calculate title position based on nodes
   const getTitlePosition = () => {
+    if (storeNodes.length === 0) {
+      return { x: 0, y: 0 }; // Default position if no nodes
+    }
     const centerX = 0;
     const minY = Math.min(...storeNodes.map((node) => node.position.y));
     const titleWidth = title.length * 18.6; // Approximate width based on character count
-    return { x: centerX - titleWidth / 2, y: minY - 100 };
+    const safeMinY = isFinite(minY) ? minY : 0;
+    return { x: centerX - titleWidth / 2, y: safeMinY - 100 };
   };
 
   return (
