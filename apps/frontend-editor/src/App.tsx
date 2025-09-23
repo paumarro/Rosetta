@@ -1,9 +1,9 @@
-import { Routes, Route, useParams } from "react-router-dom";
-import DiagramEditor from "./components/DiagramEditor";
-import DiagramsPage from "./pages/Diagrams";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import "./App.css";
+import { Routes, Route, useParams } from 'react-router-dom';
+import DiagramEditor from './components/DiagramEditor';
+import DiagramsPage from './pages/Diagrams';
+import Index from './pages/Index';
+import NotFound from './pages/NotFound';
+import './App.css';
 
 function App() {
   return (
