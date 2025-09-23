@@ -1,271 +1,112 @@
-import React, { useCallback, useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from 'react';
+import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
 import {
   ReactFlow,
   Background,
   Controls,
-  // MiniMap,
-  // addEdge,
-  Connection,
-  Edge,
-  Node,
   NodeTypes,
   Panel,
-  NodeChange,
-  EdgeChange,
-  ReactFlowInstance,
   BackgroundVariant,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-// import { io, Socket } from "socket.io-client";
-import * as Y from "yjs";
-import { WebsocketProvider } from "y-websocket";
-import { Button } from "./ui/button";
-import { Circle, Diamond } from "lucide-react";
-import CustomNode from "./nodes/customNode";
-import { LoadingOverlay } from "./ui/loading-overlay";
-import { nanoid } from "nanoid";
+  ViewportPortal,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+import { Button } from './ui/button';
+import { Circle, Diamond, Play } from 'lucide-react';
+import CustomNode from './nodes/customNode';
+import StartNode from './nodes/startNode';
+import { LoadingOverlay } from './ui/loading-overlay';
 
 const nodeTypes: NodeTypes = {
   custom: CustomNode,
   start: StartNode,
 };
 
-const initialNodes: Node[] = [];
-const initialEdges: Edge[] = [];
-
 interface DiagramEditorProps {
   diagramName?: string;
-  learningPathId?: string;
 }
 
 export default function DiagramEditor({
-  diagramName = "default",
-  learningPathId = "default",
+  diagramName = 'default',
 }: DiagramEditorProps) {
-  const [nodes, setNodes] = useState<Node[]>(initialNodes);
-  const [edges, setEdges] = useState<Edge[]>(initialEdges);
-  const [isConnected, setIsConnected] = useState(false);
-  const ydocRef = useRef<Y.Doc | null>(null);
-  const yProviderRef = useRef<WebsocketProvider | null>(null);
+  // Test the collaborative store
+  const {
+    initializeCollaboration,
+    isInitializing,
+    cleanup,
+    isConnected: storeIsConnected,
+    nodes: storeNodes,
+    edges: storeEdges,
+    title,
+    onNodeChange,
+    onEdgeChange,
+    onConnect,
+    addNode,
+  } = useCollaborativeStore();
+
   const [currentUser] = useState({
-    userId: nanoid(8),
-    userName: `User-${nanoid(3)}`,
+    userId: Math.random().toString(36).substring(2, 9),
+    userName: `User-${Math.random().toString(36).substring(2, 4)}`,
   });
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadingMessage] = useState("Loading diagram...");
-  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const [reactFlowInstance, setReactFlowInstance] =
-    useState<ReactFlowInstance | null>(null);
+  // const [reactFlowInstance, setReactFlowInstance] =
+  //   useState<ReactFlowInstance | null>(null);
 
-  // --- Yjs doc & provider setup ---
+  // Initialization of collaborative store
   useEffect(() => {
-    // Create a new doc per learning path
-    const doc = new Y.Doc();
-    const provider = new WebsocketProvider("ws://localhost:3001", learningPathId, doc);
-    ydocRef.current = doc;
-    yProviderRef.current = provider;
-
-    const yNodes = doc.getMap<Y.Map<unknown>>("nodes");
-    const yEdges = doc.getMap<Y.Map<unknown>>("edges");
-
-    const toRfNodes = (): Node[] => {
-      return Array.from(yNodes.entries()).map(([id, yNode]) => {
-        const type = (yNode.get("type") as string | undefined) ?? "custom";
-        const position =
-          (yNode.get("position") as { x: number; y: number } | undefined) ??
-          { x: 0, y: 0 };
-        const data =
-          (yNode.get("data") as Record<string, unknown> | undefined) ?? {};
-        return { id, type, position, data } as Node;
-      });
+    const initializeCollaborativeStore = async () => {
+      console.log('[Diagram Editor] Initializing collaborative store...');
+      await initializeCollaboration(diagramName, currentUser);
+      console.log('[Diagram Editor] Initialization complete');
     };
 
-    const toRfEdges = (): Edge[] => {
-      return Array.from(yEdges.entries()).map(([id, yEdge]) => {
-        const source = (yEdge.get("source") as string | undefined) || "";
-        const target = (yEdge.get("target") as string | undefined) || "";
-        const sourceHandle = (yEdge.get("sourceHandle") as string | null) ?? null;
-        const targetHandle = (yEdge.get("targetHandle") as string | null) ?? null;
-        return { id, source, target, sourceHandle, targetHandle } as Edge;
-      });
-    };
-
-    const applyFromY = () => {
-      setNodes(toRfNodes());
-      setEdges(toRfEdges());
-    };
-
-    // Initial sync and observers
-    applyFromY();
-    const nodesObserver = () => {
-      applyFromY();
-    };
-    const edgesObserver = () => {
-      applyFromY();
-    };
-    yNodes.observeDeep(nodesObserver);
-    yEdges.observeDeep(edgesObserver);
-
-    provider.on("status", (event: { status: string }) => {
-      setIsConnected(event.status === "connected");
-    });
-
-    setIsLoading(false);
-
+    void initializeCollaborativeStore();
     return () => {
-      yNodes.unobserveDeep(nodesObserver);
-      yEdges.unobserveDeep(edgesObserver);
-      provider.destroy();
-      doc.destroy();
-      ydocRef.current = null;
-      yProviderRef.current = null;
+      console.log('[Diagram Editor] Cleaning up collaborative store...');
+      cleanup();
     };
-  }, [learningPathId, setNodes, setEdges]);
+  }, [diagramName, currentUser, initializeCollaboration, cleanup]);
 
-  // Cleanup timer reference
-  useEffect(() => {
-    return () => {
-      const t = updateTimeoutRef.current;
-      if (t) clearTimeout(t);
-    };
-  }, []);
+  // const onDragOver = useCallback((event: React.DragEvent) => {
+  //   event.preventDefault();
+  //   event.dataTransfer.dropEffect = 'move';
+  // }, []);
 
-  // Apply ReactFlow changes to Yjs
-  const handleNodesChange = useCallback((changes: NodeChange[]) => {
-    const doc = ydocRef.current;
-    if (!doc) return;
-    const yNodes = doc.getMap<Y.Map<unknown>>("nodes");
-    const yEdges = doc.getMap<Y.Map<unknown>>("edges");
-
-    changes.forEach((change) => {
-      if (change.type === "position" && change.position) {
-        // continuous updates
-        const yNode = yNodes.get(change.id);
-        if (yNode) {
-          yNode.set("position", {
-            x: change.position.x,
-            y: change.position.y,
-          });
-        }
-      }
-      if (change.type === "remove") {
-        // remove node and connected edges
-        yNodes.delete(change.id);
-        Array.from(yEdges.entries()).forEach(([edgeId, yEdge]) => {
-          const source = yEdge.get("source") as string | undefined;
-          const target = yEdge.get("target") as string | undefined;
-          if (source === change.id || target === change.id) {
-            yEdges.delete(edgeId);
-          }
-        });
-      }
-    });
-  }, []);
-
-  const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
-    const doc = ydocRef.current;
-    if (!doc) return;
-    const yEdges = doc.getMap<Y.Map<unknown>>("edges");
-
-    changes.forEach((change) => {
-      if (change.type === "remove") {
-        yEdges.delete(change.id);
-      }
-    });
-  }, []);
-
-  const onConnect = useCallback((params: Connection) => {
-    const { source, target, sourceHandle, targetHandle } = params;
-    if (!source || !target) return;
-
-    const doc = ydocRef.current;
-    if (!doc) return;
-    const yEdges = doc.getMap<Y.Map<unknown>>("edges");
-    const edgeId = `e${source}${sourceHandle ?? ""}-${target}${targetHandle ?? ""}`;
-    const yEdge = new Y.Map<unknown>();
-    yEdge.set("source", source);
-    yEdge.set("target", target);
-    yEdge.set("sourceHandle", sourceHandle ?? null);
-    yEdge.set("targetHandle", targetHandle ?? null);
-    yEdges.set(edgeId, yEdge);
-  }, []);
-
-  const addNode = useCallback((type: string) => {
-    const doc = ydocRef.current;
-    if (!doc) return;
-    const yNodes = doc.getMap<Y.Map<unknown>>("nodes");
-    const id = `${type}-${nanoid(8)}`;
-    const yNode = new Y.Map<unknown>();
-    yNode.set("type", "custom");
-    yNode.set("position", { x: Math.random() * 400, y: Math.random() * 400 });
-    yNode.set("data", {
-      label: `What's the ${type.charAt(0).toUpperCase() + type.slice(1)} about?`,
-    });
-    yNodes.set(id, yNode);
-  }, []);
-
-  const onDragOver = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-  }, []);
-
-  const onDrop = useCallback(
-    (event: React.DragEvent) => {
-      event.preventDefault();
-
-      if (!reactFlowWrapper.current) {
-        return;
-      }
-
-      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-      const type = event.dataTransfer.getData("application/reactflow");
-
-      if (typeof type === "undefined" || !type) {
-        return;
-      }
-
-      let position = { x: 0, y: 0 };
-      if (reactFlowInstance) {
-        position = reactFlowInstance.screenToFlowPosition({
-          x: event.clientX - reactFlowBounds.left,
-          y: event.clientY - reactFlowBounds.top,
-        });
-      }
-
-      const doc = ydocRef.current;
-      if (!doc) return;
-      const yNodes = doc.getMap<Y.Map<unknown>>("nodes");
-      const id = `${type}-${nanoid(8)}`;
-      const yNode = new Y.Map<unknown>();
-      yNode.set("type", "custom");
-      yNode.set("position", position);
-      yNode.set("data", {
-        label: `${type.charAt(0).toUpperCase() + type.slice(1)} Node`,
-      });
-      yNodes.set(id, yNode);
-    },
-    [reactFlowInstance],
-  );
-
-  // Show loading overlay while initializing Yjs
-  if (isLoading) {
-    return <LoadingOverlay message={loadingMessage} />;
+  // Show loading overlay when loading or reconnecting
+  if (isInitializing) {
+    return <LoadingOverlay message="Loading diagram" />;
   }
+
+  const fitViewOptions = {
+    padding: 0.2,
+    duration: 800,
+  };
+
+  //Calculate title position based on nodes
+  const getTitlePosition = () => {
+    if (storeNodes.length === 0) {
+      return { x: 0, y: 0 }; // Default position if no nodes
+    }
+    const centerX = 0;
+    const minY = Math.min(...storeNodes.map((node) => node.position.y));
+    const titleWidth = title.length * 18.6; // Approximate width based on character count
+    const safeMinY = isFinite(minY) ? minY : 0;
+    return { x: centerX - titleWidth / 2, y: safeMinY - 100 };
+  };
 
   return (
     <div className="h-screen w-full flex flex-col bg-gray-50">
       {/* React Flow Editor */}
       <div className="flex-1" ref={reactFlowWrapper}>
         <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={handleNodesChange}
-          onEdgesChange={handleEdgesChange}
+          nodes={storeNodes}
+          edges={storeEdges}
+          onNodesChange={onNodeChange}
+          onEdgesChange={onEdgeChange}
           onConnect={onConnect}
-          onInit={setReactFlowInstance}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
+          // onInit={setReactFlowInstance}
+          // onDrop={onDrop}
+          // onDragOver={onDragOver}
           nodeTypes={nodeTypes}
           snapToGrid={true}
           snapGrid={[15, 15]}
@@ -277,13 +118,12 @@ export default function DiagramEditor({
         >
           <Controls />
           {/* <MiniMap /> */}
-          <Background variant={"dots" as BackgroundVariant} gap={12} size={1} />
-
+          <Background variant={'dots' as BackgroundVariant} gap={12} size={1} />
           {/* Status Panel */}
           <Panel position="top-left">
             <div className="bg-white p-3 rounded-lg shadow-md border">
               <p className="text-sm text-gray-600 mt-1">
-                {isConnected ? (
+                {storeIsConnected ? (
                   <span className="text-green-600">
                     ● Connected as {currentUser.userName}
                   </span>
@@ -299,7 +139,16 @@ export default function DiagramEditor({
             <div className="flex gap-2">
               <Button
                 onClick={() => {
-                  addNode("Topic");
+                  addNode('Start');
+                }}
+              >
+                <Play className="w-4 h-4" />
+                Start
+              </Button>
+
+              <Button
+                onClick={() => {
+                  addNode('Topic');
                 }}
                 variant="outline"
                 size="sm"
@@ -310,7 +159,7 @@ export default function DiagramEditor({
               </Button>
               <Button
                 onClick={() => {
-                  addNode("Sub Topic");
+                  addNode('Sub Topic');
                 }}
                 variant="outline"
                 size="sm"
