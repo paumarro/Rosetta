@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
 import {
   ReactFlow,
@@ -8,17 +8,21 @@ import {
   Panel,
   BackgroundVariant,
   ViewportPortal,
+  Node,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Button } from './ui/button';
 import { Circle, Diamond, Play } from 'lucide-react';
 import CustomNode from './nodes/customNode';
 import StartNode from './nodes/startNode';
+import TopicNode from './nodes/topicNode';
 import { LoadingOverlay } from './ui/loading-overlay';
+import { NodeModal } from './NodeModal';
 
 const nodeTypes: NodeTypes = {
   custom: CustomNode,
   start: StartNode,
+  topic: TopicNode, // <- This maps to the "type" field
 };
 
 interface DiagramEditorProps {
@@ -72,6 +76,25 @@ export default function DiagramEditor({
   //   event.dataTransfer.dropEffect = 'move';
   // }, []);
 
+  // Add this click handler
+  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+    console.log('Node clicked:', node); // For debugging
+
+    // Dispatch the event that NodeModal is listening for
+    const modalEvent = new CustomEvent('openNodeModal', {
+      detail: {
+        nodeId: node.id,
+        data: {
+          label: node.data.label,
+          description: node.data.description,
+          resources: node.data.resources,
+        },
+      },
+    });
+
+    window.dispatchEvent(modalEvent);
+  }, []);
+
   // Show loading overlay when loading or reconnecting
   if (isInitializing) {
     return <LoadingOverlay message="Loading diagram" />;
@@ -107,6 +130,7 @@ export default function DiagramEditor({
           // onInit={setReactFlowInstance}
           // onDrop={onDrop}
           // onDragOver={onDragOver}
+          onNodeClick={onNodeClick}
           nodeTypes={nodeTypes}
           snapToGrid={true}
           snapGrid={[15, 15]}
@@ -183,6 +207,7 @@ export default function DiagramEditor({
           </ViewportPortal>
         </ReactFlow>
       </div>
+      <NodeModal />
     </div>
   );
 }
