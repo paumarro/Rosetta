@@ -1,17 +1,10 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import { FullDiagram } from '@/types/diagram';
 import { DiagramNode, DiagramEdge } from '@/types/reactflow';
-import {
-  Connection,
-  addEdge,
-  NodeChange,
-  EdgeChange,
-  applyNodeChanges,
-  applyEdgeChanges,
-} from '@xyflow/react';
-import { io, Socket } from 'socket.io-client';
-import TemplateData from '@/lib/templates/newDiagram.json';
+import { Connection, NodeChange, EdgeChange } from '@xyflow/react';
+import * as Y from 'yjs';
+import { WebsocketProvider } from 'y-websocket';
+import { nanoid } from 'nanoid';
 
 // TODO: Move types to the types folder later
 
@@ -30,19 +23,24 @@ interface CollaborativeState {
   title: string;
 
   //Connection State
-  socket: Socket | null;
   isConnected: boolean;
 
   //Collaboration State
   connectedUsers: User[];
   currentUser: User | null;
   diagramName: string;
+  learningPathId: string;
+  ydoc: Y.Doc | null;
+  yProvider: WebsocketProvider | null;
 
   //Loading States
   isInitializing: boolean;
 
   //Actions - Setup
-  initializeCollaboration: (diagramName: string, user: User) => Promise<void>;
+  initializeCollaboration: (
+    learningPathId: string,
+    user: User,
+  ) => Promise<void>;
   cleanup: () => void;
 
   //Actions - React Flow Diagram Manipulation
@@ -58,9 +56,7 @@ interface CollaborativeState {
   updateCursor: (position: { x: number; y: number }) => void;
   updateSelection: (nodeIds: string[]) => void;
 
-  // Actions - Broadcasting
-  broadcastNodes: () => void;
-  broadcastEdges: () => void;
+  // Actions - Broadcasting (placeholder for awareness later)
 }
 
 //Collaboration Actions
@@ -76,135 +72,98 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     //Initial State
     nodes: [],
     edges: [],
-    socket: null,
     isConnected: false,
     connectedUsers: [],
     currentUser: null,
     diagramName: '',
+    learningPathId: 'default',
+    ydoc: null,
+    yProvider: null,
     isInitializing: false,
     title: '',
 
     // Setup Actions
 
-    initializeCollaboration: async (diagramName: string, user: User) => {
+    // eslint-disable-next-line @typescript-eslint/require-await
+    initializeCollaboration: async (learningPathId: string, user: User) => {
       const state = get();
       // Prevent multiple initializations
       if (
         state.isInitializing ||
-        (state.socket && state.diagramName === diagramName)
+        (state.yProvider && state.learningPathId === learningPathId)
       ) {
         console.log('[Store] Already initialized, skipping...');
         return;
       }
       // Cleanup existing connections
-      if (state.socket) {
+      if (state.yProvider) {
         console.log('[Store] Cleaning up existing connection...');
         get().cleanup(); // Disconnects AND cleanup state
       }
 
       set({
         isInitializing: true,
-        diagramName,
+        diagramName: learningPathId,
+        learningPathId,
         currentUser: user,
       });
       try {
-        // 1. Fetching existing diagram data
-        const response = await fetch(
-          `http://localhost:3001/api/diagrams/${diagramName}`,
+        // Initialize Yjs
+        const doc = new Y.Doc();
+        const provider = new WebsocketProvider(
+          'ws://localhost:3001',
+          learningPathId,
+          doc,
         );
-        if (response.ok) {
-          const diagram = (await response.json()) as FullDiagram;
-          console.log('[CollavorativeStore] Loaded diagram:', diagram);
-          if (diagram.nodes.length === 0) {
-            console.log(
-              '[CollaborativeStore] Diagram is new and has no nodes, using template',
-            );
-            set({
-              nodes: TemplateData.nodes,
-              edges: TemplateData.edges,
-              title: diagramName,
-            });
-          } else {
-            set({
-              nodes: diagram.nodes,
-              edges: diagram.edges,
-              title: diagramName,
-            });
-          }
-        } else {
-          console.error(
-            '[CollavorativeStore] Failed to load diagram, status:',
-            response.status,
-          );
-        }
-        // 2. Initialize Websocket
-        const newSocket = io('http://localhost:3001', {
-          query: {
-            userId: user.userId,
-            userName: user.userName,
-            diagramName: diagramName,
-          },
-          reconnection: true,
-          reconnectionAttempts: 5,
-          reconnectionDelay: 1000,
+
+        // Maps: nodes and edges keyed by id
+        const yNodes = doc.getMap<Y.Map<unknown>>('nodes');
+        const yEdges = doc.getMap<Y.Map<unknown>>('edges');
+
+        // Observe and derive React state
+        const applyFromY = () => {
+          const nodes = Array.from(yNodes.entries()).map(([id, yNode]) => {
+            const type = (yNode.get('type') as string | undefined) ?? 'custom';
+            const position = (yNode.get('position') as
+              | { x: number; y: number }
+              | undefined) ?? { x: 0, y: 0 };
+            const data =
+              (yNode.get('data') as Record<string, unknown> | undefined) ?? {};
+            return { id, type, position, data } as DiagramNode;
+          });
+          const edges = Array.from(yEdges.entries()).map(([id, yEdge]) => {
+            const source = (yEdge.get('source') as string | undefined) || '';
+            const target = (yEdge.get('target') as string | undefined) || '';
+            const sourceHandle =
+              (yEdge.get('sourceHandle') as string | null) ?? null;
+            const targetHandle =
+              (yEdge.get('targetHandle') as string | null) ?? null;
+            return {
+              id,
+              source,
+              target,
+              sourceHandle,
+              targetHandle,
+            } as DiagramEdge;
+          });
+          set({ nodes, edges, title: learningPathId });
+        };
+
+        applyFromY();
+        const nodesObserver = () => {
+          applyFromY();
+        };
+        const edgesObserver = () => {
+          applyFromY();
+        };
+        yNodes.observeDeep(nodesObserver);
+        yEdges.observeDeep(edgesObserver);
+
+        provider.on('status', (event: { status: string }) => {
+          set({ isConnected: event.status === 'connected' });
         });
 
-        // 3. Setup socket event listeners
-        newSocket.on('connect', () => {
-          console.log(
-            '[CollavorativeStore] Connected to collaboration server',
-            {
-              socketId: newSocket.id,
-              userId: user.userId,
-              userName: user.userName,
-              diagramName: diagramName,
-              nodes: state.nodes,
-            },
-          );
-          set({ isConnected: true });
-          // BROADCAST TEMPLATE AFTER CONNECTION
-          const currentState = get();
-          if (currentState.nodes.length > 0) {
-            console.log('[Store] Broadcasting template nodes after connection');
-            newSocket.emit('nodes-updated', currentState.nodes, diagramName);
-            newSocket.emit('edges-updated', currentState.edges, diagramName);
-          }
-        });
-
-        newSocket.on('disconnect', (reason) => {
-          console.log('Disconnected:', reason);
-          set({ isConnected: false, connectedUsers: [] });
-        });
-
-        newSocket.on('connect_error', (error) => {
-          console.error('Connection error:', error);
-          set({ isConnected: false });
-        });
-
-        // Real-time updates from other users
-        newSocket.on('nodes-updated', (updatedNodes: DiagramNode[]) => {
-          set({ nodes: updatedNodes });
-        });
-
-        newSocket.on('edges-updated', (updatedEdges: DiagramEdge[]) => {
-          set({ edges: updatedEdges });
-        });
-
-        newSocket.on('users-updated', (users: User[]) => {
-          set({ connectedUsers: users });
-        });
-
-        newSocket.on(
-          'user-cursor',
-          (userId: string, position: { x: number; y: number }) => {
-            set((state) => ({
-              connectedUsers: state.connectedUsers.map((u) =>
-                u.userId === userId ? { ...u, cursor: position } : u,
-              ),
-            }));
-          },
-        );
-        set({ socket: newSocket });
+        set({ ydoc: doc, yProvider: provider });
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Unknown error';
@@ -214,18 +173,18 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       }
     },
     cleanup: () => {
-      const { socket } = get();
-      if (socket) {
-        console.log('[Store Cleanup] Cleaning up socket connection');
-        socket.disconnect();
-        set({
-          socket: null,
-          isConnected: false,
-          connectedUsers: [],
-          currentUser: null,
-          diagramName: '',
-        });
-      }
+      const { yProvider, ydoc } = get();
+      if (yProvider) yProvider.destroy();
+      if (ydoc) ydoc.destroy();
+      set({
+        yProvider: null,
+        ydoc: null,
+        isConnected: false,
+        connectedUsers: [],
+        currentUser: null,
+        diagramName: '',
+        learningPathId: 'default',
+      });
     },
 
     // React Flow Actions
@@ -244,84 +203,60 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       }));
     },
     onNodeChange: (changes) => {
-      const { nodes, socket, isConnected, diagramName } = get();
-      const updatedNodes = applyNodeChanges(changes, nodes);
-      set({ nodes: updatedNodes });
-      console.log(
-        '[CollaborativeStore] Nodes changed:',
-        changes.length,
-        'changes',
-      );
-      // Broadcasting changes to other users
-      if (socket && isConnected) {
-        const hasNonSelectionChange = changes.some(
-          (change) => change.type !== 'select',
-        );
-        if (hasNonSelectionChange) {
-          socket.emit('nodes-updated', updatedNodes, diagramName);
-          console.log(
-            '[CollaborativeStore] Broadcasting Nodes changed:',
-            changes.length,
-            'changes',
-          );
+      const { ydoc } = get();
+      if (!ydoc) return;
+      const yNodes = ydoc.getMap<Y.Map<unknown>>('nodes');
+      changes.forEach((change) => {
+        if (change.type === 'position' && change.position) {
+          const yNode = yNodes.get(change.id);
+          if (yNode) {
+            yNode.set('position', {
+              x: change.position.x,
+              y: change.position.y,
+            });
+          }
         }
-      }
+        if (change.type === 'remove') {
+          // delete node and incident edges
+          yNodes.delete(change.id);
+          const yEdges = ydoc.getMap<Y.Map<unknown>>('edges');
+          Array.from(yEdges.entries()).forEach(([edgeId, yEdge]) => {
+            const source = yEdge.get('source') as string | undefined;
+            const target = yEdge.get('target') as string | undefined;
+            if (source === change.id || target === change.id) {
+              yEdges.delete(edgeId);
+            }
+          });
+        }
+      });
     },
     onEdgeChange: (changes) => {
-      const { edges, socket, isConnected, diagramName } = get();
-      const updatedEdges = applyEdgeChanges(changes, edges);
-      set({ edges: updatedEdges });
-      console.log(
-        '[CollaborativeStore] Edges changed:',
-        changes.length,
-        'changes',
-      );
-      // Broadcasting changes to other users
-      if (socket && isConnected) {
-        const hasNonSelectionChange = changes.some(
-          (change) => change.type !== 'select',
-        );
-        if (hasNonSelectionChange) {
-          socket.emit('edges-updated', updatedEdges, diagramName);
-          console.log(
-            '[CollaborativeStore] Broadcasting Edges changed:',
-            changes.length,
-            'changes',
-          );
+      const { ydoc } = get();
+      if (!ydoc) return;
+      const yEdges = ydoc.getMap<Y.Map<unknown>>('edges');
+      changes.forEach((change) => {
+        if (change.type === 'remove') {
+          yEdges.delete(change.id);
         }
-      }
+      });
     },
     onConnect: (params) => {
       const { source, target, sourceHandle, targetHandle } = params;
       if (!source || !target) return;
-      const { edges, socket, isConnected, diagramName } = get();
-
-      // Create the edge object
-      const updatedEdges = addEdge(
-        {
-          id: `e${source}${sourceHandle ?? ''}-${target}${targetHandle ?? ''}`,
-          source,
-          target,
-          sourceHandle: sourceHandle ?? null,
-          targetHandle: targetHandle ?? null,
-        },
-        edges,
-      );
-      set({ edges: updatedEdges });
-      console.log('[CollaborativeStore] Edge connected:', source, '->', target);
-      // Broadcasting changes to other users
-      if (socket && isConnected) {
-        socket.emit('edges-updated', updatedEdges, diagramName);
-        console.log(
-          '[CollaborativeStore]... Broadcasting Edge connected:',
-          source,
-          '->',
-          target,
-        );
-      }
+      const { ydoc } = get();
+      if (!ydoc) return;
+      const yEdges = ydoc.getMap<Y.Map<unknown>>('edges');
+      const edgeId = `e${source}${sourceHandle ?? ''}-${target}${targetHandle ?? ''}`;
+      const yEdge = new Y.Map<unknown>();
+      yEdge.set('source', source);
+      yEdge.set('target', target);
+      yEdge.set('sourceHandle', sourceHandle ?? null);
+      yEdge.set('targetHandle', targetHandle ?? null);
+      yEdges.set(edgeId, yEdge);
     },
     addNode: (type, position) => {
-      const { nodes } = get();
+      const { nodes, ydoc } = get();
+      if (!ydoc) return;
       const nodeCount = nodes.length;
 
       // Auto-calculate zigzag position if not provided
@@ -331,30 +266,25 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         x: isEven ? (nodes.length === 0 ? 0 : -200) : 200,
         y: levelY,
       };
-      const newNode: DiagramNode = {
-        id: `${type}-${String(Date.now())}`,
-        type: type === 'Start' ? 'start' : 'custom',
-        position: position || autoPosition,
-        data: {
-          label:
-            type === 'start'
-              ? 'Start here'
-              : type.charAt(0).toUpperCase() + type.slice(1),
-          type: type.toLowerCase(),
-        },
-      };
-      set((state) => ({
-        nodes: [...state.nodes, newNode],
-      }));
-
-      console.log('[CollaborativeStore] Added new node:', newNode.id);
+      const id = `${type}-${nanoid(8)}`;
+      const yNodes = ydoc.getMap<Y.Map<unknown>>('nodes');
+      const yNode = new Y.Map<unknown>();
+      yNode.set('type', type === 'Start' ? 'start' : 'custom');
+      yNode.set('position', position || autoPosition);
+      yNode.set('data', {
+        label:
+          type === 'Start'
+            ? 'Start here'
+            : type.charAt(0).toUpperCase() + type.slice(1),
+        type: type.toLowerCase(),
+      });
+      yNodes.set(id, yNode);
+      console.log('[CollaborativeStore] Added new node:', id);
     },
     // Collaboration Actions
     updateCursor: () => {},
     updateSelection: () => {},
 
-    // Broadcasting Actions
-    broadcastNodes: () => {},
-    broadcastEdges: () => {},
+    // Broadcasting Actions (placeholder)
   })),
 );
