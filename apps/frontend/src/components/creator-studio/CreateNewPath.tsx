@@ -18,6 +18,9 @@ import { useState, FormEvent } from 'react';
 import { X } from 'lucide-react';
 // import axiosLib from 'axios';
 
+const BE_API_URL = import.meta.env.VITE_BE_API_URL as string;
+const DEV_EDITOR_FE_URL = import.meta.env.VITE_DEV_EDITOR_FE_URL as string;
+
 export default function CreateNewPath({
   className,
   ...props
@@ -40,8 +43,10 @@ export default function CreateNewPath({
       skills: skills,
     };
 
+    const LP_API_URL = `${BE_API_URL}/api/learning-paths`;
+
     try {
-      const response = await fetch('http://localhost:8080/api/learning-paths', {
+      const response = await fetch(LP_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -55,7 +60,7 @@ export default function CreateNewPath({
         throw new Error(`HTTP error! status: ${response.status.toString()}`);
       }
 
-      window.location.href = 'http://localhost:5173/';
+      window.location.href = DEV_EDITOR_FE_URL;
     } catch (err) {
       if (err instanceof Error) {
         console.error('Error submitting form:', err.message);
