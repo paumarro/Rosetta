@@ -1,4 +1,10 @@
-import { createContext, useState, useEffect, useContext, ReactNode } from "react";
+import {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  ReactNode,
+} from 'react';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -8,7 +14,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
-  children: ReactNode; 
+  children: ReactNode;
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
@@ -18,25 +24,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch("/api/auth/check", {
-          method: "GET",
-          credentials: "include",
+        const response = await fetch('/api/auth/check', {
+          method: 'GET',
+          credentials: 'include',
         });
 
         if (!response.ok) {
-          throw new Error("Failed to fetch authentication status");
+          throw new Error('Failed to fetch authentication status');
         }
 
-        const data = await response.json();
+        const data = (await response.json()) as { authenticated: boolean };
         setIsAuthenticated(data.authenticated);
       } catch (err) {
+        console.error('Error checking authentication:', err);
         setIsAuthenticated(false);
       } finally {
         setLoading(false);
       }
     };
 
-    checkAuth();
+    void checkAuth();
   }, []);
 
   return (
@@ -49,7 +56,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
