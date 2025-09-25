@@ -2,38 +2,68 @@
   "nodes": [
     {
       "id": "topic-internet",
-      "type": "topic",
+      "type": "subtopic",
       "position": {
         "x": 0,
         "y": 200
       },
       "data": {
-        "label": "Start Here",
-        "type": "start"
+        "label": "Start Here more bit"
       }
     },
     {
       "id": "topic-language",
-      "type": "start",
+      "type": "topic",
       "position": {
         "x": -200,
         "y": 300
       },
       "data": {
-        "label": "Topic 1",
-        "type": "topic"
+        "label": "Internet"
       }
     },
     {
       "id": "topic-3-template",
-      "type": "custom",
+      "type": "topic",
       "position": {
         "x": 200,
         "y": 400
       },
       "data": {
-        "label": "Topic 2",
-        "type": "topic"
+        "label": "DNS"
+      }
+    },
+    {
+      "id": "topic-4-template",
+      "type": "topic",
+      "position": {
+        "x": -200,
+        "y": 500
+      },
+      "data": {
+        "label": "Python"
+      }
+    },
+    {
+      "id": "topic-5-template",
+      "type": "topic",
+      "position": {
+        "x": 200,
+        "y": 600
+      },
+      "data": {
+        "label": "Domain Name"
+      }
+    },
+    {
+      "id": "topic-5-template",
+      "type": "topic",
+      "position": {
+        "x": 200,
+        "y": 600
+      },
+      "data": {
+        "label": "Pick a language"
       }
     }
   ],
