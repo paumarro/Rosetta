@@ -26,8 +26,8 @@ const TopicNode = ({ data, selected, type, id }: TopicNodeProps) => {
   const getNodeStyles = () => {
     if (type === 'subtopic') {
       return {
-        base: selected ? 'bg-sub-hover' : 'bg-sub-bg',
-        border: 'border-sub-border',
+        base: selected ? 'bg-sub-hover' : 'bg-sub-bg bg-red-800',
+        border: 'border-sub-border border-[2.5px] rounded-[5px]',
         hover: 'hover:bg-sub-hover',
         text: 'text-white',
         size: 'text-sm',
@@ -35,12 +35,24 @@ const TopicNode = ({ data, selected, type, id }: TopicNodeProps) => {
     } else {
       // topic (including the starting nodes)
       return {
-        base: selected ? 'bg-gray-900' : 'bg-black',
-        border: 'border-gray-700',
-        hover: 'hover:bg-gray-900',
+        base: selected ? 'bg-topic-hover' : 'bg-topic-bg',
+        border: 'border-topic-border border-[2.5px] rounded-[5px]',
+        hover: 'hover:bg-topic-hover',
         text: 'text-white',
-        size: 'text-lg',
+        size: 'text-sm',
       };
+    }
+  };
+
+  // Dynamic width based on text length
+  const getNodeWidth = () => {
+    const textLength = data.label.length;
+    if (textLength <= 5) {
+      return 'w-[72px]';
+    } else if (textLength <= 8) {
+      return 'w-[102px]';
+    } else {
+      return 'w-[170px]'; // Control max length to be 16 including spaces to avoid overly wide nodes
     }
   };
 
@@ -52,13 +64,24 @@ const TopicNode = ({ data, selected, type, id }: TopicNodeProps) => {
     window.dispatchEvent(event);
   };
 
+  // Truncate text to max 16 characters
+  const getTruncatedLabel = () => {
+    const maxLength = 16;
+    if (data.label.length <= maxLength) {
+      return data.label;
+    }
+    return data.label.substring(0, maxLength - 3) + '...'; // -3 for the ellipsis
+  };
+
   const styles = getNodeStyles();
   const isStartingNode = data.level === 0;
+  const widthClass = getNodeWidth();
+  const displayLabel = getTruncatedLabel();
 
   return (
     <div
-      className={`px-4 py-2 shadow-md rounded-md border-2 transition-colors cursor-pointer
-        ${styles.base} ${styles.border} ${styles.hover}`}
+      className={`px-4 py-2 shadow-md transition-colors cursor-pointer 
+        ${styles.base} ${styles.border} ${styles.hover} ${widthClass}`}
       onClick={handleNodeClick}
     >
       {/* Input Handles - starting nodes don't need input handles */}
@@ -69,12 +92,8 @@ const TopicNode = ({ data, selected, type, id }: TopicNodeProps) => {
         </>
       )}
 
-      <div className="flex">
-        <div className="ml-2">
-          <div className={`${styles.text} ${styles.size} font-bold`}>
-            {data.label}
-          </div>
-        </div>
+      <div className={` text-center`}>
+        <div className={`${styles.text} ${styles.size}`}>{displayLabel}</div>
       </div>
 
       {/* Output Handles - all nodes can have outputs */}

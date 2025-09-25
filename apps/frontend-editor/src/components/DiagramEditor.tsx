@@ -22,7 +22,8 @@ import { NodeModal } from './NodeModal';
 const nodeTypes: NodeTypes = {
   custom: CustomNode,
   start: StartNode,
-  topic: TopicNode, // <- This maps to the "type" field
+  topic: TopicNode,
+  subtopic: TopicNode, // <- This maps to the "type" field
 };
 
 interface DiagramEditorProps {
