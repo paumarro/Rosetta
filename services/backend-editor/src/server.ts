@@ -8,6 +8,10 @@ import { diagramSocket } from './sockets/diagramSockets.js';
 import { WebSocketServer } from 'ws';
 import type { WebSocket } from 'ws';
 import { setupWSConnection } from 'y-websocket/bin/utils';
+import yMongo from 'y-mongodb';
+const { MongodbPersistence } = yMongo as unknown as {
+  MongodbPersistence: new (url: string) => unknown;
+};
 
 const app = express();
 // eslint-disable-next-line @typescript-eslint/no-misused-promises
@@ -23,12 +27,17 @@ app.use('/api', diagramRoutes);
 
 diagramSocket(io);
 
-// Minimal Yjs websocket server (no persistence)
-
+// Yjs websocket server with MongoDB persistence
 const wss = new WebSocketServer({ server });
 
+const mongoUrl =
+  process.env.MONGO_URL ||
+  process.env.MONGODB_URI ||
+  'mongodb://localhost:27017/yjs';
+const yPersistence = new MongodbPersistence(mongoUrl);
+
 wss.on('connection', (conn: WebSocket, req: IncomingMessage) => {
-  setupWSConnection(conn, req);
+  setupWSConnection(conn, req, { persistence: yPersistence });
 });
 
 const startServer = async () => {
