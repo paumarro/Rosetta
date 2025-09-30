@@ -149,7 +149,48 @@ export const useCollaborativeStore = create<CollaborativeState>()(
           set({ nodes, edges, title: learningPathId });
         };
 
-        applyFromY();
+        // Wait for initial sync, then populate if empty
+        provider.once('sync', async (isSynced: boolean) => {
+          if (!isSynced) return;
+          console.log('[Store] Initial sync complete');
+          applyFromY();
+
+          // If Yjs doc is empty, fetch from MongoDB and populate
+          if (yNodes.size === 0) {
+            console.log('[Store] Yjs doc is empty, fetching from MongoDB...');
+            try {
+              const response = await fetch(
+                `http://localhost:3001/api/diagrams/${learningPathId}`,
+              );
+              if (response.ok) {
+                const diagram = (await response.json()) as {
+                  nodes: DiagramNode[];
+                  edges: DiagramEdge[];
+                };
+                console.log('[Store] Populating Yjs with template:', diagram);
+
+                // Populate Yjs document
+                diagram.nodes.forEach((node) => {
+                  const yNode = new Y.Map<unknown>();
+                  yNode.set('type', node.type);
+                  yNode.set('position', node.position);
+                  yNode.set('data', node.data);
+                  yNodes.set(node.id, yNode);
+                });
+                diagram.edges.forEach((edge) => {
+                  const yEdge = new Y.Map<unknown>();
+                  yEdge.set('source', edge.source);
+                  yEdge.set('target', edge.target);
+                  yEdge.set('sourceHandle', edge.sourceHandle ?? null);
+                  yEdge.set('targetHandle', edge.targetHandle ?? null);
+                  yEdges.set(edge.id, yEdge);
+                });
+              }
+            } catch (error) {
+              console.error('[Store] Failed to fetch initial diagram:', error);
+            }
+          }
+        });
         const nodesObserver = () => {
           applyFromY();
         };

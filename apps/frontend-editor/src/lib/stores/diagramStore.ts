@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { Diagram, DiagramStore, CreateDiagramRequest } from '@/types';
+import defaultDiagramTemplate from '@/lib/templates/defaultDiagram.json';
 
 export const useDiagramStore = create<DiagramStore>((set) => ({
   diagrams: [],
@@ -43,8 +44,8 @@ export const useDiagramStore = create<DiagramStore>((set) => ({
     try {
       const requestBody: CreateDiagramRequest = {
         name: name.trim(),
-        nodes: [],
-        edges: [],
+        nodes: defaultDiagramTemplate.nodes,
+        edges: defaultDiagramTemplate.edges,
       };
       const response = await fetch('http://localhost:3001/api/diagrams', {
         method: 'POST',
