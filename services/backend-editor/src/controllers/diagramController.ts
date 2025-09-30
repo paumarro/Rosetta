@@ -24,14 +24,28 @@ export const createDiagram = async (
 ) => {
   try {
     const { name, nodes, edges, learningPathId } = req.body;
-    const diagram = new DiagramModel({ name, nodes, edges, learningPathId });
+    if (!name || String(name).trim() === '') {
+      return res.status(400).json({ error: 'Name is required' });
+    }
+    const diagram = new DiagramModel({
+      name,
+      nodes,
+      edges,
+      learningPathId,
+    });
     await diagram.save();
     res.status(201).json(diagram);
   } catch (err) {
-    if (err instanceof Error) {
-      res.status(500);
-      throw new Error(`Error: ${err.message}`);
+    const code = (err as Error & { code?: number }).code;
+    if (code === 11000) {
+      const existing = await DiagramModel.findOne({ name: req.body.name });
+      if (existing)
+        return res
+          .status(409)
+          .json({ error: 'Diagram already exists', diagram: existing });
     }
+    res.status(500);
+    throw new Error(`Error: ${(err as Error).message}`);
   }
 };
 

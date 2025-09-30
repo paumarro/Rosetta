@@ -1,8 +1,7 @@
 import mongoose from 'mongoose';
 
 const MONGODB_URI =
-  process.env.MONGODB_URI ||
-  'mongodb://carbyte-academy-be-editor-mongodb-1:27017/carbyte-editor';
+  process.env.MONGODB_URI || 'mongodb://localhost:27017/carbyte-editor';
 
 // MongoDB Connection with retry logic
 export const connectDB = async () => {
