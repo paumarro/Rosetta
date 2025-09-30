@@ -123,7 +123,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         // Observe and derive React state
         const applyFromY = () => {
           const nodes = Array.from(yNodes.entries()).map(([id, yNode]) => {
-            const type = (yNode.get('type') as string | undefined) ?? 'custom';
+            const type = (yNode.get('type') as string | undefined) ?? 'topic';
             const position = (yNode.get('position') as
               | { x: number; y: number }
               | undefined) ?? { x: 0, y: 0 };
@@ -310,7 +310,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       const id = `${type}-${nanoid(8)}`;
       const yNodes = ydoc.getMap<Y.Map<unknown>>('nodes');
       const yNode = new Y.Map<unknown>();
-      yNode.set('type', type === 'Start' ? 'start' : 'custom');
+      yNode.set('type', type.toLocaleLowerCase());
       yNode.set('position', position || autoPosition);
       yNode.set('data', {
         label:
