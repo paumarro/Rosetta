@@ -12,16 +12,12 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Button } from './ui/button';
-import { Circle, Diamond, Play } from 'lucide-react';
-import CustomNode from './nodes/customNode';
-import StartNode from './nodes/startNode';
+import { Circle, Diamond } from 'lucide-react';
 import TopicNode from './nodes/topicNode';
 import { LoadingOverlay } from './ui/loading-overlay';
 import { NodeModal } from './NodeModal';
 
 const nodeTypes: NodeTypes = {
-  custom: CustomNode,
-  start: StartNode,
   topic: TopicNode,
   subtopic: TopicNode, // <- This maps to the "type" field
 };
@@ -164,15 +160,6 @@ export default function DiagramEditor({
             <div className="flex gap-2">
               <Button
                 onClick={() => {
-                  addNode('Start');
-                }}
-              >
-                <Play className="w-4 h-4" />
-                Start
-              </Button>
-
-              <Button
-                onClick={() => {
                   addNode('Topic');
                 }}
                 variant="outline"
@@ -184,7 +171,7 @@ export default function DiagramEditor({
               </Button>
               <Button
                 onClick={() => {
-                  addNode('Sub Topic');
+                  addNode('subtopic');
                 }}
                 variant="outline"
                 size="sm"
