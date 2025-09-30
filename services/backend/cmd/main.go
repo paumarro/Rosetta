@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"log"
 
 	"github.com/gin-contrib/cors"
@@ -20,13 +21,15 @@ func init() {
 }
 
 func main() {
-	// frontendURL := os.Getenv("ROSETTA_FE")
+	allowOrigins := []string{
+		os.Getenv("ROSETTA_FE"),
+	}
 
 	r := gin.Default()
 
 	// Add CORS middleware - allow frontend origin
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     allowOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept", "X-Requested-With"},
 		AllowCredentials: true,
