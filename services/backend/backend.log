@@ -1,0 +1,11 @@
+2025/09/30 19:01:20 Loading environment variables...
+2025/09/30 19:01:20 Environment variables loaded successfully!
+2025/09/30 19:01:20 postgresql://admin:thestonedoesnotlie@db:5432/rosetta_db
+
+2025/09/30 19:01:20 [35m/Users/pau.marro-schmitt/Documents/Rosetta/BE/internal/initializer/database.go:20
+[0m[31m[error] [0mfailed to initialize database, got error failed to connect to `user=admin database=rosetta_db`:
+	hostname resolving error: lookup db: no such host
+	lookup db: no such host
+2025/09/30 19:01:20 Failed to connect to DB: failed to connect to `user=admin database=rosetta_db`:
+	hostname resolving error: lookup db: no such host
+	lookup db: no such host
