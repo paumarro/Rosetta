@@ -19,7 +19,8 @@ import { NodeModal } from './NodeModal';
 
 const nodeTypes: NodeTypes = {
   topic: TopicNode,
-  subtopic: TopicNode, // <- This maps to the "type" field
+  subtopic: TopicNode,
+  custom: TopicNode, // <- Fallback for custom type nodes
 };
 
 interface DiagramEditorProps {
@@ -29,7 +30,6 @@ interface DiagramEditorProps {
 export default function DiagramEditor({
   diagramName = 'default',
 }: DiagramEditorProps) {
-  // Test the collaborative store
   const {
     initializeCollaboration,
     isInitializing,
@@ -50,34 +50,15 @@ export default function DiagramEditor({
   });
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  // const [reactFlowInstance, setReactFlowInstance] =
-  //   useState<ReactFlowInstance | null>(null);
 
-  // Initialization of collaborative store
   useEffect(() => {
-    const initializeCollaborativeStore = async () => {
-      console.log('[Diagram Editor] Initializing collaborative store...');
-      await initializeCollaboration(diagramName, currentUser);
-      console.log('[Diagram Editor] Initialization complete');
-    };
-
-    void initializeCollaborativeStore();
+    void initializeCollaboration(diagramName, currentUser);
     return () => {
-      console.log('[Diagram Editor] Cleaning up collaborative store...');
       cleanup();
     };
   }, [diagramName, currentUser, initializeCollaboration, cleanup]);
 
-  // const onDragOver = useCallback((event: React.DragEvent) => {
-  //   event.preventDefault();
-  //   event.dataTransfer.dropEffect = 'move';
-  // }, []);
-
-  // Add this click handler
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
-    console.log('Node clicked:', node); // For debugging
-
-    // Dispatch the event that NodeModal is listening for
     const modalEvent = new CustomEvent('openNodeModal', {
       detail: {
         nodeId: node.id,
@@ -88,11 +69,27 @@ export default function DiagramEditor({
         },
       },
     });
-
     window.dispatchEvent(modalEvent);
   }, []);
 
-  // Show loading overlay when loading or reconnecting
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        const selectedEdges = storeEdges.filter((edge) => edge.selected);
+        if (selectedEdges.length > 0) {
+          event.preventDefault();
+          onEdgeChange(
+            selectedEdges.map((edge) => ({
+              id: edge.id,
+              type: 'remove' as const,
+            })),
+          );
+        }
+      }
+    },
+    [storeEdges, onEdgeChange],
+  );
+
   if (isInitializing) {
     return <LoadingOverlay message="Loading diagram" />;
   }
@@ -102,21 +99,25 @@ export default function DiagramEditor({
     duration: 800,
   };
 
-  //Calculate title position based on nodes
+  const defaultEdgeOptions = {
+    selectable: true,
+    deletable: true,
+  };
+
   const getTitlePosition = () => {
-    if (storeNodes.length === 0) {
-      return { x: 0, y: 0 }; // Default position if no nodes
-    }
-    const centerX = 0;
+    if (storeNodes.length === 0) return { x: 0, y: 0 };
     const minY = Math.min(...storeNodes.map((node) => node.position.y));
-    const titleWidth = title.length * 18.6; // Approximate width based on character count
     const safeMinY = isFinite(minY) ? minY : 0;
-    return { x: centerX - titleWidth / 2, y: safeMinY - 100 };
+    const titleWidth = title.length * 18.6;
+    return { x: -titleWidth / 2, y: safeMinY - 100 };
   };
 
   return (
-    <div className="h-screen w-full flex flex-col bg-gray-50">
-      {/* React Flow Editor */}
+    <div
+      className="h-screen w-full flex flex-col bg-gray-50"
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+    >
       <div className="flex-1" ref={reactFlowWrapper}>
         <ReactFlow
           nodes={storeNodes}
@@ -124,9 +125,6 @@ export default function DiagramEditor({
           onNodesChange={onNodeChange}
           onEdgesChange={onEdgeChange}
           onConnect={onConnect}
-          // onInit={setReactFlowInstance}
-          // onDrop={onDrop}
-          // onDragOver={onDragOver}
           onNodeClick={onNodeClick}
           nodeTypes={nodeTypes}
           snapToGrid={true}
@@ -136,11 +134,13 @@ export default function DiagramEditor({
           minZoom={0.8}
           maxZoom={1}
           attributionPosition="top-right"
+          defaultEdgeOptions={defaultEdgeOptions}
+          elementsSelectable={true}
+          edgesFocusable={true}
+          edgesReconnectable={false}
         >
           <Controls />
-          {/* <MiniMap /> */}
           <Background variant={'dots' as BackgroundVariant} gap={12} size={1} />
-          {/* Status Panel */}
           <Panel position="top-left">
             <div className="bg-white p-3 rounded-lg shadow-md border">
               <p className="text-sm text-gray-600 mt-1">
@@ -155,7 +155,6 @@ export default function DiagramEditor({
               <p className="text-sm text-gray-600">Diagram: {diagramName}</p>
             </div>
           </Panel>
-          {/* Toolbar */}
           <Panel position="top-right">
             <div className="flex gap-2">
               <Button
