@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { DiagramModel } from '../models/diagramModel.js';
 import { DiagramBody, DiagramParams } from '../types/diagramTypes.js';
+import defaultDiagramTemplate from '../templates/defaultDiagram.json' with { type: 'json' };
 
 export const getDiagrams = async (_req: Request, res: Response) => {
   const diagrams = await DiagramModel.find().select('name createdAt updatedAt');
@@ -82,11 +83,14 @@ export const createDiagramByLP = async (
     finalName,
   );
   try {
+    const nodes = defaultDiagramTemplate.nodes;
+
+    const edges = defaultDiagramTemplate.edges;
     const diagram = new DiagramModel({
       learningPathId,
       name: finalName,
-      nodes: [],
-      edges: [],
+      nodes,
+      edges,
     });
     await diagram.save();
     return res.status(201).json(diagram);
@@ -99,6 +103,34 @@ export const createDiagramByLP = async (
     res.status(500);
     throw new Error(`Error: ${(err as Error).message}`);
   }
+};
+
+// Delete diagram by name
+export const deleteDiagramByName = async (
+  req: Request<DiagramParams>,
+  res: Response,
+) => {
+  const { name } = req.params;
+
+  // First, check if the diagram exists and has an associated learning path
+  const diagram = await DiagramModel.findOne({ name });
+  if (!diagram) {
+    return res.status(404).json({ error: 'Diagram not found' });
+  }
+
+  // Prevent deletion if it has an associated learning path
+  if (diagram.learningPathId && diagram.learningPathId !== diagram.name) {
+    return res.status(409).json({
+      error: 'Cannot delete diagram with associated learning path',
+      message:
+        'Please delete the learning path first, which will cascade delete the diagram',
+      learningPathId: diagram.learningPathId,
+    });
+  }
+
+  // If no learning path is associated, allow deletion
+  await DiagramModel.findOneAndDelete({ name });
+  return res.status(204).send();
 };
 
 // New: delete diagram by LP UUID (compensation)
