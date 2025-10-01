@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { X, Trash2 } from 'lucide-react';
 import data from '@/lib/templates/mockData.json';
+import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
 
 interface Resource {
   title: string;
@@ -24,27 +25,24 @@ export function NodeModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [modalData, setModalData] = useState<ModalData | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
+  const { deleteNode } = useCollaborativeStore();
 
   useEffect(() => {
     const handleOpenModal = (
       event: CustomEvent<{ nodeId: string; data: NodeData }>,
     ) => {
-      const nodeData = event.detail.data; // Basic Node Data
-
-      // Find the rich content from mock data based on nodeId
+      const nodeData = event.detail.data;
       const mockNode = data.nodes.find(
         (node) => node.id === event.detail.nodeId,
       );
 
-      // Convert mock resources to proper Resource type
       const mockResources: Resource[] =
         mockNode?.data.resources.map((resource) => ({
           title: resource.title,
-          type: resource.type === 'video' ? 'video' : 'article', // Default to 'article' if not 'video'
+          type: resource.type === 'video' ? 'video' : 'article',
           url: resource.url,
         })) || [];
 
-      // Combine data - use real data if exits, otherwise fallback to mock data
       const enrichedData: ModalData = {
         nodeId: event.detail.nodeId,
         data: {
@@ -53,11 +51,10 @@ export function NodeModal() {
           resources: nodeData.resources || mockResources,
         },
       };
-      console.log('Enriched Data:', enrichedData); // For debugging
-      setModalData(enrichedData);
 
+      setModalData(enrichedData);
       setIsOpen(true);
-      // Check if this node was previously completed (you can store this in localStorage or your store)
+
       const completed =
         localStorage.getItem(`node-${event.detail.nodeId}-completed`) ===
         'true';
@@ -65,7 +62,6 @@ export function NodeModal() {
     };
 
     window.addEventListener('openNodeModal', handleOpenModal as EventListener);
-
     return () => {
       window.removeEventListener(
         'openNodeModal',
@@ -90,6 +86,18 @@ export function NodeModal() {
     if (modalData) {
       localStorage.setItem(`node-${modalData.nodeId}-completed`, 'false');
       setIsCompleted(false);
+    }
+  };
+
+  const handleDelete = () => {
+    if (
+      modalData &&
+      window.confirm(
+        `Are you sure you want to delete "${modalData.data.label}"?`,
+      )
+    ) {
+      deleteNode(modalData.nodeId);
+      handleClose();
     }
   };
 
@@ -163,6 +171,14 @@ export function NodeModal() {
         {/* Footer */}
         <div className="flex justify-between items-center p-6 border-t bg-gray-50">
           <div className="flex gap-2">
+            <Button
+              onClick={handleDelete}
+              variant="outline"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Node
+            </Button>
             {!isCompleted ? (
               <Button onClick={handleMarkInProgress} variant="outline">
                 Still in Progress

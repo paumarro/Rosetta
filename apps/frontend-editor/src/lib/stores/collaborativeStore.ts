@@ -51,25 +51,15 @@ interface CollaborativeState {
   onEdgeChange: (changes: EdgeChange[]) => void;
   onConnect: (connection: Connection) => void;
   addNode: (type: string, position?: { x: number; y: number }) => void;
+  deleteNode: (nodeId: string) => void;
 
   // Actions - Collaboration
   updateCursor: (position: { x: number; y: number }) => void;
   updateSelection: (nodeIds: string[]) => void;
-
-  // Actions - Broadcasting (placeholder for awareness later)
 }
-
-//Collaboration Actions
-//   updateCursor: (position: { x: number, y: number }) => {
-//     const { socket, isConnected, currentUser } = get()
-// if (socket && isConnected && currentUser) {
-//   socket.emit('cursor-update', { userId: currentUser.userId, position })
-// }
-//   }
 
 export const useCollaborativeStore = create<CollaborativeState>()(
   subscribeWithSelector((set, get) => ({
-    //Initial State
     nodes: [],
     edges: [],
     isConnected: false,
@@ -82,23 +72,17 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     isInitializing: false,
     title: '',
 
-    // Setup Actions
-
     // eslint-disable-next-line @typescript-eslint/require-await
     initializeCollaboration: async (learningPathId: string, user: User) => {
       const state = get();
-      // Prevent multiple initializations
       if (
         state.isInitializing ||
         (state.yProvider && state.learningPathId === learningPathId)
       ) {
-        console.log('[Store] Already initialized, skipping...');
         return;
       }
-      // Cleanup existing connections
       if (state.yProvider) {
-        console.log('[Store] Cleaning up existing connection...');
-        get().cleanup(); // Disconnects AND cleanup state
+        get().cleanup();
       }
 
       set({
@@ -108,7 +92,6 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         currentUser: user,
       });
       try {
-        // Initialize Yjs
         const doc = new Y.Doc();
         const provider = new WebsocketProvider(
           'ws://localhost:3001',
@@ -116,11 +99,9 @@ export const useCollaborativeStore = create<CollaborativeState>()(
           doc,
         );
 
-        // Maps: nodes and edges keyed by id
         const yNodes = doc.getMap<Y.Map<unknown>>('nodes');
         const yEdges = doc.getMap<Y.Map<unknown>>('edges');
 
-        // Observe and derive React state
         const applyFromY = () => {
           const nodes = Array.from(yNodes.entries()).map(([id, yNode]) => {
             const type = (yNode.get('type') as string | undefined) ?? 'topic';
@@ -149,15 +130,11 @@ export const useCollaborativeStore = create<CollaborativeState>()(
           set({ nodes, edges, title: learningPathId });
         };
 
-        // Wait for initial sync, then populate if empty
         provider.once('sync', async (isSynced: boolean) => {
           if (!isSynced) return;
-          console.log('[Store] Initial sync complete');
           applyFromY();
 
-          // If Yjs doc is empty, fetch from MongoDB and populate
           if (yNodes.size === 0) {
-            console.log('[Store] Yjs doc is empty, fetching from MongoDB...');
             try {
               const response = await fetch(
                 `http://localhost:3001/api/diagrams/${learningPathId}`,
@@ -167,9 +144,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
                   nodes: DiagramNode[];
                   edges: DiagramEdge[];
                 };
-                console.log('[Store] Populating Yjs with template:', diagram);
 
-                // Populate Yjs document
                 diagram.nodes.forEach((node) => {
                   const yNode = new Y.Map<unknown>();
                   yNode.set('type', node.type);
@@ -187,18 +162,17 @@ export const useCollaborativeStore = create<CollaborativeState>()(
                 });
               }
             } catch (error) {
-              console.error('[Store] Failed to fetch initial diagram:', error);
+              console.error('Failed to fetch initial diagram:', error);
             }
           }
         });
-        const nodesObserver = () => {
+
+        yNodes.observeDeep(() => {
           applyFromY();
-        };
-        const edgesObserver = () => {
+        });
+        yEdges.observeDeep(() => {
           applyFromY();
-        };
-        yNodes.observeDeep(nodesObserver);
-        yEdges.observeDeep(edgesObserver);
+        });
 
         provider.on('status', (event: { status: string }) => {
           set({ isConnected: event.status === 'connected' });
@@ -228,7 +202,6 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       });
     },
 
-    // React Flow Actions
     setNodes: (
       nodes: DiagramNode[] | ((nodes: DiagramNode[]) => DiagramNode[]),
     ) => {
@@ -236,13 +209,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         nodes: typeof nodes === 'function' ? nodes(state.nodes) : nodes,
       }));
     },
-    setEdges: (
-      edges: DiagramEdge[] | ((edges: DiagramEdge[]) => DiagramEdge[]),
-    ) => {
-      set((state) => ({
-        edges: typeof edges === 'function' ? edges(state.edges) : edges,
-      }));
-    },
+
     onNodeChange: (changes) => {
       const { ydoc } = get();
       if (!ydoc) return;
@@ -258,7 +225,6 @@ export const useCollaborativeStore = create<CollaborativeState>()(
           }
         }
         if (change.type === 'remove') {
-          // delete node and incident edges
           yNodes.delete(change.id);
           const yEdges = ydoc.getMap<Y.Map<unknown>>('edges');
           Array.from(yEdges.entries()).forEach(([edgeId, yEdge]) => {
@@ -271,16 +237,33 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         }
       });
     },
+
     onEdgeChange: (changes) => {
-      const { ydoc } = get();
+      const { ydoc, edges } = get();
       if (!ydoc) return;
       const yEdges = ydoc.getMap<Y.Map<unknown>>('edges');
+
+      const hasSelectChange = changes.some((c) => c.type === 'select');
+      if (hasSelectChange) {
+        const updatedEdges = edges.map((edge) => {
+          const selectChange = changes.find(
+            (c) => c.type === 'select' && c.id === edge.id,
+          );
+          if (selectChange && selectChange.type === 'select') {
+            return { ...edge, selected: selectChange.selected };
+          }
+          return edge;
+        });
+        set({ edges: updatedEdges });
+      }
+
       changes.forEach((change) => {
         if (change.type === 'remove') {
           yEdges.delete(change.id);
         }
       });
     },
+
     onConnect: (params) => {
       const { source, target, sourceHandle, targetHandle } = params;
       if (!source || !target) return;
@@ -295,12 +278,12 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       yEdge.set('targetHandle', targetHandle ?? null);
       yEdges.set(edgeId, yEdge);
     },
+
     addNode: (type, position) => {
       const { nodes, ydoc } = get();
       if (!ydoc) return;
       const nodeCount = nodes.length;
 
-      // Auto-calculate zigzag position if not provided
       const isEven = nodeCount % 2 === 0;
       const levelY = nodeCount * 100 + 200;
       const autoPosition = {
@@ -320,12 +303,26 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         type: type.toLowerCase(),
       });
       yNodes.set(id, yNode);
-      console.log('[CollaborativeStore] Added new node:', id);
     },
-    // Collaboration Actions
+
+    deleteNode: (nodeId) => {
+      const { ydoc } = get();
+      if (!ydoc) return;
+      const yNodes = ydoc.getMap<Y.Map<unknown>>('nodes');
+      const yEdges = ydoc.getMap<Y.Map<unknown>>('edges');
+
+      yNodes.delete(nodeId);
+
+      Array.from(yEdges.entries()).forEach(([edgeId, yEdge]) => {
+        const source = yEdge.get('source') as string | undefined;
+        const target = yEdge.get('target') as string | undefined;
+        if (source === nodeId || target === nodeId) {
+          yEdges.delete(edgeId);
+        }
+      });
+    },
+
     updateCursor: () => {},
     updateSelection: () => {},
-
-    // Broadcasting Actions (placeholder)
   })),
 );
