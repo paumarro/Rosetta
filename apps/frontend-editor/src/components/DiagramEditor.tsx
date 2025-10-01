@@ -74,7 +74,7 @@ export default function DiagramEditor({
   // }, []);
 
   // Add this click handler
-  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+  const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     console.log('Node clicked:', node); // For debugging
 
     // Dispatch the event that NodeModal is listening for
