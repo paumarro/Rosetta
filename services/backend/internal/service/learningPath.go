@@ -31,13 +31,22 @@ type diagramResponse struct {
 
 func (s *LearningPathService) GetLearningPaths() ([]model.LearningPath, error) {
 	var paths []model.LearningPath
-	if err := s.DB.Preload("Courses").Find(&paths).Error; err != nil {
+	if err := s.DB.Preload("Skills.Skill").Find(&paths).Error; err != nil {
 		return nil, err
 	}
+
+	// Extract skills from join table into SkillsList
+	for i := range paths {
+		paths[i].SkillsList = make([]model.Skill, 0, len(paths[i].Skills))
+		for _, lpSkill := range paths[i].Skills {
+			paths[i].SkillsList = append(paths[i].SkillsList, lpSkill.Skill)
+		}
+	}
+
 	return paths, nil
 }
 
-func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, description string, isPublic bool, thumbnail string) (*model.LearningPath, error) {
+func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, description string, isPublic bool, thumbnail string, skillNames []string) (*model.LearningPath, error) {
 	lpID := uuid.New()
 
 	editorURL := os.Getenv("EDITOR_BASE_URL")
@@ -90,7 +99,46 @@ func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, des
 		return nil, fmt.Errorf("postgres insert failed: %w", err)
 	}
 
-	fmt.Println("LP created successfully")
+	// Step 6: Create skills for the learning path
+	for _, skillName := range skillNames {
+		// First, find or create the skill
+		var skill model.Skill
+		if err := s.DB.WithContext(ctx).Where("name = ?", skillName).First(&skill).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				// Skill doesn't exist, create it
+				skill = model.Skill{Name: skillName}
+				if err := s.DB.WithContext(ctx).Create(&skill).Error; err != nil {
+					fmt.Printf("Warning: failed to create skill %s: %v\n", skillName, err)
+					continue
+				}
+			} else {
+				fmt.Printf("Warning: failed to query skill %s: %v\n", skillName, err)
+				continue
+			}
+		}
+
+		// Create the LPSkill association
+		lpSkill := model.LPSkill{
+			LPID:    lpID,
+			SkillID: skill.ID,
+		}
+		if err := s.DB.WithContext(ctx).Create(&lpSkill).Error; err != nil {
+			fmt.Printf("Warning: failed to associate skill %s with LP: %v\n", skillName, err)
+		}
+	}
+
+	// Reload the learning path with skills
+	if err := s.DB.WithContext(ctx).Preload("Skills.Skill").First(lp, "id = ?", lpID).Error; err != nil {
+		fmt.Printf("Warning: failed to reload LP with skills: %v\n", err)
+	}
+
+	// Extract skills from join table into SkillsList
+	lp.SkillsList = make([]model.Skill, 0, len(lp.Skills))
+	for _, lpSkill := range lp.Skills {
+		lp.SkillsList = append(lp.SkillsList, lpSkill.Skill)
+	}
+
+	fmt.Println("LP created successfully with skills")
 
 	return lp, nil
 }
@@ -111,5 +159,35 @@ func (s *LearningPathService) deleteDiagramByLP(_ context.Context, httpClient *h
 	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusNotFound {
 		return fmt.Errorf("unexpected status deleting diagram: %d", resp.StatusCode)
 	}
+	return nil
+}
+
+func (s *LearningPathService) DeleteLearningPath(ctx context.Context, lpID string) error {
+	// First, find the learning path to get its UUID and diagram ID
+	var lp model.LearningPath
+	if err := s.DB.WithContext(ctx).Where("id = ?", lpID).First(&lp).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("learning path not found")
+		}
+		return fmt.Errorf("failed to find learning path: %w", err)
+	}
+
+	editorURL := os.Getenv("EDITOR_BASE_URL")
+	if editorURL == "" {
+		editorURL = "http://localhost:3001"
+	}
+
+	httpClient := &http.Client{Timeout: 10 * time.Second}
+
+	// Delete the diagram from MongoDB using the LP UUID
+	if err := s.deleteDiagramByLP(ctx, httpClient, editorURL, lp.ID.String()); err != nil {
+		return fmt.Errorf("failed to delete diagram: %w", err)
+	}
+
+	// Delete the learning path from PostgreSQL
+	if err := s.DB.WithContext(ctx).Delete(&lp).Error; err != nil {
+		return fmt.Errorf("failed to delete learning path: %w", err)
+	}
+
 	return nil
 }

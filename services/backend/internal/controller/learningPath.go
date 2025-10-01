@@ -35,8 +35,9 @@ func (res *LearningPathController) Index(c *gin.Context) {
 }
 
 type CreateLearningPathRequest struct {
-	PathName string   `json:"pathName" binding:"required"`
-	Skills   []string `json:"skills"`
+	PathName    string   `json:"pathName" binding:"required"`
+	Description string   `json:"description"`
+	Skills      []string `json:"skills"`
 }
 
 func (res *LearningPathController) Create(c *gin.Context) {
@@ -46,11 +47,27 @@ func (res *LearningPathController) Create(c *gin.Context) {
 		return
 	}
 
-	learningPath, err := res.LearningPathService.CreateLearningPath(c, req.PathName, "", true, "")
+	learningPath, err := res.LearningPathService.CreateLearningPath(c, req.PathName, req.Description, true, "", req.Skills)
 	if err != nil {
 		respondWithError(c, http.StatusInternalServerError, "Failed to create learning path", err)
 		return
 	}
 
 	c.JSON(http.StatusCreated, learningPath)
+}
+
+func (res *LearningPathController) Delete(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		respondWithError(c, http.StatusBadRequest, "Learning path ID is required", nil)
+		return
+	}
+
+	err := res.LearningPathService.DeleteLearningPath(c, id)
+	if err != nil {
+		respondWithError(c, http.StatusInternalServerError, "Failed to delete learning path", err)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
