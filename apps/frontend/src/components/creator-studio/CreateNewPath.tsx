@@ -11,12 +11,12 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { SearchSkillForm } from '@/components/welcome/search-skill-form';
 import { useState, FormEvent } from 'react';
 import { X } from 'lucide-react';
-// import axiosLib from 'axios';
 
 const BE_API_URL = import.meta.env.VITE_BE_API_URL as string;
 const DEV_EDITOR_FE_URL = import.meta.env.VITE_DEV_EDITOR_FE_URL as string;
@@ -28,6 +28,7 @@ export default function CreateNewPath({
   const [pathName, setPathName] = useState<string>('');
   const [pathNameCharacterCount, setPathNameCharacterCount] =
     useState<number>(0);
+  const [description, setDescription] = useState<string>('');
   const [skills, setSkills] = useState<string[]>([]);
   const [searchValue, setSearchValue] = useState('');
   const handleSearchSubmit = (value: string) => {
@@ -40,6 +41,7 @@ export default function CreateNewPath({
     e.preventDefault();
     const formData = {
       pathName: pathName,
+      description: description,
       skills: skills,
     };
 
@@ -60,7 +62,7 @@ export default function CreateNewPath({
         throw new Error(`HTTP error! status: ${response.status.toString()}`);
       }
 
-      window.location.href = DEV_EDITOR_FE_URL;
+      window.location.href = `${DEV_EDITOR_FE_URL}editor/${pathName}`;
     } catch (err) {
       if (err instanceof Error) {
         console.error('Error submitting form:', err.message);
@@ -114,6 +116,25 @@ export default function CreateNewPath({
                       <div className="text-xs text-muted-foreground text-right">
                         {pathNameCharacterCount}/50
                       </div>
+                    </div>
+                    <div className="grid gap-3">
+                      <Label htmlFor="description">Description</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Give your path a short description for the community
+                      </p>
+                      <Textarea
+                        id="description"
+                        placeholder="Add a short description..."
+                        required
+                        value={description}
+                        onChange={(
+                          e: React.ChangeEvent<HTMLTextAreaElement>,
+                        ) => {
+                          setDescription(e.target.value);
+                        }}
+                        rows={4}
+                        className="resize-none"
+                      />
                     </div>
                     <div className="grid gap-3">
                       <Label htmlFor="skills">Skills</Label>
