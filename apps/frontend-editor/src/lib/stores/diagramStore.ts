@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 
-import { Diagram, DiagramStore, CreateDiagramRequest } from '@/types';
-import defaultDiagramTemplate from '@/lib/templates/defaultDiagram.json';
+import { Diagram, DiagramStore } from '@/types';
 
 export const useDiagramStore = create<DiagramStore>((set) => ({
   diagrams: [],
@@ -36,39 +35,43 @@ export const useDiagramStore = create<DiagramStore>((set) => ({
       console.error('Error fetching diagrams:', error);
     }
   },
-  addDiagram: async (name: string) => {
-    if (!name.trim()) {
-      set({ error: 'Diagram name cannot be empty' });
-      return;
-    }
+  deleteDiagram: async (name: string) => {
     try {
-      const requestBody: CreateDiagramRequest = {
-        name: name.trim(),
-        nodes: defaultDiagramTemplate.nodes,
-        edges: defaultDiagramTemplate.edges,
-      };
-      const response = await fetch('http://localhost:3001/api/diagrams', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `http://localhost:3001/api/diagrams/${name}`,
+        {
+          method: 'DELETE',
         },
-        body: JSON.stringify(requestBody),
-      });
+      );
 
-      if (response.ok) {
-        const newDiagram = (await response.json()) as Diagram;
+      if (response.ok || response.status === 204) {
+        // Remove from local state
         set((state) => ({
-          diagrams: [...state.diagrams, newDiagram],
+          diagrams: state.diagrams.filter((d) => d.name !== name),
           error: null,
         }));
+      } else if (response.status === 409) {
+        // Diagram has an associated learning path
+        const errorData = (await response.json()) as {
+          error: string;
+          message: string;
+        };
+        const errorMessage =
+          errorData.message ||
+          'Cannot delete diagram with associated learning path';
+        set({ error: errorMessage });
+        throw new Error(errorMessage);
       } else {
-        throw new Error('Failed to create diagram');
+        throw new Error('Failed to delete diagram');
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      set({ error: errorMessage });
-      console.error('Error creating diagram:', error);
+      if (!errorMessage.includes('learning path')) {
+        set({ error: errorMessage });
+      }
+      console.error('Error deleting diagram:', error);
+      throw error; // Re-throw so UI can handle it
     }
   },
 }));

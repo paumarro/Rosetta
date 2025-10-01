@@ -15,16 +15,10 @@ export interface FullDiagram extends Diagram {
   edges: DiagramEdge[];
 }
 
-// API request types (using Pick/Omit only where it adds clear value)
-export type CreateDiagramRequest = Pick<
-  FullDiagram,
-  'name' | 'nodes' | 'edges'
->;
-
 //Store interface
 export interface DiagramStore extends BaseStore {
   diagrams: Diagram[];
   // Actions
   fetchDiagrams: () => Promise<void>;
-  addDiagram: (name: string) => Promise<void>;
+  deleteDiagram: (name: string) => Promise<void>;
 }
