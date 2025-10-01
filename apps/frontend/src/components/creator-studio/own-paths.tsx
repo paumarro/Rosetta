@@ -1,14 +1,14 @@
+import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   LayoutGrid,
   LayoutList,
   ChevronDown,
-  Heart,
-  MessageSquare,
-  Share,
-  Bookmark,
+  Trash2,
+  Edit,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
   Carousel,
@@ -17,217 +17,221 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
+import { useLearningPathStore } from '@/store/learningPathStore';
 
 // Frontend interface
 interface CreatorLearningPath {
-  id: number;
-  title: string;
-  // Enum-like values for better readability in code
-  status: 'draft' | 'published' | 'archived';
-  visibility: 'private' | 'public' | 'shared';
-
-  metrics: {
-    likes: number;
-    comments: number;
-    shares: number;
-    bookmarks: number;
-  };
-
-  dates: {
-    created: string;
-    lastUpdated: string;
-    published: string | null;
-  };
-
-  tags: string[];
-  thumbnail: string | null;
+  ID: string;
+  Title: string;
+  Description: string;
+  IsPublic: boolean;
+  Thumbnail: string;
+  DiagramID: string;
+  CreatedAt: string;
+  UpdatedAt: string;
+  Skills?: Array<{ ID: string; Name: string }>;
 }
 
-function CreatorPathCard({ path }: { path: CreatorLearningPath }) {
+function CreatorPathCard({
+  path,
+  onDelete,
+  onEdit,
+  deleting,
+}: {
+  path: CreatorLearningPath;
+  onDelete: (id: string, e: React.MouseEvent) => Promise<void>;
+  onEdit: (id: string) => void;
+  deleting: boolean;
+}) {
   return (
-    <Card
-      key={path.id}
-      className="bg-muted  hover:bg-secondary/50 cursor-pointer gap-2 transition-colors p-2"
-    >
-      {path.thumbnail && (
+    <Card className="relative bg-muted hover:bg-secondary/50 cursor-pointer gap-2 transition-colors p-2 group">
+      {path.Thumbnail && (
         <div className="bg-white rounded-lg w-full h-40 overflow-hidden">
           <img
-            src={path.thumbnail}
-            alt={`${path.title} thumbnail`}
+            src={path.Thumbnail}
+            alt={`${path.Title} thumbnail`}
             className="w-full h-full object-contain"
           />
         </div>
       )}
       <CardContent className="bg-muted px-4 flex flex-col">
-        <h3>{path.title}</h3>
-        <div className="flex items-center justify-between mt-4">
-          <div className="flex items-center gap-8">
-            {/* Likes */}
-            <div className="flex flex-col items-center">
-              <Heart className="w-5 h-5" />
-              <span className="text-sm mt-1">{path.metrics.likes}</span>
-            </div>
-
-            {/* Comments */}
-            <div className="flex flex-col items-center">
-              <MessageSquare className="w-5 h-5" />
-              <span className="text-sm mt-1">{path.metrics.comments}</span>
-            </div>
-
-            {/* Shares */}
-            <div className="flex flex-col items-center">
-              <Share className="w-5 h-5" />
-              <span className="text-sm mt-1">{path.metrics.shares}</span>
-            </div>
-
-            {/* Bookmarks */}
-            <div className="flex flex-col items-center">
-              <Bookmark className="w-5 h-5" />
-              <span className="text-sm mt-1">{path.metrics.bookmarks}</span>
-            </div>
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="flex-1">{path.Title}</h3>
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(path.ID);
+              }}
+              disabled={deleting}
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
+              onClick={(e) => {
+                onDelete(path.ID, e).catch(console.error);
+              }}
+              disabled={deleting}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
           </div>
         </div>
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+          {path.Description || 'No description'}
+        </p>
+        <div className="text-xs text-muted-foreground mb-3">
+          Created: {new Date(path.CreatedAt).toLocaleDateString()}
+        </div>
+
+        {/* Skills badges */}
+        <div className="flex flex-wrap gap-1.5 mt-auto">
+          {path.Skills && path.Skills.length > 0 ? (
+            path.Skills.slice(0, 4).map((skill, index) => (
+              <Badge
+                key={index}
+                variant="outline"
+                className="text-xs py-0.5 px-2"
+              >
+                {skill.Name}
+              </Badge>
+            ))
+          ) : (
+            <span className="text-xs text-muted-foreground">
+              No skills added yet
+            </span>
+          )}
+          {path.Skills && path.Skills.length > 4 && (
+            <Badge variant="secondary" className="text-xs py-0.5 px-2">
+              +{path.Skills.length - 4}
+            </Badge>
+          )}
+        </div>
       </CardContent>
+      {deleting && (
+        <div className="absolute inset-0 bg-white/80 rounded-lg flex items-center justify-center">
+          <p className="text-sm text-gray-600">Deleting...</p>
+        </div>
+      )}
     </Card>
   );
 }
 
 export default function OwnPaths() {
-  // Sample learning paths data
-  const creatorLearningPaths: CreatorLearningPath[] = [
-    {
-      id: 1,
-      title: 'Automotive Grundlagen',
-      status: 'published',
-      visibility: 'public',
-      metrics: {
-        likes: 129,
-        comments: 49,
-        shares: 29,
-        bookmarks: 84,
-      },
-      dates: {
-        created: '2024-11-15',
-        lastUpdated: '2025-01-20',
-        published: '2024-11-20',
-      },
-      tags: ['automotive', 'engineering', 'mechanics', 'electronics'],
-      thumbnail: '/path-preview.png',
-    },
-    {
-      id: 2,
-      title: 'Web Development Masterclass',
-      status: 'published',
-      visibility: 'public',
-      metrics: {
-        likes: 347,
-        comments: 112,
-        shares: 86,
-        bookmarks: 192,
-      },
-      dates: {
-        created: '2025-02-03',
-        lastUpdated: '2025-05-12',
-        published: '2025-02-10',
-      },
-      tags: ['web development', 'javascript', 'react', 'node.js', 'frontend'],
-      thumbnail: '/path-preview.png',
-    },
-    {
-      id: 3,
-      title: 'Cloud Computing Fundamentals',
-      status: 'draft',
-      visibility: 'private',
-      metrics: {
-        likes: 0,
-        comments: 0,
-        shares: 0,
-        bookmarks: 0,
-      },
-      dates: {
-        created: '2025-05-01',
-        lastUpdated: '2025-05-22',
-        published: null,
-      },
-      tags: ['cloud', 'aws', 'azure', 'infrastructure', 'devops'],
-      thumbnail: '/path-preview.png',
-    },
-    {
-      id: 4,
-      title: 'Data Science for Beginners',
-      status: 'published',
-      visibility: 'public',
-      metrics: {
-        likes: 215,
-        comments: 78,
-        shares: 43,
-        bookmarks: 127,
-      },
-      dates: {
-        created: '2024-09-18',
-        lastUpdated: '2025-03-07',
-        published: '2024-10-01',
-      },
-      tags: [
-        'data science',
-        'python',
-        'statistics',
-        'machine learning',
-        'pandas',
-      ],
-      thumbnail: '/path-preview.png',
-    },
-    {
-      id: 5,
-      title: 'DevOps Best Practices',
-      status: 'published',
-      visibility: 'private',
-      metrics: {
-        likes: 32,
-        comments: 8,
-        shares: 3,
-        bookmarks: 17,
-      },
-      dates: {
-        created: '2025-04-10',
-        lastUpdated: '2025-04-30',
-        published: '2025-04-15',
-      },
-      tags: ['devops', 'ci/cd', 'automation', 'docker', 'kubernetes'],
-      thumbnail: '/path-preview.png',
-    },
-  ];
+  const {
+    learningPaths,
+    isLoading,
+    error,
+    fetchLearningPaths,
+    deleteLearningPath,
+    setError,
+  } = useLearningPathStore();
+  const [deletingPathId, setDeletingPathId] = useState<string | null>(null);
+  const DEV_EDITOR_FE_URL = import.meta.env.VITE_DEV_EDITOR_FE_URL as string;
+
+  useEffect(() => {
+    void fetchLearningPaths();
+  }, [fetchLearningPaths]);
+
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const path = learningPaths.find((lp) => lp.ID === id);
+    if (
+      !confirm(
+        `Are you sure you want to delete "${path?.Title ?? 'this learning path'}"? This will also delete the associated diagram.`,
+      )
+    ) {
+      return;
+    }
+
+    setDeletingPathId(id);
+    try {
+      await deleteLearningPath(id);
+    } catch (error) {
+      console.error('Failed to delete learning path:', error);
+    } finally {
+      setDeletingPathId(null);
+    }
+  };
+
+  const handleEdit = (id: string) => {
+    // Navigate to editor with the learning path's diagram
+    const path = learningPaths.find((lp) => lp.ID === id);
+    if (path) {
+      // Use DiagramID to find the diagram name or use the learning path title
+      window.location.href = `${DEV_EDITOR_FE_URL}editor/${path.Title}`;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Loading learning paths...</p>
+      </div>
+    );
+  }
 
   return (
     <>
       <div className="flex flex-col gap-4 h-full">
-        {/* Recently viewed section */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-sm text-muted-foreground">Recently edited</div>
+        {/* Error display */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600">{error}</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setError(null);
+              }}
+            >
+              Dismiss
+            </Button>
           </div>
-          <div className="bg-muted p-4 rounded-2xl ">
-            <Carousel className="w-full ">
-              <CarouselContent className="-ml-4">
-                {creatorLearningPaths.map((path) => (
-                  <CarouselItem
-                    key={path.id}
-                    className="pl-4 md:basis-1/2 lg:basis-1/3"
-                  >
-                    <CreatorPathCard path={path} />
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <div className="mt-2 flex justify-between">
-                <CarouselPrevious className="relative left-0 right-auto translate-y-0 position-static" />
-                <CarouselNext className="relative right-0 left-auto translate-y-0 position-static" />
+        )}
+
+        {/* Recently edited section */}
+        {learningPaths.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm text-muted-foreground">
+                Recently edited
               </div>
-            </Carousel>
+            </div>
+            <div className="bg-muted p-4 rounded-2xl ">
+              <Carousel className="w-full ">
+                <CarouselContent className="-ml-4">
+                  {learningPaths.slice(0, 6).map((path) => (
+                    <CarouselItem
+                      key={path.ID}
+                      className="pl-4 md:basis-1/2 lg:basis-1/3"
+                    >
+                      <CreatorPathCard
+                        path={path}
+                        onDelete={handleDelete}
+                        onEdit={handleEdit}
+                        deleting={deletingPathId === path.ID}
+                      />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <div className="mt-2 flex justify-between">
+                  <CarouselPrevious className="relative left-0 right-auto translate-y-0 position-static" />
+                  <CarouselNext className="relative right-0 left-auto translate-y-0 position-static" />
+                </div>
+              </Carousel>
+            </div>
           </div>
-        </div>
+        )}
 
         <Separator />
-        {/* Fillters and sorting */}
+        {/* Filters and sorting */}
         <div className="flex flex-col flex-1 h-full">
           <div className="text-sm flex items-center justify-end text-muted-foreground gap-2 mb-2">
             <div className="flex items-center gap-2">
@@ -256,24 +260,24 @@ export default function OwnPaths() {
             </div>
           </div>
 
-          {/* Placeholder for learning paths call */}
-          <div className="bg-muted rounded-2xl flex-1">
+          {/* Learning paths grid */}
+          <div className="bg-muted rounded-2xl flex-1 ">
             <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Placeholder for learning paths call */}
-              {Array(30)
-                .fill(0)
-                .map((_, index) => {
-                  // Just use the existing paths and cycle through them
-                  const path =
-                    creatorLearningPaths[index % creatorLearningPaths.length];
-                  // Use a unique key by combining the original ID with the index
-                  return (
-                    <CreatorPathCard
-                      key={`${String(path.id)}-${String(index)}`}
-                      path={path}
-                    />
-                  );
-                })}
+              {learningPaths.length > 0 ? (
+                learningPaths.map((path) => (
+                  <CreatorPathCard
+                    key={path.ID}
+                    path={path}
+                    onDelete={handleDelete}
+                    onEdit={handleEdit}
+                    deleting={deletingPathId === path.ID}
+                  />
+                ))
+              ) : (
+                <div className="col-span-full flex items-center justify-center py-12 text-muted-foreground">
+                  No learning paths yet. Create your first one!
+                </div>
+              )}
             </div>
           </div>
         </div>
