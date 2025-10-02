@@ -8,7 +8,7 @@ interface Resource {
 
 interface TopicNodeData {
   label: string;
-  level?: number;
+  side: 0 | 1 | 2 | 3; // 0 for center, 1 for right, 2 for left, 3 for no specific side
   parentId?: string | null;
   description?: string;
   resources?: Resource[];
@@ -73,8 +73,75 @@ const TopicNode = ({ data, selected, type, id }: TopicNodeProps) => {
     return data.label.substring(0, maxLength - 3) + '...'; // -3 for the ellipsis
   };
 
+  const renderHandles = () => {
+    // SUBTOPIC NODES - Different logic based on side
+    if (type === 'subtopic') {
+      if (data.side === 1) {
+        // Subtopic on right side
+        return (
+          <>
+            <Handle type="target" position={Position.Left} id="l" />
+          </>
+        );
+      } else if (data.side === 2) {
+        // Subtopic on left side
+        return (
+          <>
+            <Handle type="target" position={Position.Right} id="r" />
+          </>
+        );
+      } else {
+        // Default subtopic handles (side 3 or other)
+        return (
+          <>
+            <Handle type="target" position={Position.Left} id="l" />
+            <Handle type="target" position={Position.Right} id="r" />
+          </>
+        );
+      }
+    }
+
+    // TOPIC NODES - Original logic
+    if (data.side === 0) {
+      // Starting node: only right and bottom handles
+      return (
+        <>
+          <Handle type="source" position={Position.Right} id="r" />
+          <Handle type="source" position={Position.Bottom} id="b" />
+        </>
+      );
+    } else if (data.side === 1) {
+      // Right side topic
+      return (
+        <>
+          <Handle type="target" position={Position.Top} id="t" />
+          <Handle type="source" position={Position.Right} id="r" />
+          <Handle type="source" position={Position.Bottom} id="b" />
+        </>
+      );
+    } else if (data.side === 2) {
+      // Left side topic
+      return (
+        <>
+          <Handle type="target" position={Position.Top} id="t" />
+          <Handle type="source" position={Position.Left} id="l" />
+          <Handle type="source" position={Position.Bottom} id="b" />
+        </>
+      );
+    } else {
+      // Default topic handles (side 3)
+      return (
+        <>
+          <Handle type="target" position={Position.Top} id="t" />
+          <Handle type="target" position={Position.Left} id="l" />
+          <Handle type="source" position={Position.Right} id="r" />
+          <Handle type="source" position={Position.Bottom} id="b" />
+        </>
+      );
+    }
+  };
+
   const styles = getNodeStyles();
-  const isStartingNode = data.level === 0;
   const widthClass = getNodeWidth();
   const displayLabel = getTruncatedLabel();
 
@@ -84,21 +151,11 @@ const TopicNode = ({ data, selected, type, id }: TopicNodeProps) => {
         ${styles.base} ${styles.border} ${styles.hover} ${widthClass}`}
       onClick={handleNodeClick}
     >
-      {/* Input Handles - starting nodes don't need input handles */}
-      {!isStartingNode && (
-        <>
-          <Handle type="target" position={Position.Top} id="t" />
-          <Handle type="target" position={Position.Left} id="l" />
-        </>
-      )}
+      {renderHandles()}
 
       <div className={` text-center`}>
         <div className={`${styles.text} ${styles.size}`}>{displayLabel}</div>
       </div>
-
-      {/* Output Handles - all nodes can have outputs */}
-      <Handle type="source" position={Position.Right} id="r" />
-      <Handle type="source" position={Position.Bottom} id="b" />
     </div>
   );
 };
