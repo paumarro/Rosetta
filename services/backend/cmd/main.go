@@ -1,8 +1,8 @@
 package main
 
 import (
-	"os"
 	"log"
+	"os"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -49,6 +49,7 @@ func main() {
 	{
 		api.GET("/learning-paths", lpController.Index)
 		api.POST("/learning-paths", lpController.Create)
+		api.DELETE("/learning-paths/:id", lpController.Delete)
 	}
 
 	r.GET("/callback", handler.Callback)
