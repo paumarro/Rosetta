@@ -3,19 +3,28 @@ import * as AvatarPrimitive from '@radix-ui/react-avatar';
 
 import { cn } from '@/lib/utils';
 
-function Avatar({
-  className,
-  ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Root>) {
+interface AvatarProps
+  extends React.ComponentProps<typeof AvatarPrimitive.Root> {
+  isActive?: boolean;
+}
+
+function Avatar({ className, isActive, ...props }: AvatarProps) {
   return (
-    <AvatarPrimitive.Root
-      data-slot="avatar"
+    <div
       className={cn(
-        'relative flex size-8 shrink-0 overflow-hidden rounded-full',
-        className,
+        'm-1',
+        isActive && 'border-[3px] border-blue-300 rounded-full w-fit',
       )}
-      {...props}
-    />
+    >
+      <AvatarPrimitive.Root
+        data-slot="avatar"
+        className={cn(
+          'relative flex size-8 shrink-0 overflow-hidden rounded-full border-[1.5px] border-sub-bg',
+          className,
+        )}
+        {...props}
+      />
+    </div>
   );
 }
 
