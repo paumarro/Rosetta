@@ -11,9 +11,8 @@ import {
   Node,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Button } from './ui/button';
+import AddNodeButton from '@/components/ui/addNodeButton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Circle, Diamond } from 'lucide-react';
 import TopicNode from './nodes/topicNode';
 import { LoadingOverlay } from './ui/loading-overlay';
 import { NodeModal } from './NodeModal';
@@ -111,7 +110,6 @@ export default function DiagramEditor({
     onNodeChange,
     onEdgeChange,
     onConnect,
-    addNode,
   } = useCollaborativeStore();
 
   const [currentUser] = useState({
@@ -226,31 +224,8 @@ export default function DiagramEditor({
             </div>
             <AvatarDemo />
           </Panel>
-          <Panel position="top-right">
-            <div className="flex gap-2">
-              <Button
-                onClick={() => {
-                  addNode('Topic');
-                }}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <Circle className="w-4 h-4" />
-                Topic
-              </Button>
-              <Button
-                onClick={() => {
-                  addNode('subtopic');
-                }}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <Diamond className="w-4 h-4" />
-                Sub Topic
-              </Button>
-            </div>
+          <Panel position="center-left">
+            <AddNodeButton />
           </Panel>
           <ViewportPortal>
             <div
