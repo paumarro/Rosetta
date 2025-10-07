@@ -1,5 +1,5 @@
 import { Handle, Position } from '@xyflow/react';
-import { DiagramNode } from '@/types/reactflow';
+import { TopicNodeProps } from '@/types/reactflow';
 
 const TopicNode = ({
   id,
@@ -7,7 +7,7 @@ const TopicNode = ({
   selected,
   type,
   isBeingEdited,
-}: DiagramNode) => {
+}: TopicNodeProps) => {
   // Style based on the ReactFlow type and editing status
   const getNodeStyles = () => {
     //Check if node is being edited - override all other styles
