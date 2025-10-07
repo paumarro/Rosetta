@@ -1,29 +1,26 @@
 import { Handle, Position } from '@xyflow/react';
+import { DiagramNode } from '@/types/reactflow';
 
-interface Resource {
-  title: string;
-  type: 'article' | 'video';
-  url: string;
-}
-
-interface TopicNodeData {
-  label: string;
-  side: 0 | 1 | 2 | 3; // 0 for center, 1 for right, 2 for left, 3 for no specific side
-  parentId?: string | null;
-  description?: string;
-  resources?: Resource[];
-}
-
-interface TopicNodeProps {
-  id: string;
-  data: TopicNodeData;
-  selected: boolean;
-  type: string; // ReactFlow type: "topic" or "subtopic"
-}
-
-const TopicNode = ({ data, selected, type, id }: TopicNodeProps) => {
-  // Style based on the ReactFlow type
+const TopicNode = ({
+  id,
+  data,
+  selected,
+  type,
+  isBeingEdited,
+}: DiagramNode) => {
+  // Style based on the ReactFlow type and editing status
   const getNodeStyles = () => {
+    //Check if node is being edited - override all other styles
+    if (isBeingEdited) {
+      return {
+        base: 'bg-white',
+        border: 'border-black border-[2.5px] rounded-[5px]',
+        hover: 'hover:bg-white',
+        text: 'text-black',
+        size: 'text-sm',
+      };
+    }
+
     if (type === 'subtopic') {
       return {
         base: selected ? 'bg-sub-hover' : 'bg-sub-bg bg-red-800',
@@ -156,6 +153,10 @@ const TopicNode = ({ data, selected, type, id }: TopicNodeProps) => {
       <div className={` text-center`}>
         <div className={`${styles.text} ${styles.size}`}>{displayLabel}</div>
       </div>
+      {/* Editing indicator */}
+      {isBeingEdited && (
+        <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white animate-pulse"></div>
+      )}
     </div>
   );
 };
