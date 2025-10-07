@@ -1,25 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Trash2 } from 'lucide-react';
-import data from '@/lib/templates/mockData.json';
 import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
+import { DiagramNode } from '@/types/reactflow';
 
-interface Resource {
-  title: string;
-  type: 'article' | 'video';
-  url: string;
-}
-
-interface NodeData {
-  label: string;
-  description?: string;
-  resources?: Resource[];
-}
-
-interface ModalData {
-  nodeId: string;
-  data: NodeData;
-}
+type ModalData = Pick<DiagramNode, 'id' | 'data'>;
 
 export function NodeModal() {
   const [isOpen, setIsOpen] = useState(false);
@@ -28,36 +13,15 @@ export function NodeModal() {
   const { deleteNode } = useCollaborativeStore();
 
   useEffect(() => {
-    const handleOpenModal = (
-      event: CustomEvent<{ nodeId: string; data: NodeData }>,
-    ) => {
-      const nodeData = event.detail.data;
-      const mockNode = data.nodes.find(
-        (node) => node.id === event.detail.nodeId,
-      );
-
-      const mockResources: Resource[] =
-        mockNode?.data.resources.map((resource) => ({
-          title: resource.title,
-          type: resource.type === 'video' ? 'video' : 'article',
-          url: resource.url,
-        })) || [];
-
-      const enrichedData: ModalData = {
-        nodeId: event.detail.nodeId,
-        data: {
-          label: nodeData.label,
-          description: nodeData.description || mockNode?.data.description,
-          resources: nodeData.resources || mockResources,
-        },
-      };
-
-      setModalData(enrichedData);
+    const handleOpenModal = (event: CustomEvent<ModalData>) => {
+      setModalData({
+        id: event.detail.id,
+        data: event.detail.data,
+      });
       setIsOpen(true);
 
       const completed =
-        localStorage.getItem(`node-${event.detail.nodeId}-completed`) ===
-        'true';
+        localStorage.getItem(`node-${event.detail.id}-completed`) === 'true';
       setIsCompleted(completed);
     };
 
@@ -77,14 +41,14 @@ export function NodeModal() {
 
   const handleMarkComplete = () => {
     if (modalData) {
-      localStorage.setItem(`node-${modalData.nodeId}-completed`, 'true');
+      localStorage.setItem(`node-${modalData.id}-completed`, 'true');
       setIsCompleted(true);
     }
   };
 
   const handleMarkInProgress = () => {
     if (modalData) {
-      localStorage.setItem(`node-${modalData.nodeId}-completed`, 'false');
+      localStorage.setItem(`node-${modalData.id}-completed`, 'false');
       setIsCompleted(false);
     }
   };
@@ -96,7 +60,7 @@ export function NodeModal() {
         `Are you sure you want to delete "${modalData.data.label}"?`,
       )
     ) {
-      deleteNode(modalData.nodeId);
+      deleteNode(modalData.id);
       handleClose();
     }
   };
