@@ -296,11 +296,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       yNode.set('type', type.toLocaleLowerCase());
       yNode.set('position', position || autoPosition);
       yNode.set('data', {
-        label:
-          type === 'Start'
-            ? 'Start here'
-            : type.charAt(0).toUpperCase() + type.slice(1),
-        type: type.toLowerCase(),
+        label: type.charAt(0).toUpperCase() + type.slice(1),
       });
       yNodes.set(id, yNode);
     },
