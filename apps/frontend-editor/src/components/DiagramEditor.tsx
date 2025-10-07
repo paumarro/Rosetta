@@ -20,7 +20,6 @@ import { NodeModal } from './NodeModal';
 const nodeTypes: NodeTypes = {
   topic: TopicNode,
   subtopic: TopicNode,
-  custom: TopicNode, // <- Fallback for custom type nodes
 };
 
 interface DiagramEditorProps {

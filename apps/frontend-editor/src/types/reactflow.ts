@@ -1,4 +1,4 @@
-import type { Node, Edge } from '@xyflow/react';
+import type { Node, Edge, NodeProps } from '@xyflow/react';
 
 type Resource = {
   title: string;
@@ -15,11 +15,16 @@ type TopicNodeData = {
   [key: string]: unknown; // Add index signature
 };
 
-export interface DiagramNode extends Node {
-  data: TopicNodeData;
+export interface DiagramNode extends Node<TopicNodeData> {
   type: string; // ReactFlow type: "topic" or "subtopic"
-  isBeingEdited?: boolean;
+  isBeingEdited: boolean;
   editedBy?: string | null;
 }
+// Custom props type that includes your extended properties
+export type TopicNodeProps = NodeProps<DiagramNode> & {
+  type: string;
+  isBeingEdited?: boolean;
+  editedBy?: string | null;
+};
 
 export type DiagramEdge = Edge;
