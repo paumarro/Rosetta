@@ -1,13 +1,11 @@
 import { Handle, Position } from '@xyflow/react';
 import { TopicNodeProps } from '@/types/reactflow';
+import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
 
-const TopicNode = ({
-  id,
-  data,
-  selected,
-  type,
-  isBeingEdited,
-}: TopicNodeProps) => {
+const TopicNode = ({ id, data, selected, type }: TopicNodeProps) => {
+  const { nodes } = useCollaborativeStore();
+  const currentNode = nodes.find((n) => n.id === id);
+  const isBeingEdited = currentNode?.isBeingEdited || false;
   // Style based on the ReactFlow type and editing status
   const getNodeStyles = () => {
     //Check if node is being edited - override all other styles
@@ -23,7 +21,7 @@ const TopicNode = ({
 
     if (type === 'subtopic') {
       return {
-        base: selected ? 'bg-sub-hover' : 'bg-sub-bg bg-red-800',
+        base: selected ? 'bg-sub-hover' : 'bg-sub-bg',
         border: 'border-sub-border border-[2.5px] rounded-[5px]',
         hover: 'hover:bg-sub-hover',
         text: 'text-white',
@@ -54,10 +52,12 @@ const TopicNode = ({
   };
 
   const handleNodeClick = () => {
+    // console.log('🎯 Node clicked:', id, data.label);
     // Dispatch custom event to open modal
     const event = new CustomEvent('openNodeModal', {
-      detail: { nodeId: id, data },
+      detail: { id, data },
     });
+    // console.log('📡 Dispatching event:', event.detail);
     window.dispatchEvent(event);
   };
 

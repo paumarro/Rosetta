@@ -128,7 +128,7 @@ export default function DiagramEditor({
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     const modalEvent = new CustomEvent('openNodeModal', {
       detail: {
-        nodeId: node.id,
+        id: node.id,
         data: {
           label: node.data.label,
           description: node.data.description,
