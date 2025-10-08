@@ -1,8 +1,14 @@
 import { Handle, Position } from '@xyflow/react';
 import { TopicNodeProps } from '@/types/reactflow';
 import { useNodeState } from '@/lib/hooks/useNodestate';
+// import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
+// import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const TopicNode = ({ id, data, selected, type }: TopicNodeProps) => {
+  // const { connectedUsers, currentUser } = useCollaborativeStore();
+  // console.log('👥 NODE Connected Users:', connectedUsers);
+  // console.log('👤 Current User:', currentUser);
+
   const { isBeingEdited } = useNodeState(id);
   // Style based on the ReactFlow type and editing status
   const getNodeStyles = () => {
