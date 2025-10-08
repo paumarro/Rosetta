@@ -1,15 +1,15 @@
 import { Handle, Position } from '@xyflow/react';
 import { TopicNodeProps } from '@/types/reactflow';
 import { useNodeState } from '@/lib/hooks/useNodestate';
-// import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
-// import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const TopicNode = ({ id, data, selected, type }: TopicNodeProps) => {
-  // const { connectedUsers, currentUser } = useCollaborativeStore();
-  // console.log('👥 NODE Connected Users:', connectedUsers);
-  // console.log('👤 Current User:', currentUser);
+  const { connectedUsers } = useCollaborativeStore();
+  const { isBeingEdited, editedBy } = useNodeState(id);
+  // Find the user who is editing this node
+  const editingUser = connectedUsers.find((user) => user.userName === editedBy);
 
-  const { isBeingEdited } = useNodeState(id);
   // Style based on the ReactFlow type and editing status
   const getNodeStyles = () => {
     //Check if node is being edited - override all other styles
@@ -158,8 +158,14 @@ const TopicNode = ({ id, data, selected, type }: TopicNodeProps) => {
         <div className={`${styles.text} ${styles.size}`}>{displayLabel}</div>
       </div>
       {/* Editing indicator */}
-      {isBeingEdited && (
-        <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white animate-pulse"></div>
+      {isBeingEdited && editingUser && (
+        <div className="absolute -right-3.5 top-1/2 -translate-y-1/2">
+          <Avatar className="w-6 h-6" isActive={true}>
+            <AvatarFallback className="text-xs bg-blue-500 text-white">
+              {editingUser.userName.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </div>
       )}
     </div>
   );
