@@ -2,49 +2,38 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
 
 export default function AvatarDemo() {
-  const { currentUser } = useCollaborativeStore();
+  const { connectedUsers, currentUser } = useCollaborativeStore();
 
-  const authors = [
-    {
+  const otherUsers = connectedUsers.filter(
+    (user) => user.userId !== currentUser?.userId,
+  );
+
+  // Create authors array with current user first
+  const connectedAuthors = [
+    // Current user first
+    ...(currentUser
+      ? [
+          {
+            src: '',
+            alt: `@${currentUser.userName}`,
+            fallback: currentUser.userName.slice(0, 2).toUpperCase(),
+            isActive: true,
+          },
+        ]
+      : []),
+    ...otherUsers.map((user) => ({
       src: '',
-      alt: `@${currentUser?.userName || 'user'}`,
-      fallback: currentUser?.userName.slice(0, 2).toUpperCase() || 'US',
+      alt: `@${user.userName}`,
+      fallback: user.userName.slice(0, 2).toUpperCase(),
       isActive: true,
-    },
-    {
-      src: 'https://github.com/maxleiter.png',
-      alt: '@maxleiter',
-      fallback: 'LR',
-      isActive: true,
-    },
-    {
-      src: 'https://github.com/evilrabbit.png',
-      alt: '@evilrabbit',
-      fallback: 'ER',
-      isActive: true,
-    },
-    {
-      src: 'https://github.com/vercel.png',
-      alt: '@vercel',
-      fallback: 'VR',
-      isActive: false,
-    },
-    {
-      src: 'https://github.com/nextjs.png',
-      alt: '@nextjs',
-      fallback: 'NJ',
-      isActive: false,
-    },
-    {
-      src: 'https://github.com/react.png',
-      alt: '@react',
-      fallback: 'RC',
-      isActive: true,
-    },
+    })),
   ];
+
+  const allAuthors = [...connectedAuthors];
+
   const maxVisible = 4;
-  const visibleAuthors = authors.slice(0, maxVisible);
-  const remainingCount = authors.length - maxVisible;
+  const visibleAuthors = allAuthors.slice(0, maxVisible);
+  const remainingCount = allAuthors.length - maxVisible;
 
   return (
     <div className="mt-3">
