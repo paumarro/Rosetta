@@ -101,6 +101,14 @@ export const useCollaborativeStore = create<CollaborativeState>()(
 
         const yNodes = doc.getMap<Y.Map<unknown>>('nodes');
         const yEdges = doc.getMap<Y.Map<unknown>>('edges');
+        const yUsers = doc.getMap<User>('users');
+        // Add beforeunload listener to ensure cleanup on page close/refresh
+        const handleBeforeUnload = () => {
+          console.log('🚪 Page unloading - removing user from Yjs');
+          yUsers.delete(user.userId);
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
 
         const applyFromY = () => {
           // console.log('🔄 applyFromY called');
@@ -138,11 +146,25 @@ export const useCollaborativeStore = create<CollaborativeState>()(
               targetHandle,
             } as DiagramEdge;
           });
-          set({ nodes, edges, title: learningPathId });
+
+          const connectedUsers = Array.from(yUsers.values());
+          console.log('👥 Connected Users from Yjs:', connectedUsers);
+          set({ nodes, edges, title: learningPathId, connectedUsers });
         };
+
+        // Liste for user changes
+        yUsers.observe(() => {
+          const connectedUsers = Array.from(yUsers.values());
+          console.log('👥 Connected Users updated from Yjs:', connectedUsers);
+          set({ connectedUsers });
+        });
 
         provider.once('sync', async (isSynced: boolean) => {
           if (!isSynced) return;
+          // Add current user to the yUsers map
+          yUsers.set(user.userId, user);
+          console.log('➕ User added to Yjs:', user);
+
           applyFromY();
 
           if (yNodes.size === 0) {
@@ -188,8 +210,18 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         });
 
         provider.on('status', (event: { status: string }) => {
-          set({ isConnected: event.status === 'connected' });
+          const isConnected = event.status === 'connected';
+          set({ isConnected });
+
+          if (isConnected) {
+            yUsers.set(user.userId, user);
+            console.log('✅ Reconnected and user re-added to Yjs:', user);
+          } else {
+            console.log('❌ Disconnected - removing user from Yjs:', user);
+            yUsers.delete(user.userId);
+          }
         });
+        console.log('Ydoc:', doc);
 
         set({ ydoc: doc, yProvider: provider });
       } catch (error) {
@@ -201,7 +233,21 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       }
     },
     cleanup: () => {
-      const { yProvider, ydoc } = get();
+      const { yProvider, ydoc, currentUser } = get();
+      if (ydoc && currentUser) {
+        const yUsers = ydoc.getMap<User>('users');
+        yUsers.delete(currentUser.userId);
+        console.log('🧹 Cleanup - removed user:', currentUser);
+      }
+      // Remove beforeunload listener
+      const handleBeforeUnload = () => {
+        if (ydoc && currentUser) {
+          const yUsers = ydoc.getMap<User>('users');
+          yUsers.delete(currentUser.userId);
+        }
+      };
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+
       if (yProvider) yProvider.destroy();
       if (ydoc) ydoc.destroy();
       set({
