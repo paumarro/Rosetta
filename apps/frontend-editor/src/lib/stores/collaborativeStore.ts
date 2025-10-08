@@ -52,7 +52,7 @@ interface CollaborativeState {
   onConnect: (connection: Connection) => void;
   addNode: (type: string, position?: { x: number; y: number }) => void;
   deleteNode: (nodeId: string) => void;
-
+  setNodeBeingEdited: (nodeId: string, isBeingEdited: boolean) => void;
   // Actions - Collaboration
   updateCursor: (position: { x: number; y: number }) => void;
   updateSelection: (nodeIds: string[]) => void;
@@ -103,6 +103,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         const yEdges = doc.getMap<Y.Map<unknown>>('edges');
 
         const applyFromY = () => {
+          // console.log('🔄 applyFromY called');
           const nodes = Array.from(yNodes.entries()).map(([id, yNode]) => {
             const type = (yNode.get('type') as string | undefined) ?? 'topic';
             const position = (yNode.get('position') as
@@ -110,7 +111,17 @@ export const useCollaborativeStore = create<CollaborativeState>()(
               | undefined) ?? { x: 0, y: 0 };
             const data =
               (yNode.get('data') as Record<string, unknown> | undefined) ?? {};
-            return { id, type, position, data } as DiagramNode;
+            const isBeingEdited =
+              (yNode.get('isBeingEdited') as boolean | undefined) ?? false;
+            const editedBy = (yNode.get('editedBy') as string | null) ?? null;
+            return {
+              id,
+              type,
+              position,
+              data,
+              isBeingEdited,
+              editedBy,
+            } as DiagramNode;
           });
           const edges = Array.from(yEdges.entries()).map(([id, yEdge]) => {
             const source = (yEdge.get('source') as string | undefined) || '';
@@ -150,6 +161,8 @@ export const useCollaborativeStore = create<CollaborativeState>()(
                   yNode.set('type', node.type);
                   yNode.set('position', node.position);
                   yNode.set('data', node.data);
+                  yNode.set('isBeingEdited', node.isBeingEdited || false);
+                  yNode.set('editedBy', node.editedBy || null);
                   yNodes.set(node.id, yNode);
                 });
                 diagram.edges.forEach((edge) => {
@@ -208,6 +221,28 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       set((state) => ({
         nodes: typeof nodes === 'function' ? nodes(state.nodes) : nodes,
       }));
+    },
+
+    setNodeBeingEdited: (id: string, isBeingEdited: boolean) => {
+      const { ydoc, currentUser } = get();
+      if (!ydoc) return;
+      const yNodes = ydoc.getMap<Y.Map<unknown>>('nodes');
+      const yNode = yNodes.get(id);
+      if (yNode) {
+        yNode.set('isBeingEdited', isBeingEdited);
+        yNode.set(
+          'editedBy',
+          isBeingEdited ? currentUser?.userName || null : null,
+        );
+        if (isBeingEdited) {
+          console.log(
+            '✅ Node marked as being edited by:',
+            currentUser?.userName,
+          );
+        }
+      } else {
+        console.log('❌ yNode not found for id:', id);
+      }
     },
 
     onNodeChange: (changes) => {
@@ -298,6 +333,8 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       yNode.set('data', {
         label: type.charAt(0).toUpperCase() + type.slice(1),
       });
+      yNode.set('isBeingEdited', false);
+      yNode.set('editedBy', get().currentUser?.userName || null);
       yNodes.set(id, yNode);
     },
 

@@ -10,15 +10,17 @@ export function NodeModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [modalData, setModalData] = useState<ModalData | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
-  const { deleteNode } = useCollaborativeStore();
+  const { deleteNode, setNodeBeingEdited } = useCollaborativeStore();
 
   useEffect(() => {
     const handleOpenModal = (event: CustomEvent<ModalData>) => {
+      // console.log('📨 Modal received event:', event.detail);
       setModalData({
         id: event.detail.id,
         data: event.detail.data,
       });
       setIsOpen(true);
+      setNodeBeingEdited(event.detail.id, true);
 
       const completed =
         localStorage.getItem(`node-${event.detail.id}-completed`) === 'true';
@@ -32,9 +34,13 @@ export function NodeModal() {
         handleOpenModal as EventListener,
       );
     };
-  }, []);
+  }, [setNodeBeingEdited]);
 
   const handleClose = () => {
+    // Clear editing state when modal closes
+    if (modalData) {
+      setNodeBeingEdited(modalData.id, false);
+    }
     setIsOpen(false);
     setModalData(null);
   };
