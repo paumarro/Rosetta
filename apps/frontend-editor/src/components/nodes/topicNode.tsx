@@ -1,11 +1,9 @@
 import { Handle, Position } from '@xyflow/react';
 import { TopicNodeProps } from '@/types/reactflow';
-import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
+import { useNodeState } from '@/lib/hooks/useNodestate';
 
 const TopicNode = ({ id, data, selected, type }: TopicNodeProps) => {
-  const { nodes } = useCollaborativeStore();
-  const currentNode = nodes.find((n) => n.id === id);
-  const isBeingEdited = currentNode?.isBeingEdited || false;
+  const { isBeingEdited } = useNodeState(id);
   // Style based on the ReactFlow type and editing status
   const getNodeStyles = () => {
     //Check if node is being edited - override all other styles
