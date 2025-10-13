@@ -6,6 +6,8 @@ export interface DiagramParams {
 export interface DiagramNode {
   id: string;
   type: string;
+  isBeingEdited: boolean;
+  editedBy?: string | null;
   position: {
     x: number;
     y: number;
