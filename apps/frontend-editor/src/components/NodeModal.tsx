@@ -1,8 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
 import { DiagramNode } from '@/types/reactflow';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 type ModalData = Pick<DiagramNode, 'id' | 'data'>;
 
@@ -36,13 +45,15 @@ export function NodeModal() {
     };
   }, [setNodeBeingEdited]);
 
-  const handleClose = () => {
-    // Clear editing state when modal closes
-    if (modalData) {
+  const handleOpenChange = (open: boolean) => {
+    if (!open && modalData) {
+      // Clear editing state when modal closes
       setNodeBeingEdited(modalData.id, false);
     }
-    setIsOpen(false);
-    setModalData(null);
+    setIsOpen(open);
+    if (!open) {
+      setModalData(null);
+    }
   };
 
   const handleMarkComplete = () => {
@@ -67,19 +78,26 @@ export function NodeModal() {
       )
     ) {
       deleteNode(modalData.id);
-      handleClose();
+      handleOpenChange(false);
     }
   };
 
   if (!isOpen || !modalData) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent
+        className={cn(
+          'flex flex-col',
+          'max-h-[90vh] sm:max-h-[85vh] md:min-h-[80vh] lg:min-h-[75vh]',
+          'sm:max-w-lg md:max-w-xl lg:max-w-5xl p-17',
+        )}
+      >
+        <DialogHeader className="flex-shrink-0">
           <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold">{modalData.data.label}</h2>
+            <DialogTitle className="text-5xl font-bold">
+              {modalData.data.label}
+            </DialogTitle>
             {isCompleted && (
               <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -87,39 +105,34 @@ export function NodeModal() {
               </div>
             )}
           </div>
-          <Button variant="ghost" size="icon" onClick={handleClose}>
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
           {modalData.data.description && (
-            <div className="mb-6">
-              <p className="text-gray-700 leading-relaxed">
-                {modalData.data.description}
-              </p>
-            </div>
+            <DialogDescription className="leading-relaxed text-left text-base pb-4 text-black">
+              {modalData.data.description}
+              <br />
+            </DialogDescription>
           )}
+          <h3 className=" leading-relaxed text-left text-base mb-4">
+            Visit the following resources to learn more
+          </h3>
+        </DialogHeader>
 
+        {/* Resources Content */}
+        <div className="flex-1 overflow-y-auto py-4 flex flex-col justify-center">
           {modalData.data.resources && modalData.data.resources.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-4">
-                Visit the following resources to learn more
-              </h3>
-              <div className="space-y-3">
+            <>
+              <div className="space-y-1">
                 {modalData.data.resources.map((resource, index) => (
                   <div
                     key={index}
-                    className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50"
+                    className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-50"
                   >
                     <span
                       className={`px-2 py-1 rounded text-xs font-medium 
-                        ${
-                          resource.type === 'article'
-                            ? 'bg-purple-100 text-purple-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}
+                      ${
+                        resource.type === 'article'
+                          ? 'bg-[oklch(0.55_0.32_295_/_0.16)]  text-[#8830B7]'
+                          : 'bg-[#FFDC69] text-[#7E6D37]'
+                      }`}
                     >
                       {resource.type === 'article' ? 'Article' : 'Video'}
                     </span>
@@ -127,20 +140,19 @@ export function NodeModal() {
                       href={resource.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline font-medium flex-1"
+                      className="hover:underline hover:font-bold flex-1"
                     >
                       {resource.title}
                     </a>
                   </div>
                 ))}
               </div>
-            </div>
+            </>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="flex justify-between items-center p-6 border-t bg-gray-50">
-          <div className="flex gap-2">
+        <DialogFooter className="flex-col sm:flex-row gap-2 bg-gray-50 -mx-6 -mb-6 p-6 border-t">
+          <div className="flex gap-2 w-full sm:w-auto">
             <Button
               onClick={handleDelete}
               variant="outline"
@@ -162,8 +174,8 @@ export function NodeModal() {
           <Button onClick={handleMarkComplete} disabled={isCompleted}>
             {isCompleted ? 'Completed' : 'Complete'}
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
