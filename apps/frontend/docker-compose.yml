@@ -1,3 +1,4 @@
+name: fe-prod
 services:
   frontend:
     build: .
