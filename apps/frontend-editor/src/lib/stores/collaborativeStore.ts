@@ -52,6 +52,7 @@ interface CollaborativeState {
   onConnect: (connection: Connection) => void;
   addNode: (type: string, position?: { x: number; y: number }) => void;
   deleteNode: (nodeId: string) => void;
+  updateNodeData: (nodeId: string, data: Record<string, unknown>) => void;
   setNodeBeingEdited: (nodeId: string, isBeingEdited: boolean) => void;
   // Actions - Collaboration
   updateCursor: (position: { x: number; y: number }) => void;
@@ -399,6 +400,19 @@ export const useCollaborativeStore = create<CollaborativeState>()(
           yEdges.delete(edgeId);
         }
       });
+    },
+
+    updateNodeData: (nodeId, data) => {
+      const { ydoc } = get();
+      if (!ydoc) return;
+      const yNodes = ydoc.getMap<Y.Map<unknown>>('nodes');
+      const yNode = yNodes.get(nodeId);
+      if (yNode) {
+        yNode.set('data', data);
+        console.log('✅ Node data updated:', nodeId, data);
+      } else {
+        console.log('❌ yNode not found for id:', nodeId);
+      }
     },
 
     updateCursor: () => {},
