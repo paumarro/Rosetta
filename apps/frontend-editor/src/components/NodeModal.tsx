@@ -151,7 +151,7 @@ export function NodeModal() {
           )}
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2 bg-gray-50 -mx-6 -mb-6 p-6 border-t">
+        <DialogFooter className="flex-col sm:flex-row gap-2 -mx-6 -mb-6">
           <div className="flex gap-2 w-full sm:w-auto">
             <Button
               onClick={handleDelete}
@@ -162,16 +162,28 @@ export function NodeModal() {
               Delete Node
             </Button>
             {!isCompleted ? (
-              <Button onClick={handleMarkInProgress} variant="outline">
+              <Button
+                className="text-gray-700 hover:text-black"
+                onClick={handleMarkInProgress}
+                variant="outline"
+              >
                 Still in Progress
               </Button>
             ) : (
-              <Button onClick={handleMarkInProgress} variant="outline">
+              <Button
+                className="text-gray-700 hover:text-black"
+                onClick={handleMarkInProgress}
+                variant="outline"
+              >
                 Mark as In Progress
               </Button>
             )}
           </div>
-          <Button onClick={handleMarkComplete} disabled={isCompleted}>
+          <Button
+            className="bg-black hover:bg-topic-hover"
+            onClick={handleMarkComplete}
+            disabled={isCompleted}
+          >
             {isCompleted ? 'Completed' : 'Complete'}
           </Button>
         </DialogFooter>
