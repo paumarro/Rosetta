@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { Check } from 'lucide-react';
 
 type ModalData = Pick<DiagramNode, 'id' | 'data'>;
 
@@ -99,9 +100,10 @@ export function NodeModal() {
               {modalData.data.label}
             </DialogTitle>
             {isCompleted && (
-              <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                Completed
+              <div className="w-15 h-15 flex items-center gap-1 px-2 py-1 bg-[#ECFDF3] rounded-full text-sm justify-center">
+                <div className="w-10 h-10 bg-[#D1FADF] rounded-full flex items-center justify-center">
+                  <Check className="text-[#039855]" width={20} height={20} />
+                </div>
               </div>
             )}
           </div>
