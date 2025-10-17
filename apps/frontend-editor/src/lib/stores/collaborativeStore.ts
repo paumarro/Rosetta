@@ -16,6 +16,103 @@ interface User {
   color?: string;
 }
 
+// Constants for node positioning
+const NODE_SPACING = {
+  TOPIC_Y: 200,
+  TOPIC_X: 200,
+  SUBTOPIC_Y: 50,
+  SUBTOPIC_X: 200,
+} as const;
+
+// Helper functions for position calculation
+const getLastNodeType = (
+  nodes: DiagramNode[],
+  type: string,
+): DiagramNode | undefined => {
+  const nodesOfType = nodes.filter((node) => node.type === type);
+  return nodesOfType.length > 0
+    ? nodesOfType[nodesOfType.length - 1]
+    : undefined;
+};
+
+const calculateTopicPosition = (
+  nodes: DiagramNode[],
+): { x: number; y: number } => {
+  const topicNodes = nodes.filter((node) => node.type === 'topic');
+  const nodeCount = topicNodes.length;
+  const lastNode = getLastNodeType(nodes, 'topic');
+  const lastPosition = lastNode?.position ?? { x: 0, y: 0 };
+
+  const isEven = nodeCount % 2 === 0;
+  const xPosition =
+    nodeCount === 0 ? 0 : isEven ? -NODE_SPACING.TOPIC_X : NODE_SPACING.TOPIC_X;
+
+  return {
+    x: xPosition,
+    y: lastPosition.y + NODE_SPACING.TOPIC_Y,
+  };
+};
+
+const calculateSubtopicPosition = (
+  nodes: DiagramNode[],
+): { x: number; y: number } => {
+  const lastNode = nodes.length > 0 ? nodes[nodes.length - 1] : undefined;
+  const lastPosition = lastNode?.position ?? { x: 0, y: 0 };
+
+  const topicNodes = nodes.filter((node) => node.type === 'topic');
+  const isEvenTopic = topicNodes.length % 2 === 0;
+  const xOffset = isEvenTopic
+    ? NODE_SPACING.SUBTOPIC_X
+    : -NODE_SPACING.SUBTOPIC_X;
+
+  if (lastNode?.type === 'topic') {
+    return {
+      x: lastPosition.x + xOffset,
+      y: lastPosition.y - NODE_SPACING.SUBTOPIC_Y,
+    };
+  }
+
+  return {
+    x: lastPosition.x,
+    y: lastPosition.y + NODE_SPACING.SUBTOPIC_Y,
+  };
+};
+
+const calculateAutoPosition = (
+  type: string,
+  nodes: DiagramNode[],
+): { x: number; y: number } => {
+  switch (type) {
+    case 'topic':
+      return calculateTopicPosition(nodes);
+    case 'subtopic':
+      return calculateSubtopicPosition(nodes);
+    default:
+      return { x: 0, y: 0 };
+  }
+};
+
+const createYjsNode = (
+  ydoc: Y.Doc,
+  id: string,
+  type: string,
+  position: { x: number; y: number },
+  currentUser: User | null,
+): void => {
+  const yNodes = ydoc.getMap<Y.Map<unknown>>('nodes');
+  const yNode = new Y.Map<unknown>();
+
+  yNode.set('type', type);
+  yNode.set('position', position);
+  yNode.set('data', {
+    label: type.charAt(0).toUpperCase() + type.slice(1),
+  });
+  yNode.set('isBeingEdited', false);
+  yNode.set('editedBy', currentUser?.userName || null);
+
+  yNodes.set(id, yNode);
+};
+
 interface CollaborativeState {
   // react Flow State
   nodes: DiagramNode[];
@@ -52,6 +149,7 @@ interface CollaborativeState {
   onConnect: (connection: Connection) => void;
   addNode: (type: string, position?: { x: number; y: number }) => void;
   deleteNode: (nodeId: string) => void;
+  deleteAllNodes: () => void;
   updateNodeData: (nodeId: string, data: Record<string, unknown>) => void;
   setNodeBeingEdited: (nodeId: string, isBeingEdited: boolean) => void;
   // Actions - Collaboration
@@ -361,28 +459,27 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       yEdges.set(edgeId, yEdge);
     },
 
-    addNode: (type, position) => {
-      const { nodes, ydoc } = get();
+    deleteAllNodes: () => {
+      const { ydoc } = get();
       if (!ydoc) return;
-      const nodeCount = nodes.length;
-
-      const isEven = nodeCount % 2 === 0;
-      const levelY = nodeCount * 100 + 200;
-      const autoPosition = {
-        x: isEven ? (nodes.length === 0 ? 0 : -200) : 200,
-        y: levelY,
-      };
-      const id = `${type}-${nanoid(8)}`;
       const yNodes = ydoc.getMap<Y.Map<unknown>>('nodes');
-      const yNode = new Y.Map<unknown>();
-      yNode.set('type', type.toLocaleLowerCase());
-      yNode.set('position', position || autoPosition);
-      yNode.set('data', {
-        label: type.charAt(0).toUpperCase() + type.slice(1),
-      });
-      yNode.set('isBeingEdited', false);
-      yNode.set('editedBy', get().currentUser?.userName || null);
-      yNodes.set(id, yNode);
+      yNodes.clear();
+    },
+
+    addNode: (type, position) => {
+      const { nodes, ydoc, currentUser } = get();
+
+      if (!ydoc) {
+        console.error('Cannot add node: Yjs document not initialized');
+        return;
+      }
+
+      const normalizedType = type.toLowerCase();
+      const nodePosition =
+        position || calculateAutoPosition(normalizedType, nodes);
+      const nodeId = `${normalizedType}-${nanoid(8)}`;
+
+      createYjsNode(ydoc, nodeId, normalizedType, nodePosition, currentUser);
     },
 
     deleteNode: (nodeId) => {
@@ -414,7 +511,6 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         console.log('❌ yNode not found for id:', nodeId);
       }
     },
-
     updateCursor: () => {},
     updateSelection: () => {},
   })),
