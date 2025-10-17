@@ -38,7 +38,7 @@ export default function AddNodeButton() {
       >
         <DropdownMenuItem
           onClick={() => {
-            addNode('Topic');
+            addNode('topic');
           }}
           className="flex items-center gap-2 cursor-pointer text-white hover:!text-black [&>svg]:!text-white hover:[&>svg]:!text-black"
         >
