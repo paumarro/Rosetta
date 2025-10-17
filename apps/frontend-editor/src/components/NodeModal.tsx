@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Plus, X } from 'lucide-react';
 import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
 import { DiagramNode } from '@/types/reactflow';
 import {
@@ -11,16 +11,31 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
 
 type ModalData = Pick<DiagramNode, 'id' | 'data'>;
 
+interface Resource {
+  type: 'article' | 'video';
+  title: string;
+  url: string;
+}
+
 export function NodeModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [modalData, setModalData] = useState<ModalData | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
-  const { deleteNode, setNodeBeingEdited } = useCollaborativeStore();
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Form state for editing
+  const [editLabel, setEditLabel] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editResources, setEditResources] = useState<Resource[]>([]);
+
+  const { deleteNode, setNodeBeingEdited, updateNodeData } =
+    useCollaborativeStore();
 
   useEffect(() => {
     const handleOpenModal = (event: CustomEvent<ModalData>) => {
@@ -29,7 +44,14 @@ export function NodeModal() {
         id: event.detail.id,
         data: event.detail.data,
       });
+
+      // Initialize edit form with current data
+      setEditLabel(event.detail.data.label || '');
+      setEditDescription(event.detail.data.description || '');
+      setEditResources(event.detail.data.resources || []);
+
       setIsOpen(true);
+      setIsEditing(false);
       setNodeBeingEdited(event.detail.id, true);
 
       const completed =
@@ -50,6 +72,7 @@ export function NodeModal() {
     if (!open && modalData) {
       // Clear editing state when modal closes
       setNodeBeingEdited(modalData.id, false);
+      setIsEditing(false);
     }
     setIsOpen(open);
     if (!open) {
@@ -72,15 +95,64 @@ export function NodeModal() {
   };
 
   const handleDelete = () => {
-    if (
-      modalData &&
-      window.confirm(
-        `Are you sure you want to delete "${modalData.data.label}"?`,
-      )
-    ) {
+    if (!modalData) return;
+    const label =
+      typeof modalData.data.label === 'string'
+        ? modalData.data.label
+        : 'this node';
+    if (window.confirm(`Are you sure you want to delete "${label}"?`)) {
       deleteNode(modalData.id);
       handleOpenChange(false);
     }
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    // Reset form to current data
+    if (modalData) {
+      setEditLabel(modalData.data.label || '');
+      setEditDescription(modalData.data.description || '');
+      setEditResources(modalData.data.resources || []);
+    }
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = () => {
+    if (modalData) {
+      const updatedData = {
+        ...modalData.data,
+        label: editLabel,
+        description: editDescription,
+        resources: editResources,
+      };
+      updateNodeData(modalData.id, updatedData);
+      setModalData({ ...modalData, data: updatedData });
+      setIsEditing(false);
+    }
+  };
+
+  const handleAddResource = () => {
+    setEditResources([
+      ...editResources,
+      { type: 'article', title: '', url: '' },
+    ]);
+  };
+
+  const handleRemoveResource = (index: number) => {
+    setEditResources(editResources.filter((_, i) => i !== index));
+  };
+
+  const handleResourceChange = (
+    index: number,
+    field: keyof Resource,
+    value: string,
+  ) => {
+    const updated = [...editResources];
+    updated[index] = { ...updated[index], [field]: value };
+    setEditResources(updated);
   };
 
   if (!isOpen || !modalData) return null;
@@ -96,22 +168,50 @@ export function NodeModal() {
       >
         <DialogHeader className="flex-shrink-0">
           <div className="flex items-center gap-3">
-            <DialogTitle className="text-5xl font-bold">
-              {modalData.data.label}
-            </DialogTitle>
-            {isCompleted && (
-              <div className="w-15 h-15 flex items-center gap-1 px-2 py-1 bg-[#ECFDF3] rounded-full text-sm justify-center">
-                <div className="w-10 h-10 bg-[#D1FADF] rounded-full flex items-center justify-center">
-                  <Check className="text-[#039855]" width={20} height={20} />
-                </div>
-              </div>
+            {isEditing ? (
+              <Input
+                value={editLabel}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setEditLabel(e.target.value);
+                }}
+                className="text-5xl font-bold h-auto"
+                placeholder="Node label"
+              />
+            ) : (
+              <>
+                <DialogTitle className="text-5xl font-bold">
+                  {modalData.data.label}
+                </DialogTitle>
+                {isCompleted && (
+                  <div className="w-15 h-15 flex items-center gap-1 px-2 py-1 bg-[#ECFDF3] rounded-full text-sm justify-center">
+                    <div className="w-10 h-10 bg-[#D1FADF] rounded-full flex items-center justify-center">
+                      <Check
+                        className="text-[#039855]"
+                        width={20}
+                        height={20}
+                      />
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
-          {modalData.data.description && (
-            <DialogDescription className="leading-relaxed text-left text-base pb-4 text-black">
-              {modalData.data.description}
-              <br />
-            </DialogDescription>
+          {isEditing ? (
+            <textarea
+              value={editDescription}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                setEditDescription(e.target.value);
+              }}
+              className="leading-relaxed text-left text-base pb-4 text-black w-full p-2 border rounded-md min-h-[100px]"
+              placeholder="Node description"
+            />
+          ) : (
+            modalData.data.description && (
+              <DialogDescription className="leading-relaxed text-left text-base pb-4 text-black">
+                {modalData.data.description}
+                <br />
+              </DialogDescription>
+            )
           )}
           <h3 className=" leading-relaxed text-left text-base mb-4">
             Visit the following resources to learn more
@@ -120,74 +220,154 @@ export function NodeModal() {
 
         {/* Resources Content */}
         <div className="flex-1 overflow-y-auto py-4 flex flex-col justify-center">
-          {modalData.data.resources && modalData.data.resources.length > 0 && (
-            <>
-              <div className="space-y-1">
-                {modalData.data.resources.map((resource, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-50"
-                  >
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium 
-                      ${
-                        resource.type === 'article'
-                          ? 'bg-[oklch(0.55_0.32_295_/_0.16)]  text-[#8830B7]'
-                          : 'bg-[#FFDC69] text-[#7E6D37]'
-                      }`}
+          {isEditing ? (
+            <div className="space-y-3">
+              {editResources.map((resource, index) => (
+                <div
+                  key={index}
+                  className="flex flex-col gap-2 p-3 border rounded-lg"
+                >
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={resource.type}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                        handleResourceChange(index, 'type', e.target.value);
+                      }}
+                      className="px-2 py-1 rounded text-xs font-medium border"
                     >
-                      {resource.type === 'article' ? 'Article' : 'Video'}
-                    </span>
-                    <a
-                      href={resource.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:underline hover:font-bold flex-1"
+                      <option value="article">Article</option>
+                      <option value="video">Video</option>
+                    </select>
+                    <Button
+                      onClick={() => {
+                        handleRemoveResource(index);
+                      }}
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto text-red-600 hover:text-red-700"
                     >
-                      {resource.title}
-                    </a>
+                      <X className="w-4 h-4" />
+                    </Button>
                   </div>
-                ))}
-              </div>
-            </>
+                  <Input
+                    value={resource.title}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      handleResourceChange(index, 'title', e.target.value);
+                    }}
+                    placeholder="Resource title"
+                    className="w-full"
+                  />
+                  <Input
+                    value={resource.url}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      handleResourceChange(index, 'url', e.target.value);
+                    }}
+                    placeholder="Resource URL"
+                    className="w-full"
+                  />
+                </div>
+              ))}
+              <Button
+                onClick={handleAddResource}
+                variant="outline"
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Resource
+              </Button>
+            </div>
+          ) : (
+            Array.isArray(modalData.data.resources) &&
+            modalData.data.resources.length > 0 && (
+              <>
+                <div className="space-y-1">
+                  {modalData.data.resources.map(
+                    (resource: Resource, index: number) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-50"
+                      >
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-medium 
+                        ${
+                          resource.type === 'article'
+                            ? 'bg-[oklch(0.55_0.32_295_/_0.16)]  text-[#8830B7]'
+                            : 'bg-[#FFDC69] text-[#7E6D37]'
+                        }`}
+                        >
+                          {resource.type === 'article' ? 'Article' : 'Video'}
+                        </span>
+                        <a
+                          href={resource.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:underline hover:font-bold flex-1"
+                        >
+                          {resource.title}
+                        </a>
+                      </div>
+                    ),
+                  )}
+                </div>
+              </>
+            )
           )}
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2 -mx-6 -mb-6">
-          <div className="flex gap-2 w-full sm:w-auto">
-            <Button
-              onClick={handleDelete}
-              variant="outline"
-              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Node
-            </Button>
-            {!isCompleted ? (
-              <Button
-                className="text-gray-700 hover:text-black"
-                onClick={handleMarkInProgress}
-                variant="outline"
-              >
-                Still in Progress
+          {isEditing ? (
+            <div className="flex gap-2 w-full justify-end">
+              <Button onClick={handleCancelEdit} variant="outline">
+                Cancel
               </Button>
-            ) : (
               <Button
-                className="text-gray-700 hover:text-black"
-                onClick={handleMarkInProgress}
-                variant="outline"
+                onClick={handleSaveEdit}
+                className="bg-black hover:bg-topic-hover"
               >
-                Mark as In Progress
+                Save Changes
               </Button>
-            )}
-          </div>
-          <Button
-            className="bg-black hover:bg-topic-hover"
-            onClick={handleMarkComplete}
-            disabled={isCompleted}
-          >
-            {isCompleted ? 'Completed' : 'Complete'}
-          </Button>
+            </div>
+          ) : (
+            <>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button
+                  onClick={handleDelete}
+                  variant="outline"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Node
+                </Button>
+                <Button onClick={handleEdit} variant="outline">
+                  Edit Node
+                </Button>
+                {!isCompleted ? (
+                  <Button
+                    className="text-gray-700 hover:text-black"
+                    onClick={handleMarkInProgress}
+                    variant="outline"
+                  >
+                    Still in Progress
+                  </Button>
+                ) : (
+                  <Button
+                    className="text-gray-700 hover:text-black"
+                    onClick={handleMarkInProgress}
+                    variant="outline"
+                  >
+                    Mark as In Progress
+                  </Button>
+                )}
+              </div>
+              <Button
+                className="bg-black hover:bg-topic-hover"
+                onClick={handleMarkComplete}
+                disabled={isCompleted}
+              >
+                {isCompleted ? 'Completed' : 'Complete'}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
