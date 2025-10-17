@@ -16,6 +16,7 @@ import AvatarDemo from '@/components/ui/AvatarDemo';
 import TopicNode from './nodes/topicNode';
 import { LoadingOverlay } from './ui/loading-overlay';
 import { NodeModal } from './NodeModal';
+import RemoveAllButton from './ui/removeAllButton';
 
 const nodeTypes: NodeTypes = {
   topic: TopicNode,
@@ -33,7 +34,6 @@ export default function DiagramEditor({
     initializeCollaboration,
     isInitializing,
     cleanup,
-    isConnected: storeIsConnected,
     nodes: storeNodes,
     edges: storeEdges,
     title,
@@ -145,18 +145,7 @@ export default function DiagramEditor({
           <Controls />
           <Background variant={'dots' as BackgroundVariant} gap={12} size={1} />
           <Panel position="top-left">
-            <div className="bg-white p-3 rounded-lg shadow-md border">
-              <p className="text-sm text-gray-600 mt-1">
-                {storeIsConnected ? (
-                  <span className="text-green-600">
-                    ● Connected as {currentUser.userName}
-                  </span>
-                ) : (
-                  <span className="text-red-600">● Disconnected</span>
-                )}
-              </p>
-              <p className="text-sm text-gray-600">Diagram: {diagramName}</p>
-            </div>
+            <RemoveAllButton />
             <AvatarDemo />
           </Panel>
           <Panel position="center-left">
