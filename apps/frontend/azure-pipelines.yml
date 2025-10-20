@@ -1,16 +1,36 @@
- trigger:
- - master
+trigger:
+  - master
 
- pool:
-   vmImage: 'ubuntu-latest' 
+pool:
+  vmImage: "ubuntu-latest"
 
- variables:
-   imageName: 'pipelines-javascript-docker'
+variables:
+  imageName: "pipelines-javascript-docker"
+  acrName: "rosetta"
 
- steps:
- - task: Docker@2
-   displayName: Build an image
-   inputs:
-     repository: $(imageName)
-     command: build
-     Dockerfile: Dockerfile
+steps:
+  - task: Docker@2
+    displayName: Build an image
+    inputs:
+      repository: $(imageName)
+      command: build
+      Dockerfile: Dockerfile
+      tags: |
+        $(Build.BuildId)
+        latest
+
+  - task: AzureCLI@2
+    displayName: "Login to ACR and Push Image"
+    inputs:
+      azureSubscription: "729f56d5-1522-44b3-9270-2134ab25d525"
+      scriptType: "bash"
+      scriptLocation: "inlineScript"
+      inlineScript: |
+
+        az acr login --name $(acrName)
+
+        docker tag $(imageName):$(Build.BuildId) $(acrName).azurecr.io/$(imageName):$(Build.BuildId)
+        docker tag $(imageName):latest $(acrName).azurecr.io/$(imageName):latest
+
+        docker push $(acrName).azurecr.io/$(imageName):$(Build.BuildId)
+        docker push $(acrName).azurecr.io/$(imageName):latest
