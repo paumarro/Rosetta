@@ -22,7 +22,7 @@ steps:
   - task: AzureCLI@2
     displayName: "Login to ACR and Push Image"
     inputs:
-      azureSubscription: "729f56d5-1522-44b3-9270-2134ab25d525"
+      azureSubscription: "076663e1-eb60-4e0e-8a07-45dc414dffd0"
       scriptType: "bash"
       scriptLocation: "inlineScript"
       inlineScript: |
