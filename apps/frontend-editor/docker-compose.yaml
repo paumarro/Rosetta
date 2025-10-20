@@ -1,0 +1,6 @@
+services:
+  fe-editor:
+    build: .
+    ports:
+      - "3002:80"
+
