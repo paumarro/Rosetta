@@ -1,6 +1,6 @@
 import { Handle, Position } from '@xyflow/react';
 import { TopicNodeProps } from '@/types/reactflow';
-import { useNodeState } from '@/lib/hooks/useNodestate';
+import { useNodeState } from '@/lib/hooks/useNodeState';
 import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
