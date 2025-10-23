@@ -24,6 +24,11 @@ const NODE_SPACING = {
   SUBTOPIC_X: 200,
 } as const;
 
+// Helper to calculate Node Side from Node Position
+const calculateNodeSide = (x: number): 1 | 2 => {
+  return x >= 0 ? 1 : 2;
+};
+
 // Helper functions for position calculation
 const getLastNodeType = (
   nodes: DiagramNode[],
@@ -398,10 +403,21 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         if (change.type === 'position' && change.position) {
           const yNode = yNodes.get(change.id);
           if (yNode) {
+            // Update and Calculate Node Side
+            const newSide = calculateNodeSide(change.position.x);
+            const currentData = yNode.get('data') as Record<string, unknown>;
+
             yNode.set('position', {
               x: change.position.x,
               y: change.position.y,
             });
+            // Updade node side if changed
+            if (currentData.side !== newSide) {
+              yNode.set('data', {
+                ...currentData,
+                side: newSide,
+              });
+            }
           }
         }
         if (change.type === 'remove') {
