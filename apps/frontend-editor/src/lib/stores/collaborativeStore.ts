@@ -111,6 +111,7 @@ const createYjsNode = (
   yNode.set('position', position);
   yNode.set('data', {
     label: type.charAt(0).toUpperCase() + type.slice(1),
+    side: calculateNodeSide(position.x),
   });
   yNode.set('isBeingEdited', false);
   yNode.set('editedBy', currentUser?.userName || null);
