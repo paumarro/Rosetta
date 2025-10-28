@@ -160,8 +160,15 @@ const TopicNode = ({ id, data, selected, type }: TopicNodeProps) => {
       {/* Editing indicator */}
       {isBeingEdited && editingUser && (
         <div className="absolute -right-3.5 top-1/2 -translate-y-1/2">
-          <Avatar className="w-6 h-6" isActive={true}>
-            <AvatarFallback className="text-xs bg-blue-500 text-white">
+          <Avatar
+            className="w-6 h-6"
+            isActive={true}
+            userColor={editingUser.color}
+          >
+            <AvatarFallback
+              className="text-xs text-white"
+              userColor={editingUser.color}
+            >
               {editingUser.userName.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>

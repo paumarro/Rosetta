@@ -14,18 +14,22 @@ export default function AvatarDemo() {
     ...(currentUser
       ? [
           {
+            userId: currentUser.userId,
             src: '',
             alt: `@${currentUser.userName}`,
             fallback: currentUser.userName.slice(0, 2).toUpperCase(),
             isActive: true,
+            color: currentUser.color,
           },
         ]
       : []),
     ...otherUsers.map((user) => ({
+      userId: user.userId,
       src: '',
       alt: `@${user.userName}`,
       fallback: user.userName.slice(0, 2).toUpperCase(),
       isActive: true,
+      color: user.color,
     })),
   ];
 
@@ -39,11 +43,15 @@ export default function AvatarDemo() {
     <div className="mt-3">
       <h3 className="text-lg font-semibold mb-3">Authors</h3>
       <div className="flex -space-x-1 items-center">
-        {visibleAuthors.map((author, index) => (
-          <div key={index}>
-            <Avatar className="w-9 h-9" isActive={author.isActive}>
+        {visibleAuthors.map((author) => (
+          <div key={author.userId}>
+            <Avatar
+              className="w-9 h-9"
+              isActive={author.isActive}
+              userColor={author.color}
+            >
               <AvatarImage src={author.src} alt={author.alt} />
-              <AvatarFallback className="text-sm">
+              <AvatarFallback className="text-sm" userColor={author.color}>
                 {author.fallback}
               </AvatarFallback>
             </Avatar>
