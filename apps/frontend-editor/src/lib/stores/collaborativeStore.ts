@@ -5,6 +5,7 @@ import { Connection, NodeChange, EdgeChange } from '@xyflow/react';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { nanoid } from 'nanoid';
+import type { Awareness } from 'y-protocols/awareness';
 
 // TODO: Move types to the types folder later
 
@@ -135,6 +136,8 @@ interface CollaborativeState {
   learningPathId: string;
   ydoc: Y.Doc | null;
   yProvider: WebsocketProvider | null;
+  awareness: Awareness | null;
+  awarenessCleanup: (() => void) | null;
 
   //Loading States
   isInitializing: boolean;
@@ -174,6 +177,8 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     learningPathId: 'default',
     ydoc: null,
     yProvider: null,
+    awareness: null,
+    awarenessCleanup: null,
     isInitializing: false,
     title: '',
 
@@ -206,14 +211,71 @@ export const useCollaborativeStore = create<CollaborativeState>()(
 
         const yNodes = doc.getMap<Y.Map<unknown>>('nodes');
         const yEdges = doc.getMap<Y.Map<unknown>>('edges');
-        const yUsers = doc.getMap<User>('users');
-        // Add beforeunload listener to ensure cleanup on page close/refresh
+
+        // Use Awareness for user presence - it automatically handles disconnections
+        const awareness = provider.awareness;
+
+        // Set local awareness state with user info
+        awareness.setLocalState({
+          userId: user.userId,
+          userName: user.userName,
+          color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+        });
+
+        // Function to update connected users from awareness
+        const updateConnectedUsers = () => {
+          const states = awareness.getStates();
+          const users: User[] = [];
+          states.forEach((state) => {
+            // Check if state contains required user properties
+            if ('userId' in state && 'userName' in state) {
+              users.push({
+                userId: state.userId as string,
+                userName: state.userName as string,
+                color: state.color as string,
+                cursor: state.cursor as { x: number; y: number },
+                selection: state.selection as string[],
+              });
+            }
+          });
+          console.log('👥 Connected Users from Awareness:', users);
+          set({ connectedUsers: users });
+        };
+
+        // Listen to awareness changes - this fires when users join/leave
+        // The change event provides info about added, updated, and removed clients
+        const awarenessChangeHandler = (changes: {
+          added: number[];
+          updated: number[];
+          removed: number[];
+        }) => {
+          console.log('🔔 Awareness changed:', {
+            added: changes.added,
+            updated: changes.updated,
+            removed: changes.removed,
+          });
+          updateConnectedUsers();
+        };
+
+        awareness.on('change', awarenessChangeHandler);
+
+        // Call immediately to get current state
+        updateConnectedUsers();
+
+        // Add beforeunload handler to ensure cleanup on page close/refresh
         const handleBeforeUnload = () => {
-          console.log('🚪 Page unloading - removing user from Yjs');
-          yUsers.delete(user.userId);
+          console.log('🚪 Page unloading - clearing awareness state');
+          awareness.setLocalState(null);
         };
 
         window.addEventListener('beforeunload', handleBeforeUnload);
+
+        // Store cleanup function to remove listener and beforeunload handler
+        const cleanupAwareness = () => {
+          awareness.off('change', awarenessChangeHandler);
+          window.removeEventListener('beforeunload', handleBeforeUnload);
+          console.log('🧹 Awareness listener and beforeunload handler removed');
+        };
 
         const applyFromY = () => {
           // console.log('🔄 applyFromY called');
@@ -252,23 +314,13 @@ export const useCollaborativeStore = create<CollaborativeState>()(
             } as DiagramEdge;
           });
 
-          const connectedUsers = Array.from(yUsers.values());
-          console.log('👥 Connected Users from Yjs:', connectedUsers);
-          set({ nodes, edges, title: learningPathId, connectedUsers });
+          set({ nodes, edges, title: learningPathId });
         };
-
-        // Liste for user changes
-        yUsers.observe(() => {
-          const connectedUsers = Array.from(yUsers.values());
-          console.log('👥 Connected Users updated from Yjs:', connectedUsers);
-          set({ connectedUsers });
-        });
 
         provider.once('sync', async (isSynced: boolean) => {
           if (!isSynced) return;
-          // Add current user to the yUsers map
-          yUsers.set(user.userId, user);
-          console.log('➕ User added to Yjs:', user);
+
+          console.log('✅ Provider synced');
 
           applyFromY();
 
@@ -317,18 +369,17 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         provider.on('status', (event: { status: string }) => {
           const isConnected = event.status === 'connected';
           set({ isConnected });
-
-          if (isConnected) {
-            yUsers.set(user.userId, user);
-            console.log('✅ Reconnected and user re-added to Yjs:', user);
-          } else {
-            console.log('❌ Disconnected - removing user from Yjs:', user);
-            yUsers.delete(user.userId);
-          }
+          console.log(`🔌 Connection status: ${event.status}`);
         });
+
         console.log('Ydoc:', doc);
 
-        set({ ydoc: doc, yProvider: provider });
+        set({
+          ydoc: doc,
+          yProvider: provider,
+          awareness,
+          awarenessCleanup: cleanupAwareness,
+        });
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Unknown error';
@@ -338,26 +389,38 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       }
     },
     cleanup: () => {
-      const { yProvider, ydoc, currentUser } = get();
-      if (ydoc && currentUser) {
-        const yUsers = ydoc.getMap<User>('users');
-        yUsers.delete(currentUser.userId);
-        console.log('🧹 Cleanup - removed user:', currentUser);
-      }
-      // Remove beforeunload listener
-      const handleBeforeUnload = () => {
-        if (ydoc && currentUser) {
-          const yUsers = ydoc.getMap<User>('users');
-          yUsers.delete(currentUser.userId);
-        }
-      };
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      const { yProvider, ydoc, awareness, awarenessCleanup, currentUser } =
+        get();
 
-      if (yProvider) yProvider.destroy();
-      if (ydoc) ydoc.destroy();
+      console.log('🧹 Cleanup called for user:', currentUser);
+
+      // Remove awareness listener first
+      if (awarenessCleanup) {
+        awarenessCleanup();
+      }
+
+      // Destroy awareness first - this will automatically notify other clients
+      if (awareness) {
+        // Setting local state to null removes this client from awareness
+        awareness.setLocalState(null);
+        console.log('🧹 Awareness state cleared');
+      }
+
+      // Destroy provider and doc
+      if (yProvider) {
+        yProvider.destroy();
+        console.log('🧹 Provider destroyed');
+      }
+      if (ydoc) {
+        ydoc.destroy();
+        console.log('🧹 Doc destroyed');
+      }
+
       set({
         yProvider: null,
         ydoc: null,
+        awareness: null,
+        awarenessCleanup: null,
         isConnected: false,
         connectedUsers: [],
         currentUser: null,
@@ -528,7 +591,31 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         console.log('❌ yNode not found for id:', nodeId);
       }
     },
-    updateCursor: () => {},
-    updateSelection: () => {},
+    updateCursor: (position: { x: number; y: number }) => {
+      const { awareness } = get();
+      if (!awareness) return;
+
+      const currentState = awareness.getLocalState() as Record<
+        string,
+        unknown
+      > | null;
+      awareness.setLocalState({
+        ...currentState,
+        cursor: position,
+      });
+    },
+    updateSelection: (nodeIds: string[]) => {
+      const { awareness } = get();
+      if (!awareness) return;
+
+      const currentState = awareness.getLocalState() as Record<
+        string,
+        unknown
+      > | null;
+      awareness.setLocalState({
+        ...currentState,
+        selection: nodeIds,
+      });
+    },
   })),
 );
