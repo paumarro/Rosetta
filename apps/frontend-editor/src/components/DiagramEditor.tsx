@@ -13,6 +13,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import AddNodeButton from '@/components/ui/addNodeButton';
 import AvatarDemo from '@/components/ui/AvatarDemo';
+import Cursors from '@/components/ui/Cursors';
 import TopicNode from './nodes/topicNode';
 import { LoadingOverlay } from './ui/loading-overlay';
 import { NodeModal } from './NodeModal';
@@ -40,6 +41,7 @@ export default function DiagramEditor({
     onNodeChange,
     onEdgeChange,
     onConnect,
+    updateCursor,
   } = useCollaborativeStore();
 
   const [currentUser] = useState({
@@ -48,18 +50,20 @@ export default function DiagramEditor({
   });
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const lastCursorUpdate = useRef<number>(0);
 
   // Initialize collaboration when component mounts or diagram changes
   useEffect(() => {
     void initializeCollaboration(diagramName, currentUser);
   }, [diagramName, currentUser, initializeCollaboration]);
+
   // Cleanup when component unmounts
   useEffect(() => {
     return () => {
       console.log('🧹 Component unmounting - calling cleanup');
       cleanup();
     };
-  }, []);
+  }, [cleanup]);
 
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     const modalEvent = new CustomEvent('openNodeModal', {
@@ -93,6 +97,33 @@ export default function DiagramEditor({
     [storeEdges, onEdgeChange],
   );
 
+  // Track mouse movement for collaborative cursors (throttled to 50ms)
+  // We'll use a ref to store the screenToFlowPosition function
+  const screenToFlowRef = useRef<
+    ((pos: { x: number; y: number }) => { x: number; y: number }) | null
+  >(null);
+
+  const handleMouseMove = useCallback(
+    (event: React.MouseEvent) => {
+      const now = Date.now();
+      // Throttle updates to ~20 per second
+      if (now - lastCursorUpdate.current < 50) {
+        return;
+      }
+      lastCursorUpdate.current = now;
+
+      // Convert screen position to flow position (canvas coordinates)
+      if (screenToFlowRef.current) {
+        const flowPosition = screenToFlowRef.current({
+          x: event.clientX,
+          y: event.clientY,
+        });
+        updateCursor(flowPosition);
+      }
+    },
+    [updateCursor],
+  );
+
   if (isInitializing) {
     return <LoadingOverlay message="Loading diagram" />;
   }
@@ -121,7 +152,11 @@ export default function DiagramEditor({
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
-      <div className="flex-1" ref={reactFlowWrapper}>
+      <div
+        className="flex-1 relative"
+        ref={reactFlowWrapper}
+        onMouseMove={handleMouseMove}
+      >
         <ReactFlow
           nodes={storeNodes}
           edges={storeEdges}
@@ -141,6 +176,10 @@ export default function DiagramEditor({
           elementsSelectable={true}
           edgesFocusable={true}
           edgesReconnectable={false}
+          onInit={(reactFlowInstance) => {
+            // Store the screenToFlowPosition function for cursor tracking
+            screenToFlowRef.current = reactFlowInstance.screenToFlowPosition;
+          }}
         >
           <Controls />
           <Background variant={'dots' as BackgroundVariant} gap={12} size={1} />
@@ -161,6 +200,7 @@ export default function DiagramEditor({
             >
               <h1 className="text-5xl font-bold">{title}</h1>
             </div>
+            <Cursors />
           </ViewportPortal>
         </ReactFlow>
       </div>
