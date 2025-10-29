@@ -140,3 +140,39 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Enhanced XYFlow handle styling for better UX */
+.react-flow .react-flow__handle {
+  width: 12px;
+  height: 12px;
+  border-width: 3px;
+  transition: width 0.2s ease-in-out, height 0.2s ease-in-out, opacity 0.2s ease-in-out;
+}
+
+/* Grow on hover */
+.react-flow .react-flow__handle:hover {
+  width: 14px;
+  height: 14px;
+}
+
+/* When connection is in progress: hide invalid handles */
+.react-flow:has(.react-flow__handle.connectingfrom) .react-flow__handle:not(.connectingfrom):not(.connectionindicator) {
+  opacity: 0;
+}
+
+/* Hide handles on the same node being dragged from (prevent self-connection visually) */
+.react-flow__node:has(.react-flow__handle.connectingfrom) .react-flow__handle:not(.connectingfrom) {
+  opacity: 0;
+}
+
+/* Enlarge the source handle being dragged from */
+.react-flow .react-flow__handle.connectingfrom {
+  width: 16px;
+  height: 16px;
+}
+
+/* Enlarge valid drop target handles */
+.react-flow .react-flow__handle.connectionindicator {
+  width: 16px;
+  height: 16px;
+}
