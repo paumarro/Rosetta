@@ -82,19 +82,35 @@ export default function DiagramEditor({
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
       if (event.key === 'Delete' || event.key === 'Backspace') {
+        const selectedNodes = storeNodes.filter((node) => node.selected);
         const selectedEdges = storeEdges.filter((edge) => edge.selected);
-        if (selectedEdges.length > 0) {
+
+        if (selectedNodes.length > 0 || selectedEdges.length > 0) {
           event.preventDefault();
-          onEdgeChange(
-            selectedEdges.map((edge) => ({
-              id: edge.id,
-              type: 'remove' as const,
-            })),
-          );
+
+          // Delete nodes
+          if (selectedNodes.length > 0) {
+            onNodeChange(
+              selectedNodes.map((node) => ({
+                id: node.id,
+                type: 'remove' as const,
+              })),
+            );
+          }
+
+          // Delete edges
+          if (selectedEdges.length > 0) {
+            onEdgeChange(
+              selectedEdges.map((edge) => ({
+                id: edge.id,
+                type: 'remove' as const,
+              })),
+            );
+          }
         }
       }
     },
-    [storeEdges, onEdgeChange],
+    [storeNodes, storeEdges, onNodeChange, onEdgeChange],
   );
 
   // Track mouse movement for collaborative cursors (throttled to 50ms)

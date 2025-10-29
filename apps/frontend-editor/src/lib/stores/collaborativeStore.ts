@@ -460,9 +460,25 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     },
 
     onNodeChange: (changes) => {
-      const { ydoc } = get();
+      const { ydoc, nodes } = get();
       if (!ydoc) return;
       const yNodes = ydoc.getMap<Y.Map<unknown>>('nodes');
+
+      // Handle selection changes (similar to edges)
+      const hasSelectChange = changes.some((c) => c.type === 'select');
+      if (hasSelectChange) {
+        const updatedNodes = nodes.map((node) => {
+          const selectChange = changes.find(
+            (c) => c.type === 'select' && c.id === node.id,
+          );
+          if (selectChange && selectChange.type === 'select') {
+            return { ...node, selected: selectChange.selected };
+          }
+          return node;
+        });
+        set({ nodes: updatedNodes });
+      }
+
       changes.forEach((change) => {
         if (change.type === 'position' && change.position) {
           const yNode = yNodes.get(change.id);
