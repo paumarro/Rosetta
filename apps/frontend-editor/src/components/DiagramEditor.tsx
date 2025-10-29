@@ -176,6 +176,10 @@ export default function DiagramEditor({
           elementsSelectable={true}
           edgesFocusable={true}
           edgesReconnectable={false}
+          connectionRadius={50}
+          isValidConnection={(connection) =>
+            connection.source !== connection.target
+          }
           onInit={(reactFlowInstance) => {
             // Store the screenToFlowPosition function for cursor tracking
             screenToFlowRef.current = reactFlowInstance.screenToFlowPosition;
