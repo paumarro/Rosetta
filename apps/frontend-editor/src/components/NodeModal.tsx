@@ -162,11 +162,13 @@ export function NodeModal() {
       <DialogContent
         className={cn(
           'flex flex-col',
-          'max-h-[90vh] sm:max-h-[85vh] md:min-h-[80vh] lg:min-h-[75vh]',
+          'max-h-[90vh] sm:max-h-[85vh]',
           'sm:max-w-lg md:max-w-xl lg:max-w-5xl p-17',
+          'overflow-hidden',
         )}
       >
-        <DialogHeader className="flex-shrink-0">
+        {/* Fixed Header - Title only */}
+        <DialogHeader className="flex-shrink-0 pb-4">
           <div className="flex items-center gap-3">
             {isEditing ? (
               <Input
@@ -196,6 +198,10 @@ export function NodeModal() {
               </>
             )}
           </div>
+        </DialogHeader>
+
+        {/* Description Area - Scrollable if needed */}
+        <div className="flex-shrink-0 max-h-[41vh] overflow-y-auto -mx-1 px-1">
           {isEditing ? (
             <textarea
               value={editDescription}
@@ -213,108 +219,115 @@ export function NodeModal() {
               </DialogDescription>
             )
           )}
-          <h3 className=" leading-relaxed text-left text-base mb-4">
-            Visit the following resources to learn more
-          </h3>
-        </DialogHeader>
+        </div>
 
-        {/* Resources Content */}
-        <div className="flex-1 overflow-y-auto py-4 flex flex-col justify-center">
-          {isEditing ? (
-            <div className="space-y-3">
-              {editResources.map((resource, index) => (
-                <div
-                  key={index}
-                  className="flex flex-col gap-2 p-3 border rounded-lg"
-                >
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={resource.type}
-                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                        handleResourceChange(index, 'type', e.target.value);
-                      }}
-                      className="px-2 py-1 rounded text-xs font-medium border"
-                    >
-                      <option value="article">Article</option>
-                      <option value="video">Video</option>
-                    </select>
-                    <Button
-                      onClick={() => {
-                        handleRemoveResource(index);
-                      }}
-                      variant="ghost"
-                      size="sm"
-                      className="ml-auto text-red-600 hover:text-red-700"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <Input
-                    value={resource.title}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      handleResourceChange(index, 'title', e.target.value);
-                    }}
-                    placeholder="Resource title"
-                    className="w-full"
-                  />
-                  <Input
-                    value={resource.url}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      handleResourceChange(index, 'url', e.target.value);
-                    }}
-                    placeholder="Resource URL"
-                    className="w-full"
-                  />
-                </div>
-              ))}
-              <Button
-                onClick={handleAddResource}
-                variant="outline"
-                className="w-full"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Resource
-              </Button>
-            </div>
-          ) : (
-            Array.isArray(modalData.data.resources) &&
+        {/* Resources Section - Always visible with own scroll */}
+        <div className="flex-1 flex flex-col min-h-0 mt-4">
+          {Array.isArray(modalData.data.resources) &&
             modalData.data.resources.length > 0 && (
-              <>
-                <div className="space-y-1">
-                  {modalData.data.resources.map(
-                    (resource: Resource, index: number) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-50"
+              <h3 className="leading-relaxed text-left text-base mb-4 flex-shrink-0 font-bold">
+                Resources
+              </h3>
+            )}
+          {/* Resources Content - Scrollable */}
+          <div className="flex-1 overflow-y-auto min-h-0 -mx-1 px-1">
+            {isEditing ? (
+              <div className="space-y-3">
+                {editResources.map((resource, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-col gap-3 p-1 border rounded-lg"
+                  >
+                    <div className="flex items-center gap-1">
+                      <select
+                        value={resource.type}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                          handleResourceChange(index, 'type', e.target.value);
+                        }}
+                        className="px-2 py-2 rounded text-xs font-medium border"
                       >
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-medium 
+                        <option value="article">Article</option>
+                        <option value="video">Video</option>
+                      </select>
+                      <Button
+                        onClick={() => {
+                          handleRemoveResource(index);
+                        }}
+                        variant="ghost"
+                        size="sm"
+                        className="ml-auto text-red-600 hover:text-red-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <Input
+                      value={resource.title}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        handleResourceChange(index, 'title', e.target.value);
+                      }}
+                      placeholder="Resource title"
+                      className="w-full"
+                    />
+                    <Input
+                      value={resource.url}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        handleResourceChange(index, 'url', e.target.value);
+                      }}
+                      placeholder="Resource URL"
+                      className="w-full"
+                    />
+                  </div>
+                ))}
+                <Button
+                  onClick={handleAddResource}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Resource
+                </Button>
+              </div>
+            ) : (
+              Array.isArray(modalData.data.resources) &&
+              modalData.data.resources.length > 0 && (
+                <>
+                  <div className="space-y-1">
+                    {modalData.data.resources.map(
+                      (resource: Resource, index: number) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50"
+                        >
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium 
                         ${
                           resource.type === 'article'
                             ? 'bg-[oklch(0.55_0.32_295_/_0.16)]  text-[#8830B7]'
                             : 'bg-[#FFDC69] text-[#7E6D37]'
                         }`}
-                        >
-                          {resource.type === 'article' ? 'Article' : 'Video'}
-                        </span>
-                        <a
-                          href={resource.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:underline hover:font-bold flex-1"
-                        >
-                          {resource.title}
-                        </a>
-                      </div>
-                    ),
-                  )}
-                </div>
-              </>
-            )
-          )}
+                          >
+                            {resource.type === 'article' ? 'Article' : 'Video'}
+                          </span>
+                          <a
+                            href={resource.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline hover:font-bold flex-1"
+                          >
+                            {resource.title}
+                          </a>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                </>
+              )
+            )}
+          </div>
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2 -mx-6 -mb-6">
+        {/* Fixed Footer */}
+        <DialogFooter className="flex-col sm:flex-row gap-2 -mx-6 -mb-6 flex-shrink-0 pt-4">
           {isEditing ? (
             <div className="flex gap-2 w-full justify-end">
               <Button onClick={handleCancelEdit} variant="outline">
