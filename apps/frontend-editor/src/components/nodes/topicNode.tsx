@@ -18,8 +18,11 @@ const TopicNode = ({ id, data, selected, type }: TopicNodeProps) => {
         base: 'bg-white',
         border: 'border-black border-[2.5px] rounded-[5px]',
         hover: 'hover:bg-white',
-        text: 'text-black',
-        size: 'text-sm',
+        height: type === 'subtopic' ? 'h-[34px]' : 'h-[48px]',
+        text: {
+          color: 'text-black',
+          size: 'text-sm',
+        },
       };
     }
 
@@ -28,8 +31,11 @@ const TopicNode = ({ id, data, selected, type }: TopicNodeProps) => {
         base: selected ? 'bg-sub-hover' : 'bg-sub-bg',
         border: 'border-sub-border border-[2.5px] rounded-[5px]',
         hover: 'hover:bg-sub-hover',
-        text: 'text-white',
-        size: 'text-sm',
+        height: 'h-[34px]',
+        text: {
+          color: 'text-white',
+          size: 'text-sm',
+        },
       };
     } else {
       // topic (including the starting nodes)
@@ -37,8 +43,11 @@ const TopicNode = ({ id, data, selected, type }: TopicNodeProps) => {
         base: selected ? 'bg-topic-hover' : 'bg-topic-bg',
         border: 'border-topic-border border-[2.5px] rounded-[5px]',
         hover: 'hover:bg-topic-hover',
-        text: 'text-white',
-        size: 'text-sm',
+        height: 'h-[48px]',
+        text: {
+          color: 'text-white',
+          size: 'text-sm',
+        },
       };
     }
   };
@@ -56,8 +65,6 @@ const TopicNode = ({ id, data, selected, type }: TopicNodeProps) => {
   };
 
   const handleNodeClick = () => {
-    // console.log('🎯 Node clicked:', id, data.label);
-    // Dispatch custom event to open modal
     const event = new CustomEvent('openNodeModal', {
       detail: { id, data },
     });
@@ -148,14 +155,16 @@ const TopicNode = ({ id, data, selected, type }: TopicNodeProps) => {
 
   return (
     <div
-      className={`px-4 py-2 shadow-md transition-colors cursor-pointer 
-        ${styles.base} ${styles.border} ${styles.hover} ${widthClass}`}
+      className={`px-4 shadow-md transition-colors cursor-pointer flex items-center justify-center
+        ${styles.base} ${styles.border} ${styles.hover} ${widthClass} ${styles.height}`}
       onClick={handleNodeClick}
     >
       {renderHandles()}
 
-      <div className={` text-center`}>
-        <div className={`${styles.text} ${styles.size}`}>{displayLabel}</div>
+      <div className={`text-center`}>
+        <div className={`${styles.text.color} ${styles.text.size}`}>
+          {displayLabel}
+        </div>
       </div>
       {/* Editing indicator */}
       {isBeingEdited && editingUser && (
