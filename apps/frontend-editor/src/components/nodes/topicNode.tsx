@@ -12,24 +12,13 @@ type HandleConfig = {
   position: Position;
 };
 
-// All possible handle positions
+// All possible handle positions for topic nodes
 const ALL_HANDLES: HandleConfig[] = [
   { id: 't', position: Position.Top },
   { id: 'r', position: Position.Right },
   { id: 'b', position: Position.Bottom },
   { id: 'l', position: Position.Left },
 ];
-
-// Subtopic handle configurations based on side
-const SUBTOPIC_HANDLES: Record<number, HandleConfig[]> = {
-  1: [{ id: 'l', position: Position.Left }], // Right side - left handle only
-  2: [{ id: 'r', position: Position.Right }], // Left side - right handle only
-  0: [
-    // Default - both left and right
-    { id: 'l', position: Position.Left },
-    { id: 'r', position: Position.Right },
-  ],
-};
 
 /**
  * Renders both source and target handles for a given position.
@@ -67,7 +56,7 @@ const TopicNode = ({
   type,
   ...nodeProps
 }: TopicNodeProps) => {
-  const { connectedUsers, isViewMode } = useCollaborativeStore();
+  const { connectedUsers, isViewMode, nodes } = useCollaborativeStore();
   const { isBeingEdited, editedBy } = useNodeState(id);
 
   // Find the user who is editing this node
@@ -146,15 +135,104 @@ const TopicNode = ({
     return data.label.substring(0, maxLength - 3) + '...'; // -3 for the ellipsis
   };
 
-  // Determine which handles to render based on node type
+  // Determine which handles to render based on node type and nearest topic node
   const activeHandles = useMemo(() => {
-    if (type === 'subtopic') {
-      const side = (data.side as number) || 0;
-      return SUBTOPIC_HANDLES[side] ?? SUBTOPIC_HANDLES[0];
+    // Helper to calculate node dimensions
+    const getNodeDimensions = (label: string, nodeType: string) => {
+      const height = nodeType === 'subtopic' ? 38 : 52;
+      const labelLength = label.length || 0;
+      let width: number;
+      if (labelLength <= 5) {
+        width = 72;
+      } else if (labelLength <= 8) {
+        width = 102;
+      } else {
+        width = 170;
+      }
+      return { width, height };
+    };
+
+    // Helper to calculate node center position
+    const getNodeCenter = (
+      position: { x: number; y: number },
+      label: string,
+      nodeType: string,
+    ) => {
+      const { width, height } = getNodeDimensions(label, nodeType);
+      return {
+        x: position.x + width / 2,
+        y: position.y + height / 2,
+      };
+    };
+
+    // Topic nodes always have all 4 handles
+    if (type === 'topic') {
+      return ALL_HANDLES;
     }
-    // Topic nodes have all 4 handles
-    return ALL_HANDLES;
-  }, [type, data.side]);
+
+    // For subtopic nodes, determine handles based on nearest topic node
+    const currentPosition = {
+      x: nodeProps.positionAbsoluteX || 0,
+      y: nodeProps.positionAbsoluteY || 0,
+    };
+    const currentCenter = getNodeCenter(currentPosition, data.label, type);
+
+    // Find all topic nodes
+    const topicNodes = nodes.filter((n) => n.type === 'topic');
+
+    if (topicNodes.length === 0) {
+      // No topic nodes - show both left and right handles
+      return [
+        { id: 'l' as const, position: Position.Left },
+        { id: 'r' as const, position: Position.Right },
+      ] as HandleConfig[];
+    }
+
+    // Find nearest topic node
+    let nearestTopic = topicNodes[0];
+    let minDistance = Infinity;
+
+    topicNodes.forEach((topicNode) => {
+      const topicCenter = getNodeCenter(
+        topicNode.position,
+        topicNode.data.label,
+        topicNode.type || 'topic',
+      );
+      const distance = Math.sqrt(
+        Math.pow(topicCenter.x - currentCenter.x, 2) +
+          Math.pow(topicCenter.y - currentCenter.y, 2),
+      );
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestTopic = topicNode;
+      }
+    });
+
+    // Calculate direction to nearest topic node
+    const nearestCenter = getNodeCenter(
+      nearestTopic.position,
+      nearestTopic.data.label,
+      nearestTopic.type || 'topic',
+    );
+    const dx = nearestCenter.x - currentCenter.x;
+
+    // Determine which side faces the nearest topic node
+    // If topic is to the right (positive dx), show right handle
+    // If topic is to the left (negative dx), show left handle
+    if (dx > 0) {
+      // Topic is to the right - show right handle
+      return [{ id: 'r' as const, position: Position.Right }] as HandleConfig[];
+    } else {
+      // Topic is to the left - show left handle
+      return [{ id: 'l' as const, position: Position.Left }] as HandleConfig[];
+    }
+  }, [
+    type,
+    nodeProps.positionAbsoluteX,
+    nodeProps.positionAbsoluteY,
+    data.label,
+    nodes,
+  ]);
 
   const styles = getNodeStyles();
   const displayLabel = getTruncatedLabel();
