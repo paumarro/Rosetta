@@ -169,15 +169,7 @@
   height: 18px !important;
 }
 
-/* When connection is in progress: hide invalid handles */
-.react-flow:has(.react-flow__handle.connectingfrom) .react-flow__handle:not(.connectingfrom):not(.connectionindicator) {
-  opacity: 0;
-}
-
-/* Hide handles on the same node being dragged from (prevent self-connection visually) */
-.react-flow__node:has(.react-flow__handle.connectingfrom) .react-flow__handle:not(.connectingfrom) {
-  opacity: 0;
-}
+/* When dragging, handle visibility is controlled by inline styles in the component */
 
 /* Enlarge the source handle being dragged from */
 .react-flow .react-flow__handle.connectingfrom {
@@ -185,8 +177,35 @@
   height: 16px;
 }
 
-/* Enlarge valid drop target handles */
-.react-flow .react-flow__handle.connectionindicator {
-  width: 20px;
-  height: 20px;
+
+
+/* Hide handles in view mode - use opacity instead of display:none so ReactFlow can still calculate edge positions */
+[data-view-mode="true"] .react-flow__handle {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Ensure edges are visible */
+.react-flow__edges {
+  position: relative !important;
+  z-index: 1000 !important;
+}
+
+.react-flow__edges svg {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+}
+
+.react-flow__edge-path {
+  stroke: #000000 !important;
+  stroke-width: 1px;
+  fill: none;
+}
+
+/* Selected edge styling */
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #3b82f6 !important;
+  stroke-width: 2px !important;
 }
