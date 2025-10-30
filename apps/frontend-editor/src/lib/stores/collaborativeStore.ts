@@ -138,6 +138,7 @@ interface CollaborativeState {
   yProvider: WebsocketProvider | null;
   awareness: Awareness | null;
   awarenessCleanup: (() => void) | null;
+  isViewMode: boolean;
 
   //Loading States
   isInitializing: boolean;
@@ -146,6 +147,7 @@ interface CollaborativeState {
   initializeCollaboration: (
     learningPathId: string,
     user: User,
+    isViewMode?: boolean,
   ) => Promise<void>;
   cleanup: () => void;
 
@@ -181,9 +183,14 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     awarenessCleanup: null,
     isInitializing: false,
     title: '',
+    isViewMode: false,
 
     // eslint-disable-next-line @typescript-eslint/require-await
-    initializeCollaboration: async (learningPathId: string, user: User) => {
+    initializeCollaboration: async (
+      learningPathId: string,
+      user: User,
+      isViewMode = false,
+    ) => {
       const state = get();
       if (
         state.isInitializing ||
@@ -200,6 +207,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         diagramName: learningPathId,
         learningPathId,
         currentUser: user,
+        isViewMode,
       });
       try {
         const doc = new Y.Doc();
@@ -215,11 +223,17 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         // Use Awareness for user presence - it automatically handles disconnections
         const awareness = provider.awareness;
 
+        // Generate user color and update current user
+        const userColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+
+        // Update the stored currentUser to include the color
+        set({ currentUser: { ...user, color: userColor } });
+
         // Set local awareness state with user info
         awareness.setLocalState({
           userId: user.userId,
           userName: user.userName,
-          color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+          color: userColor,
         });
 
         // Function to update connected users from awareness
@@ -438,8 +452,8 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     },
 
     setNodeBeingEdited: (id: string, isBeingEdited: boolean) => {
-      const { ydoc, currentUser } = get();
-      if (!ydoc) return;
+      const { ydoc, currentUser, isViewMode } = get();
+      if (!ydoc || isViewMode) return;
       const yNodes = ydoc.getMap<Y.Map<unknown>>('nodes');
       const yNode = yNodes.get(id);
       if (yNode) {
@@ -460,7 +474,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     },
 
     onNodeChange: (changes) => {
-      const { ydoc, nodes } = get();
+      const { ydoc, nodes, isViewMode } = get();
       if (!ydoc) return;
       const yNodes = ydoc.getMap<Y.Map<unknown>>('nodes');
 
@@ -478,6 +492,9 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         });
         set({ nodes: updatedNodes });
       }
+
+      // Block write operations in view mode
+      if (isViewMode) return;
 
       changes.forEach((change) => {
         if (change.type === 'position' && change.position) {
@@ -515,7 +532,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     },
 
     onEdgeChange: (changes) => {
-      const { ydoc, edges } = get();
+      const { ydoc, edges, isViewMode } = get();
       if (!ydoc) return;
       const yEdges = ydoc.getMap<Y.Map<unknown>>('edges');
 
@@ -533,6 +550,9 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         set({ edges: updatedEdges });
       }
 
+      // Block write operations in view mode
+      if (isViewMode) return;
+
       changes.forEach((change) => {
         if (change.type === 'remove') {
           yEdges.delete(change.id);
@@ -543,8 +563,8 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     onConnect: (params) => {
       const { source, target, sourceHandle, targetHandle } = params;
       if (!source || !target) return;
-      const { ydoc } = get();
-      if (!ydoc) return;
+      const { ydoc, isViewMode } = get();
+      if (!ydoc || isViewMode) return;
       const yEdges = ydoc.getMap<Y.Map<unknown>>('edges');
       const edgeId = `e${source}${sourceHandle ?? ''}-${target}${targetHandle ?? ''}`;
       const yEdge = new Y.Map<unknown>();
@@ -556,17 +576,19 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     },
 
     deleteAllNodes: () => {
-      const { ydoc } = get();
-      if (!ydoc) return;
+      const { ydoc, isViewMode } = get();
+      if (!ydoc || isViewMode) return;
       const yNodes = ydoc.getMap<Y.Map<unknown>>('nodes');
       yNodes.clear();
     },
 
     addNode: (type, position) => {
-      const { nodes, ydoc, currentUser } = get();
+      const { nodes, ydoc, currentUser, isViewMode } = get();
 
-      if (!ydoc) {
-        console.error('Cannot add node: Yjs document not initialized');
+      if (!ydoc || isViewMode) {
+        console.error(
+          'Cannot add node: Yjs document not initialized or in view mode',
+        );
         return;
       }
 
@@ -579,8 +601,8 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     },
 
     deleteNode: (nodeId) => {
-      const { ydoc } = get();
-      if (!ydoc) return;
+      const { ydoc, isViewMode } = get();
+      if (!ydoc || isViewMode) return;
       const yNodes = ydoc.getMap<Y.Map<unknown>>('nodes');
       const yEdges = ydoc.getMap<Y.Map<unknown>>('edges');
 
@@ -596,8 +618,8 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     },
 
     updateNodeData: (nodeId, data) => {
-      const { ydoc } = get();
-      if (!ydoc) return;
+      const { ydoc, isViewMode } = get();
+      if (!ydoc || isViewMode) return;
       const yNodes = ydoc.getMap<Y.Map<unknown>>('nodes');
       const yNode = yNodes.get(nodeId);
       if (yNode) {
