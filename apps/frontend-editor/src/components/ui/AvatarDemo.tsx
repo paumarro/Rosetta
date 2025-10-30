@@ -4,6 +4,8 @@ import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
 export default function AvatarDemo() {
   const { connectedUsers, currentUser } = useCollaborativeStore();
 
+  console.log('🎭 AvatarDemo render:', { connectedUsers, currentUser });
+
   const otherUsers = connectedUsers.filter(
     (user) => user.userId !== currentUser?.userId,
   );
@@ -35,13 +37,20 @@ export default function AvatarDemo() {
 
   const allAuthors = [...connectedAuthors];
 
+  console.log('👥 All authors:', allAuthors);
+
   const maxVisible = 4;
   const visibleAuthors = allAuthors.slice(0, maxVisible);
   const remainingCount = allAuthors.length - maxVisible;
 
+  // Don't render if no users
+  if (allAuthors.length === 0) {
+    console.log('⚠️ No authors to display');
+    return null;
+  }
+
   return (
     <div className="mt-3">
-      <h3 className="text-lg font-semibold mb-3">Authors</h3>
       <div className="flex -space-x-1 items-center">
         {visibleAuthors.map((author) => (
           <div key={author.userId}>
