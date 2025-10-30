@@ -19,8 +19,8 @@ export default function AddNodeButton() {
           onMouseEnter={() => {
             setOpen(true);
           }}
-          className="hover:bg-black hover:text-white hover:scale-110 hover:shadow-none w-14 h-14 rounded-full 
-        transition duration-300 ease-in-out [&_svg]:!size-auto shadow-[0_0_20px_rgba(0,0,0,0.40)]
+          className="hover:bg-black hover:text-white hover:scale-120 hover:shadow-none w-14 h-14 rounded-full 
+        transition duration-300 ease-in-out [&_svg]:!size-auto shadow-[0_0_20px_rgba(0,0,0,0.1)]
         data-[state=open]:bg-black data-[state=open]:text-white data-[state=open]:scale-110
         data-[state=open]:shadow-none
         "
@@ -30,8 +30,8 @@ export default function AddNodeButton() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className="bg-black"
-        side="right"
+        className="bg-black !w-[130px] !min-w-[20px]"
+        side="top"
         onMouseLeave={() => {
           setOpen(false);
         }}
@@ -40,18 +40,18 @@ export default function AddNodeButton() {
           onClick={() => {
             addNode('topic');
           }}
-          className="flex items-center gap-2 cursor-pointer text-white hover:!text-black [&>svg]:!text-white hover:[&>svg]:!text-black"
+          className="flex items-center gap-2 cursor-pointer text-[12px] text-white hover:!text-black [&>svg]:!text-white hover:[&>svg]:!text-black pl-[10px]"
         >
-          <RectangleHorizontal className="w-4 h-4" fill="currentColor" />
-          <span>Main</span>
+          <RectangleHorizontal className="size-5" fill="currentColor" />
+          <span>Subject</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => {
             addNode('subtopic');
           }}
-          className="flex items-center gap-2 cursor-pointer text-white hover:!text-black [&>svg]:!text-white hover:[&>svg]:!text-black"
+          className="flex items-center gap-2 cursor-pointer text-[12px] text-white hover:!text-black [&>svg]:!text-white hover:[&>svg]:!text-black pl-[10px]"
         >
-          <RectangleHorizontal className="w-4 h-4" />
+          <RectangleHorizontal className="size-5" />
           <span>Section</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
