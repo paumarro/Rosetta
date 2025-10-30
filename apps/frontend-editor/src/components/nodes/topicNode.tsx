@@ -3,12 +3,86 @@ import { TopicNodeProps } from '@/types/reactflow';
 import { useNodeState } from '@/lib/hooks/useNodeState';
 import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useHandleVisibility, getNodeWidthClass } from '@/lib/connectionUtils';
+import { useMemo } from 'react';
 
-const TopicNode = ({ id, data, selected, type }: TopicNodeProps) => {
-  const { connectedUsers } = useCollaborativeStore();
+// Handle configuration type
+type HandleConfig = {
+  id: 't' | 'r' | 'b' | 'l';
+  position: Position;
+};
+
+// All possible handle positions
+const ALL_HANDLES: HandleConfig[] = [
+  { id: 't', position: Position.Top },
+  { id: 'r', position: Position.Right },
+  { id: 'b', position: Position.Bottom },
+  { id: 'l', position: Position.Left },
+];
+
+// Subtopic handle configurations based on side
+const SUBTOPIC_HANDLES: Record<number, HandleConfig[]> = {
+  1: [{ id: 'l', position: Position.Left }], // Right side - left handle only
+  2: [{ id: 'r', position: Position.Right }], // Left side - right handle only
+  0: [
+    // Default - both left and right
+    { id: 'l', position: Position.Left },
+    { id: 'r', position: Position.Right },
+  ],
+};
+
+/**
+ * Renders both source and target handles for a given position.
+ * This enables bidirectional connections.
+ */
+const BidirectionalHandle = ({
+  id,
+  position,
+  isVisible,
+}: {
+  id: string;
+  position: Position;
+  isVisible: boolean;
+}) => (
+  <>
+    <Handle
+      type="source"
+      position={position}
+      id={id}
+      style={{ opacity: isVisible ? 1 : 0 }}
+    />
+    <Handle
+      type="target"
+      position={position}
+      id={id}
+      style={{ opacity: isVisible ? 1 : 0 }}
+    />
+  </>
+);
+
+const TopicNode = ({
+  id,
+  data,
+  selected,
+  type,
+  ...nodeProps
+}: TopicNodeProps) => {
+  const { connectedUsers, isViewMode } = useCollaborativeStore();
   const { isBeingEdited, editedBy } = useNodeState(id);
+
   // Find the user who is editing this node
   const editingUser = connectedUsers.find((user) => user.userName === editedBy);
+
+  // Use centralized hook to determine which handles should be visible
+  const isHandleValid = useHandleVisibility(
+    id,
+    type,
+    {
+      x: nodeProps.positionAbsoluteX || 0,
+      y: nodeProps.positionAbsoluteY || 0,
+    },
+    data,
+  );
 
   // Style based on the ReactFlow type and editing status
   const getNodeStyles = () => {
@@ -18,7 +92,7 @@ const TopicNode = ({ id, data, selected, type }: TopicNodeProps) => {
         base: 'bg-white',
         border: 'border-black border-[2.5px] rounded-[5px]',
         hover: 'hover:bg-white',
-        height: type === 'subtopic' ? 'h-[34px]' : 'h-[48px]',
+        height: type === 'subtopic' ? 'h-[38px]' : 'h-[52px]',
         text: {
           color: 'text-black',
           size: 'text-sm',
@@ -31,7 +105,7 @@ const TopicNode = ({ id, data, selected, type }: TopicNodeProps) => {
         base: selected ? 'bg-sub-hover' : 'bg-sub-bg',
         border: 'border-sub-border border-[2.5px] rounded-[5px]',
         hover: 'hover:bg-sub-hover',
-        height: 'h-[34px]',
+        height: 'h-[38px]',
         text: {
           color: 'text-white',
           size: 'text-sm',
@@ -43,7 +117,7 @@ const TopicNode = ({ id, data, selected, type }: TopicNodeProps) => {
         base: selected ? 'bg-topic-hover' : 'bg-topic-bg',
         border: 'border-topic-border border-[2.5px] rounded-[5px]',
         hover: 'hover:bg-topic-hover',
-        height: 'h-[48px]',
+        height: 'h-[52px]',
         text: {
           color: 'text-white',
           size: 'text-sm',
@@ -52,17 +126,8 @@ const TopicNode = ({ id, data, selected, type }: TopicNodeProps) => {
     }
   };
 
-  // Dynamic width based on text length
-  const getNodeWidth = () => {
-    const textLength = data.label.length;
-    if (textLength <= 5) {
-      return 'w-[72px]';
-    } else if (textLength <= 8) {
-      return 'w-[102px]';
-    } else {
-      return 'w-[170px]'; // Control max length to be 16 including spaces to avoid overly wide nodes
-    }
-  };
+  // Get dynamic width class from centralized utility
+  const widthClass = getNodeWidthClass(data.label);
 
   const handleNodeClick = () => {
     const event = new CustomEvent('openNodeModal', {
@@ -81,85 +146,35 @@ const TopicNode = ({ id, data, selected, type }: TopicNodeProps) => {
     return data.label.substring(0, maxLength - 3) + '...'; // -3 for the ellipsis
   };
 
-  const renderHandles = () => {
-    // SUBTOPIC NODES - Different logic based on side
+  // Determine which handles to render based on node type
+  const activeHandles = useMemo(() => {
     if (type === 'subtopic') {
-      if (data.side === 1) {
-        // Subtopic on right side
-        return (
-          <>
-            <Handle type="target" position={Position.Left} id="l" />
-          </>
-        );
-      } else if (data.side === 2) {
-        // Subtopic on left side
-        return (
-          <>
-            <Handle type="target" position={Position.Right} id="r" />
-          </>
-        );
-      } else {
-        // Default subtopic handles (side 3 or other)
-        return (
-          <>
-            <Handle type="target" position={Position.Left} id="l" />
-            <Handle type="target" position={Position.Right} id="r" />
-          </>
-        );
-      }
+      const side = (data.side as number) || 0;
+      return SUBTOPIC_HANDLES[side] ?? SUBTOPIC_HANDLES[0];
     }
-
-    // TOPIC NODES - Original logic
-    if (data.side === 0) {
-      // Starting node: only right and bottom handles
-      return (
-        <>
-          <Handle type="source" position={Position.Right} id="r" />
-          <Handle type="source" position={Position.Bottom} id="b" />
-        </>
-      );
-    } else if (data.side === 1) {
-      // Right side topic
-      return (
-        <>
-          <Handle type="target" position={Position.Top} id="t" />
-          <Handle type="source" position={Position.Right} id="r" />
-          <Handle type="source" position={Position.Bottom} id="b" />
-        </>
-      );
-    } else if (data.side === 2) {
-      // Left side topic
-      return (
-        <>
-          <Handle type="target" position={Position.Top} id="t" />
-          <Handle type="source" position={Position.Left} id="l" />
-          <Handle type="source" position={Position.Bottom} id="b" />
-        </>
-      );
-    } else {
-      // Default topic handles (side 3)
-      return (
-        <>
-          <Handle type="target" position={Position.Top} id="t" />
-          <Handle type="target" position={Position.Left} id="l" />
-          <Handle type="source" position={Position.Right} id="r" />
-          <Handle type="source" position={Position.Bottom} id="b" />
-        </>
-      );
-    }
-  };
+    // Topic nodes have all 4 handles
+    return ALL_HANDLES;
+  }, [type, data.side]);
 
   const styles = getNodeStyles();
-  const widthClass = getNodeWidth();
   const displayLabel = getTruncatedLabel();
 
   return (
     <div
       className={`px-4 shadow-md transition-colors cursor-pointer flex items-center justify-center
         ${styles.base} ${styles.border} ${styles.hover} ${widthClass} ${styles.height}`}
+      data-view-mode={isViewMode}
       onClick={handleNodeClick}
     >
-      {renderHandles()}
+      {/* Render bidirectional handles based on node type */}
+      {activeHandles.map((handle) => (
+        <BidirectionalHandle
+          key={handle.id}
+          id={handle.id}
+          position={handle.position}
+          isVisible={isHandleValid[handle.id]}
+        />
+      ))}
 
       <div className={`text-center`}>
         <div className={`${styles.text.color} ${styles.text.size}`}>

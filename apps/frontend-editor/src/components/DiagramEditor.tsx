@@ -7,7 +7,8 @@ import {
   Panel,
   BackgroundVariant,
   ViewportPortal,
-  Node,
+  OnConnectStart,
+  OnConnectEnd,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import AddNodeButton from '@/components/ui/addNodeButton';
@@ -16,6 +17,12 @@ import Cursors from '@/components/ui/Cursors';
 import TopicNode from './nodes/topicNode';
 import { LoadingOverlay } from './ui/loading-overlay';
 import { NodeModal } from './NodeModal';
+import {
+  ConnectionContext,
+  ConnectionState,
+  isValidTargetHandle,
+} from '@/lib/connectionUtils';
+import { DiagramNode } from '@/types/reactflow';
 
 const nodeTypes: NodeTypes = {
   topic: TopicNode,
@@ -49,6 +56,12 @@ export default function DiagramEditor({
     userName: `${Math.random().toString(36).substring(2, 4)}-User`,
   });
 
+  // Track connection state for handle visibility
+  const [connectionState, setConnectionState] = useState<ConnectionState>({
+    sourceNode: null,
+    sourceHandleId: null,
+  });
+
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const lastCursorUpdate = useRef<number>(0);
 
@@ -67,19 +80,22 @@ export default function DiagramEditor({
     };
   }, [cleanup]);
 
-  const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
-    const modalEvent = new CustomEvent('openNodeModal', {
-      detail: {
-        id: node.id,
-        data: {
-          label: node.data.label,
-          description: node.data.description,
-          resources: node.data.resources,
+  const onNodeClick = useCallback(
+    (_event: React.MouseEvent, node: DiagramNode) => {
+      const modalEvent = new CustomEvent('openNodeModal', {
+        detail: {
+          id: node.id,
+          data: {
+            label: node.data.label,
+            description: node.data.description,
+            resources: node.data.resources,
+          },
         },
-      },
-    });
-    window.dispatchEvent(modalEvent);
-  }, []);
+      });
+      window.dispatchEvent(modalEvent);
+    },
+    [],
+  );
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
@@ -145,6 +161,29 @@ export default function DiagramEditor({
     [updateCursor],
   );
 
+  // Track when connection drag starts
+  const handleConnectStart = useCallback<OnConnectStart>(
+    (_, { nodeId, handleId }) => {
+      if (!nodeId || !handleId) return;
+      const sourceNode = storeNodes.find((n) => n.id === nodeId);
+      if (sourceNode) {
+        setConnectionState({
+          sourceNode,
+          sourceHandleId: handleId,
+        });
+      }
+    },
+    [storeNodes],
+  );
+
+  // Clear connection state when drag ends
+  const handleConnectEnd = useCallback<OnConnectEnd>(() => {
+    setConnectionState({
+      sourceNode: null,
+      sourceHandleId: null,
+    });
+  }, []);
+
   if (isInitializing) {
     return <LoadingOverlay message="Loading diagram" />;
   }
@@ -178,73 +217,94 @@ export default function DiagramEditor({
         ref={reactFlowWrapper}
         onMouseMove={handleMouseMove}
       >
-        <ReactFlow
-          nodes={storeNodes}
-          edges={storeEdges}
-          onNodesChange={onNodeChange}
-          onEdgesChange={onEdgeChange}
-          onConnect={onConnect}
-          onNodeClick={onNodeClick}
-          nodeTypes={nodeTypes}
-          snapToGrid={true}
-          snapGrid={[15, 15]}
-          fitView={true}
-          fitViewOptions={fitViewOptions}
-          minZoom={0.8}
-          maxZoom={1}
-          proOptions={{ hideAttribution: true }}
-          defaultEdgeOptions={defaultEdgeOptions}
-          elementsSelectable={true}
-          edgesFocusable={true}
-          edgesReconnectable={false}
-          connectionRadius={50}
-          nodesDraggable={!isViewMode}
-          nodesConnectable={!isViewMode}
-          nodesFocusable={!isViewMode}
-          isValidConnection={(connection) =>
-            connection.source !== connection.target
-          }
-          onInit={(reactFlowInstance) => {
-            // Store the screenToFlowPosition function for cursor tracking
-            screenToFlowRef.current = reactFlowInstance.screenToFlowPosition;
-          }}
-        >
-          {!isViewMode ? (
-            <Background
-              variant={'dots' as BackgroundVariant}
-              gap={12}
-              size={1}
-            />
-          ) : (
-            <Background variant={'' as BackgroundVariant} />
-          )}
-          <Panel position="top-left" className="!top-5 !left-5">
-            <AvatarDemo />
-          </Panel>
-          {isViewMode ? (
-            <Panel position="top-right" className="!top-5 !right-5">
-              <div className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-sm font-medium border border-blue-200">
-                👁️ View Only
+        <ConnectionContext.Provider value={connectionState}>
+          <ReactFlow
+            nodes={storeNodes}
+            edges={storeEdges}
+            onNodesChange={onNodeChange}
+            onEdgesChange={onEdgeChange}
+            onConnect={onConnect}
+            onConnectStart={handleConnectStart}
+            onConnectEnd={handleConnectEnd}
+            onNodeClick={onNodeClick}
+            nodeTypes={nodeTypes}
+            snapToGrid={true}
+            snapGrid={[15, 15]}
+            fitView={true}
+            fitViewOptions={fitViewOptions}
+            minZoom={0.8}
+            maxZoom={1.8}
+            proOptions={{ hideAttribution: true }}
+            defaultEdgeOptions={defaultEdgeOptions}
+            elementsSelectable={true}
+            edgesFocusable={true}
+            edgesReconnectable={false}
+            connectionRadius={50}
+            nodesDraggable={!isViewMode}
+            nodesConnectable={!isViewMode}
+            nodesFocusable={!isViewMode}
+            isValidConnection={(connection) => {
+              // Prevent self-connections
+              if (connection.source === connection.target) return false;
+
+              // Find source and target nodes
+              const sourceNode = storeNodes.find(
+                (n) => n.id === connection.source,
+              );
+              const targetNode = storeNodes.find(
+                (n) => n.id === connection.target,
+              );
+
+              if (!sourceNode || !targetNode) return false;
+
+              // Validate that handlers face each other
+              return isValidTargetHandle(
+                sourceNode,
+                targetNode,
+                connection.sourceHandle ?? null,
+                connection.targetHandle ?? null,
+              );
+            }}
+            onInit={(reactFlowInstance) => {
+              // Store the screenToFlowPosition function for cursor tracking
+              screenToFlowRef.current = reactFlowInstance.screenToFlowPosition;
+            }}
+          >
+            {!isViewMode && (
+              <Background
+                variant={'dots' as BackgroundVariant}
+                gap={12}
+                size={1}
+              />
+            )}
+            <Panel position="top-left" className="!top-5 !left-5">
+              <AvatarDemo />
+            </Panel>
+            {isViewMode ? (
+              <Panel position="top-right" className="!top-5 !right-5">
+                <div className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-sm font-medium border border-blue-200">
+                  👁️ View Only
+                </div>
+              </Panel>
+            ) : (
+              <Panel position="bottom-center" className="!bottom-5 ">
+                <AddNodeButton />
+              </Panel>
+            )}
+            <ViewportPortal>
+              <div
+                className="absolute pointer-events-none select-none"
+                style={{
+                  left: getTitlePosition().x,
+                  top: getTitlePosition().y,
+                }}
+              >
+                <h1 className="text-5xl font-bold">{title}</h1>
               </div>
-            </Panel>
-          ) : (
-            <Panel position="bottom-center" className="!bottom-5 ">
-              <AddNodeButton />
-            </Panel>
-          )}
-          <ViewportPortal>
-            <div
-              className="absolute pointer-events-none select-none"
-              style={{
-                left: getTitlePosition().x,
-                top: getTitlePosition().y,
-              }}
-            >
-              <h1 className="text-5xl font-bold">{title}</h1>
-            </div>
-            <Cursors />
-          </ViewportPortal>
-        </ReactFlow>
+              <Cursors />
+            </ViewportPortal>
+          </ReactFlow>
+        </ConnectionContext.Provider>
       </div>
       <NodeModal />
     </div>
