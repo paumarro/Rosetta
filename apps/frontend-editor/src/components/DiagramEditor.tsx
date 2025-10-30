@@ -3,7 +3,6 @@ import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
 import {
   ReactFlow,
   Background,
-  Controls,
   NodeTypes,
   Panel,
   BackgroundVariant,
@@ -17,7 +16,6 @@ import Cursors from '@/components/ui/Cursors';
 import TopicNode from './nodes/topicNode';
 import { LoadingOverlay } from './ui/loading-overlay';
 import { NodeModal } from './NodeModal';
-import RemoveAllButton from './ui/removeAllButton';
 
 const nodeTypes: NodeTypes = {
   topic: TopicNode,
@@ -26,10 +24,12 @@ const nodeTypes: NodeTypes = {
 
 interface DiagramEditorProps {
   diagramName?: string;
+  mode?: 'edit' | 'view';
 }
 
 export default function DiagramEditor({
   diagramName = 'default',
+  mode = 'edit',
 }: DiagramEditorProps) {
   const {
     initializeCollaboration,
@@ -52,10 +52,12 @@ export default function DiagramEditor({
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const lastCursorUpdate = useRef<number>(0);
 
+  const isViewMode = mode === 'view';
+
   // Initialize collaboration when component mounts or diagram changes
   useEffect(() => {
-    void initializeCollaboration(diagramName, currentUser);
-  }, [diagramName, currentUser, initializeCollaboration]);
+    void initializeCollaboration(diagramName, currentUser, isViewMode);
+  }, [diagramName, currentUser, initializeCollaboration, isViewMode]);
 
   // Cleanup when component unmounts
   useEffect(() => {
@@ -81,6 +83,9 @@ export default function DiagramEditor({
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
+      // Disable deletion in view mode
+      if (isViewMode) return;
+
       if (event.key === 'Delete' || event.key === 'Backspace') {
         const selectedNodes = storeNodes.filter((node) => node.selected);
         const selectedEdges = storeEdges.filter((edge) => edge.selected);
@@ -110,7 +115,7 @@ export default function DiagramEditor({
         }
       }
     },
-    [storeNodes, storeEdges, onNodeChange, onEdgeChange],
+    [isViewMode, storeNodes, storeEdges, onNodeChange, onEdgeChange],
   );
 
   // Track mouse movement for collaborative cursors (throttled to 50ms)
@@ -193,6 +198,9 @@ export default function DiagramEditor({
           edgesFocusable={true}
           edgesReconnectable={false}
           connectionRadius={50}
+          nodesDraggable={!isViewMode}
+          nodesConnectable={!isViewMode}
+          nodesFocusable={!isViewMode}
           isValidConnection={(connection) =>
             connection.source !== connection.target
           }
@@ -201,15 +209,15 @@ export default function DiagramEditor({
             screenToFlowRef.current = reactFlowInstance.screenToFlowPosition;
           }}
         >
-          <Controls />
           <Background variant={'dots' as BackgroundVariant} gap={12} size={1} />
-          <Panel position="top-left">
-            <RemoveAllButton />
+          <Panel position="top-left" className="!top-5 !left-5">
             <AvatarDemo />
           </Panel>
-          <Panel position="center-left">
-            <AddNodeButton />
-          </Panel>
+          {!isViewMode && (
+            <Panel position="bottom-center" className="!bottom-5 ">
+              <AddNodeButton />
+            </Panel>
+          )}
           <ViewportPortal>
             <div
               className="absolute pointer-events-none select-none"
@@ -224,7 +232,7 @@ export default function DiagramEditor({
           </ViewportPortal>
         </ReactFlow>
       </div>
-      <NodeModal />
+      <NodeModal isViewMode={isViewMode} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Trash2, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
 import { DiagramNode } from '@/types/reactflow';
 import {
@@ -23,7 +23,11 @@ interface Resource {
   url: string;
 }
 
-export function NodeModal() {
+interface NodeModalProps {
+  isViewMode?: boolean;
+}
+
+export function NodeModal({ isViewMode = false }: NodeModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [modalData, setModalData] = useState<ModalData | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -343,20 +347,23 @@ export function NodeModal() {
           ) : (
             <>
               <div className="flex gap-2 w-full sm:w-auto">
-                <Button
-                  onClick={handleDelete}
-                  variant="outline"
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete Node
-                </Button>
-                <Button onClick={handleEdit} variant="outline">
-                  Edit Node
-                </Button>
+                {!isViewMode && (
+                  <>
+                    <Button
+                      onClick={handleDelete}
+                      variant="outline"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      Delete
+                    </Button>
+                    <Button onClick={handleEdit} variant="outline">
+                      Edit Node
+                    </Button>
+                  </>
+                )}
                 {!isCompleted ? (
                   <Button
-                    className="text-gray-700 hover:text-black"
+                    className="text-gray-700  hover:text-black"
                     onClick={handleMarkInProgress}
                     variant="outline"
                   >
