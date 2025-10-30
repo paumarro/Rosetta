@@ -192,7 +192,7 @@ export default function DiagramEditor({
           fitViewOptions={fitViewOptions}
           minZoom={0.8}
           maxZoom={1}
-          attributionPosition="top-right"
+          proOptions={{ hideAttribution: true }}
           defaultEdgeOptions={defaultEdgeOptions}
           elementsSelectable={true}
           edgesFocusable={true}
@@ -209,11 +209,25 @@ export default function DiagramEditor({
             screenToFlowRef.current = reactFlowInstance.screenToFlowPosition;
           }}
         >
-          <Background variant={'dots' as BackgroundVariant} gap={12} size={1} />
+          {!isViewMode ? (
+            <Background
+              variant={'dots' as BackgroundVariant}
+              gap={12}
+              size={1}
+            />
+          ) : (
+            <Background variant={'' as BackgroundVariant} />
+          )}
           <Panel position="top-left" className="!top-5 !left-5">
             <AvatarDemo />
           </Panel>
-          {!isViewMode && (
+          {isViewMode ? (
+            <Panel position="top-right" className="!top-5 !right-5">
+              <div className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-sm font-medium border border-blue-200">
+                👁️ View Only
+              </div>
+            </Panel>
+          ) : (
             <Panel position="bottom-center" className="!bottom-5 ">
               <AddNodeButton />
             </Panel>
@@ -232,7 +246,7 @@ export default function DiagramEditor({
           </ViewportPortal>
         </ReactFlow>
       </div>
-      <NodeModal isViewMode={isViewMode} />
+      <NodeModal />
     </div>
   );
 }

@@ -23,11 +23,7 @@ interface Resource {
   url: string;
 }
 
-interface NodeModalProps {
-  isViewMode?: boolean;
-}
-
-export function NodeModal({ isViewMode = false }: NodeModalProps) {
+export function NodeModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [modalData, setModalData] = useState<ModalData | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -38,7 +34,7 @@ export function NodeModal({ isViewMode = false }: NodeModalProps) {
   const [editDescription, setEditDescription] = useState('');
   const [editResources, setEditResources] = useState<Resource[]>([]);
 
-  const { deleteNode, setNodeBeingEdited, updateNodeData } =
+  const { deleteNode, setNodeBeingEdited, updateNodeData, isViewMode } =
     useCollaborativeStore();
 
   useEffect(() => {
@@ -84,17 +80,14 @@ export function NodeModal({ isViewMode = false }: NodeModalProps) {
     }
   };
 
-  const handleMarkComplete = () => {
+  const handleToggleComplete = () => {
     if (modalData) {
-      localStorage.setItem(`node-${modalData.id}-completed`, 'true');
-      setIsCompleted(true);
-    }
-  };
-
-  const handleMarkInProgress = () => {
-    if (modalData) {
-      localStorage.setItem(`node-${modalData.id}-completed`, 'false');
-      setIsCompleted(false);
+      const newCompletedState = !isCompleted;
+      localStorage.setItem(
+        `node-${modalData.id}-completed`,
+        String(newCompletedState),
+      );
+      setIsCompleted(newCompletedState);
     }
   };
 
@@ -346,46 +339,35 @@ export function NodeModal({ isViewMode = false }: NodeModalProps) {
             </div>
           ) : (
             <>
-              <div className="flex gap-2 w-full sm:w-auto">
-                {!isViewMode && (
-                  <>
-                    <Button
-                      onClick={handleDelete}
-                      variant="outline"
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      Delete
-                    </Button>
-                    <Button onClick={handleEdit} variant="outline">
-                      Edit Node
-                    </Button>
-                  </>
-                )}
-                {!isCompleted ? (
+              {isViewMode ? (
+                // View mode: Only show completion toggle for learning progress tracking
+                <div className="flex gap-2 w-full justify-end">
                   <Button
-                    className="text-gray-700  hover:text-black"
-                    onClick={handleMarkInProgress}
-                    variant="outline"
+                    onClick={handleToggleComplete}
+                    className={
+                      isCompleted
+                        ? 'bg-green-600 hover:bg-green-700 text-white'
+                        : 'bg-black hover:bg-gray-800 text-white'
+                    }
                   >
-                    Still in Progress
+                    {isCompleted ? '✓ Completed' : 'Mark Complete'}
                   </Button>
-                ) : (
+                </div>
+              ) : (
+                // Edit mode: Only show editing controls
+                <div className="flex gap-2 w-full justify-end">
                   <Button
-                    className="text-gray-700 hover:text-black"
-                    onClick={handleMarkInProgress}
+                    onClick={handleDelete}
                     variant="outline"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
-                    Mark as In Progress
+                    Delete
                   </Button>
-                )}
-              </div>
-              <Button
-                className="bg-black hover:bg-topic-hover"
-                onClick={handleMarkComplete}
-                disabled={isCompleted}
-              >
-                {isCompleted ? 'Completed' : 'Complete'}
-              </Button>
+                  <Button onClick={handleEdit} variant="outline">
+                    Edit Node
+                  </Button>
+                </div>
+              )}
             </>
           )}
         </DialogFooter>
