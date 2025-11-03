@@ -277,6 +277,41 @@ export const useCollaborativeStore = create<CollaborativeState>()(
             updated: changes.updated,
             removed: changes.removed,
           });
+
+          // Clean up editing states for disconnected users
+          if (changes.removed.length > 0 && !isViewMode) {
+            const states = awareness.getStates();
+            const yNodes = doc.getMap<Y.Map<unknown>>('nodes');
+
+            // Check all nodes and clean up any that are marked as being edited
+            // but the editor is no longer in the awareness states
+            const currentUserNames = new Set<string>();
+            states.forEach((state) => {
+              if ('userName' in state && state.userName) {
+                currentUserNames.add(state.userName as string);
+              }
+            });
+
+            yNodes.forEach((yNode) => {
+              const editedBy = yNode.get('editedBy') as string | null;
+              const isBeingEdited = yNode.get('isBeingEdited') as boolean;
+
+              // If a node is being edited but the editor is no longer connected, clean it up
+              if (
+                isBeingEdited &&
+                editedBy &&
+                !currentUserNames.has(editedBy)
+              ) {
+                console.log(
+                  '🧹 Cleaning up node edited by disconnected user:',
+                  editedBy,
+                );
+                yNode.set('isBeingEdited', false);
+                yNode.set('editedBy', null);
+              }
+            });
+          }
+
           updateConnectedUsers();
         };
 
