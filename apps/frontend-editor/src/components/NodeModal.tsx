@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
 import { DiagramNode } from '@/types/reactflow';
 import {
@@ -27,7 +27,7 @@ export function NodeModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [modalData, setModalData] = useState<ModalData | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isResourcesExpanded, setIsResourcesExpanded] = useState(false);
 
   // Form state for editing
   const [editLabel, setEditLabel] = useState('');
@@ -51,7 +51,6 @@ export function NodeModal() {
       setEditResources(event.detail.data.resources || []);
 
       setIsOpen(true);
-      setIsEditing(false);
       setNodeBeingEdited(event.detail.id, true);
 
       const completed =
@@ -72,7 +71,6 @@ export function NodeModal() {
     if (!open && modalData) {
       // Clear editing state when modal closes
       setNodeBeingEdited(modalData.id, false);
-      setIsEditing(false);
     }
     setIsOpen(open);
     if (!open) {
@@ -103,18 +101,9 @@ export function NodeModal() {
     }
   };
 
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
-
   const handleCancelEdit = () => {
-    // Reset form to current data
-    if (modalData) {
-      setEditLabel(modalData.data.label || '');
-      setEditDescription(modalData.data.description || '');
-      setEditResources(modalData.data.resources || []);
-    }
-    setIsEditing(false);
+    // Close modal without saving
+    handleOpenChange(false);
   };
 
   const handleSaveEdit = () => {
@@ -127,7 +116,7 @@ export function NodeModal() {
       };
       updateNodeData(modalData.id, updatedData);
       setModalData({ ...modalData, data: updatedData });
-      setIsEditing(false);
+      handleOpenChange(false);
     }
   };
 
@@ -167,16 +156,7 @@ export function NodeModal() {
         {/* Fixed Header - Title only */}
         <DialogHeader className="flex-shrink-0 pb-4">
           <div className="flex items-center gap-3">
-            {isEditing ? (
-              <Input
-                value={editLabel}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setEditLabel(e.target.value);
-                }}
-                className="text-5xl font-bold h-auto"
-                placeholder="Node label"
-              />
-            ) : (
+            {isViewMode ? (
               <>
                 <DialogTitle className="text-5xl font-bold">
                   {modalData.data.label}
@@ -193,101 +173,37 @@ export function NodeModal() {
                   </div>
                 )}
               </>
+            ) : (
+              <Input
+                value={editLabel}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setEditLabel(e.target.value);
+                }}
+                className="text-5xl font-bold h-auto"
+                placeholder="Node label"
+              />
             )}
           </div>
         </DialogHeader>
 
-        {/* Description Area - Scrollable if needed */}
-        <div className="flex-shrink-0 max-h-[41vh] overflow-y-auto -mx-1 px-1">
-          {isEditing ? (
-            <textarea
-              value={editDescription}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-                setEditDescription(e.target.value);
-              }}
-              className="leading-relaxed text-left text-base pb-4 text-black w-full p-2 border rounded-md min-h-[100px]"
-              placeholder="Node description"
-            />
-          ) : (
-            modalData.data.description && (
+        {isViewMode ? (
+          // View Mode: Sequential content with scrolling
+          <div className="flex-1 overflow-y-auto min-h-0 -mx-1 px-1">
+            {/* Description */}
+            {modalData.data.description && (
               <DialogDescription className="leading-relaxed text-left text-base pb-4 text-black">
                 {modalData.data.description}
                 <br />
               </DialogDescription>
-            )
-          )}
-        </div>
-
-        {/* Resources Section - Always visible with own scroll */}
-        <div className="flex-1 flex flex-col min-h-0 mt-4">
-          {Array.isArray(modalData.data.resources) &&
-            modalData.data.resources.length > 0 && (
-              <h3 className="leading-relaxed text-left text-base mb-4 flex-shrink-0 font-bold">
-                Resources
-              </h3>
             )}
-          {/* Resources Content - Scrollable */}
-          <div className="flex-1 overflow-y-auto min-h-0 -mx-1 px-1">
-            {isEditing ? (
-              <div className="space-y-3">
-                {editResources.map((resource, index) => (
-                  <div
-                    key={index}
-                    className="flex flex-col gap-3 p-1 border rounded-lg"
-                  >
-                    <div className="flex items-center gap-1">
-                      <select
-                        value={resource.type}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                          handleResourceChange(index, 'type', e.target.value);
-                        }}
-                        className="px-2 py-2 rounded text-xs font-medium border"
-                      >
-                        <option value="article">Article</option>
-                        <option value="video">Video</option>
-                      </select>
-                      <Button
-                        onClick={() => {
-                          handleRemoveResource(index);
-                        }}
-                        variant="ghost"
-                        size="sm"
-                        className="ml-auto text-red-600 hover:text-red-700"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <Input
-                      value={resource.title}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        handleResourceChange(index, 'title', e.target.value);
-                      }}
-                      placeholder="Resource title"
-                      className="w-full"
-                    />
-                    <Input
-                      value={resource.url}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        handleResourceChange(index, 'url', e.target.value);
-                      }}
-                      placeholder="Resource URL"
-                      className="w-full"
-                    />
-                  </div>
-                ))}
-                <Button
-                  onClick={handleAddResource}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Resource
-                </Button>
-              </div>
-            ) : (
-              Array.isArray(modalData.data.resources) &&
+
+            {/* Resources */}
+            {Array.isArray(modalData.data.resources) &&
               modalData.data.resources.length > 0 && (
                 <>
+                  <h3 className="leading-relaxed text-left text-base mb-4 mt-4 font-bold">
+                    Resources
+                  </h3>
                   <div className="space-y-1">
                     {modalData.data.resources.map(
                       (resource: Resource, index: number) => (
@@ -318,15 +234,161 @@ export function NodeModal() {
                     )}
                   </div>
                 </>
-              )
-            )}
+              )}
           </div>
-        </div>
+        ) : (
+          // Edit Mode: Expandable sections
+          <>
+            {/* Description Area - Scrollable if needed */}
+            <div
+              className={cn(
+                'flex-shrink-0 -mx-1 px-1 transition-all duration-300',
+                isResourcesExpanded ? 'max-h-[20vh]' : 'flex-1 min-h-0',
+              )}
+            >
+              <textarea
+                value={editDescription}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                  setEditDescription(e.target.value);
+                }}
+                className={cn(
+                  'leading-relaxed text-left text-base pb-4 text-black w-full p-2 border rounded-md resize-none',
+                  isResourcesExpanded
+                    ? 'h-full min-h-[20vh]'
+                    : 'h-full min-h-[300px]',
+                )}
+                placeholder="Node description"
+              />
+            </div>
+
+            {/* Resources Section - Expandable */}
+            <div
+              className={cn(
+                'flex flex-col mt-4 transition-all duration-300',
+                isResourcesExpanded
+                  ? 'flex-1 min-h-0'
+                  : 'flex-shrink-0 max-h-[60px]',
+              )}
+            >
+              {/* Clickable Header */}
+              <button
+                onClick={() => {
+                  setIsResourcesExpanded(!isResourcesExpanded);
+                }}
+                className="flex items-center justify-between w-full leading-relaxed text-left text-base mb-4 flex-shrink-0 font-bold hover:text-gray-700 transition-colors"
+              >
+                <span>Resources</span>
+                {isResourcesExpanded ? (
+                  <ChevronUp className="w-5 h-5" />
+                ) : (
+                  <ChevronDown className="w-5 h-5" />
+                )}
+              </button>
+
+              {/* Resources Content - Scrollable when expanded */}
+              {isResourcesExpanded && (
+                <div className="flex-1 overflow-y-auto min-h-0 -mx-1 px-1">
+                  <div className="space-y-3">
+                    {editResources.map((resource, index) => (
+                      <div
+                        key={index}
+                        className="flex flex-col gap-3 p-1 border rounded-lg"
+                      >
+                        <div className="flex items-center gap-1">
+                          <select
+                            value={resource.type}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLSelectElement>,
+                            ) => {
+                              handleResourceChange(
+                                index,
+                                'type',
+                                e.target.value,
+                              );
+                            }}
+                            className="px-2 py-2 rounded text-xs font-medium border"
+                          >
+                            <option value="article">Article</option>
+                            <option value="video">Video</option>
+                          </select>
+                          <Button
+                            onClick={() => {
+                              handleRemoveResource(index);
+                            }}
+                            variant="ghost"
+                            size="sm"
+                            className="ml-auto text-red-600 hover:text-red-700"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <Input
+                          value={resource.title}
+                          onChange={(
+                            e: React.ChangeEvent<HTMLInputElement>,
+                          ) => {
+                            handleResourceChange(
+                              index,
+                              'title',
+                              e.target.value,
+                            );
+                          }}
+                          placeholder="Resource title"
+                          className="w-full"
+                        />
+                        <Input
+                          value={resource.url}
+                          onChange={(
+                            e: React.ChangeEvent<HTMLInputElement>,
+                          ) => {
+                            handleResourceChange(index, 'url', e.target.value);
+                          }}
+                          placeholder="Resource URL"
+                          className="w-full"
+                        />
+                      </div>
+                    ))}
+                    <Button
+                      onClick={handleAddResource}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Resource
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
         {/* Fixed Footer */}
         <DialogFooter className="flex-col sm:flex-row gap-2 -mx-6 -mb-6 flex-shrink-0 pt-4">
-          {isEditing ? (
+          {isViewMode ? (
+            // View mode: Only show completion toggle for learning progress tracking
             <div className="flex gap-2 w-full justify-end">
+              <Button
+                onClick={handleToggleComplete}
+                className={
+                  isCompleted
+                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                    : 'bg-black hover:bg-gray-800 text-white'
+                }
+              >
+                {isCompleted ? '✓ Completed' : 'Mark Complete'}
+              </Button>
+            </div>
+          ) : (
+            // Edit mode: Always show editing controls
+            <div className="flex gap-2 w-full justify-end">
+              <Button
+                onClick={handleDelete}
+                variant="outline"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                Delete
+              </Button>
               <Button onClick={handleCancelEdit} variant="outline">
                 Cancel
               </Button>
@@ -337,38 +399,6 @@ export function NodeModal() {
                 Save Changes
               </Button>
             </div>
-          ) : (
-            <>
-              {isViewMode ? (
-                // View mode: Only show completion toggle for learning progress tracking
-                <div className="flex gap-2 w-full justify-end">
-                  <Button
-                    onClick={handleToggleComplete}
-                    className={
-                      isCompleted
-                        ? 'bg-green-600 hover:bg-green-700 text-white'
-                        : 'bg-black hover:bg-gray-800 text-white'
-                    }
-                  >
-                    {isCompleted ? '✓ Completed' : 'Mark Complete'}
-                  </Button>
-                </div>
-              ) : (
-                // Edit mode: Only show editing controls
-                <div className="flex gap-2 w-full justify-end">
-                  <Button
-                    onClick={handleDelete}
-                    variant="outline"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    Delete
-                  </Button>
-                  <Button onClick={handleEdit} variant="outline">
-                    Edit Node
-                  </Button>
-                </div>
-              )}
-            </>
           )}
         </DialogFooter>
       </DialogContent>
