@@ -1,12 +1,15 @@
 import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
 
 export default function Cursors() {
-  const { connectedUsers, currentUser } = useCollaborativeStore();
+  const { connectedUsers, currentUser, isViewMode } = useCollaborativeStore();
 
   // Filter out current user and users without cursor data
-  const otherUsersWithCursors = connectedUsers.filter(
-    (user) => user.userId !== currentUser?.userId && user.cursor,
-  );
+  // In view mode, don't show any cursors from other users
+  const otherUsersWithCursors = isViewMode
+    ? []
+    : connectedUsers.filter(
+        (user) => user.userId !== currentUser?.userId && user.cursor,
+      );
 
   return (
     <>

@@ -56,7 +56,7 @@ const TopicNode = ({
   type,
   ...nodeProps
 }: TopicNodeProps) => {
-  const { connectedUsers, isViewMode, nodes } = useCollaborativeStore();
+  const { connectedUsers, isViewMode, nodes, edges } = useCollaborativeStore();
   const { isBeingEdited, editedBy } = useNodeState(id);
 
   // Find the user who is editing this node
@@ -71,12 +71,14 @@ const TopicNode = ({
       y: nodeProps.positionAbsoluteY || 0,
     },
     data,
+    edges,
   );
 
   // Style based on the ReactFlow type and editing status
   const getNodeStyles = () => {
     //Check if node is being edited - override all other styles
-    if (isBeingEdited) {
+    // In view mode, don't show the white editing effect
+    if (isBeingEdited && !isViewMode) {
       return {
         base: 'bg-white',
         border: 'border-black border-[2.5px] rounded-[5px]',
@@ -259,8 +261,8 @@ const TopicNode = ({
           {displayLabel}
         </div>
       </div>
-      {/* Editing indicator */}
-      {isBeingEdited && editingUser && (
+      {/* Editing indicator - hidden in view mode */}
+      {isBeingEdited && editingUser && !isViewMode && (
         <div className="absolute -right-3.5 top-1/2 -translate-y-1/2">
           <Avatar
             className="w-6 h-6"

@@ -141,7 +141,14 @@
   }
 }
 
-/* Enhanced XYFlow handle styling for better UX */
+ /* Prevent ALL handles from growing on hover during edge dragging */
+.react-flow:has(.react-flow__handle.connectingfrom) .react-flow__handle:hover {
+    width: 12px !important;
+    height: 12px !important;
+}
+
+
+
 .react-flow .react-flow__handle {
   width: 12px !important;
   height: 12px !important;
@@ -149,18 +156,18 @@
   transition: width 0.2s ease-in-out, height 0.2s ease-in-out, opacity 0.2s ease-in-out;
 }
 
+/* Magnet effect for handles*/
 .react-flow .react-flow__handle::before {
   content: '';
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  /* Debug visualization (remove when satisfied):
-  background: rgba(255, 0, 0, 0.1);
-  */
+  /* background: rgba(255, 0, 0, 0.1); */
+ 
 }
 
 /* Grow on hover */
@@ -169,39 +176,14 @@
   height: 18px !important;
 }
 
-/* When dragging, handle visibility is controlled by inline styles in the component */
-
-/* Enlarge the source handle being dragged from */
-.react-flow .react-flow__handle.connectingfrom {
-  width: 16px;
-  height: 16px;
-}
-
-
-
 /* Hide handles in view mode - use opacity instead of display:none so ReactFlow can still calculate edge positions */
 [data-view-mode="true"] .react-flow__handle {
   opacity: 0 !important;
   pointer-events: none !important;
 }
 
-/* Ensure edges are visible */
-.react-flow__edges {
-  position: relative !important;
-  z-index: 1000 !important;
-}
-
-.react-flow__edges svg {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  overflow: visible !important;
-}
-
 .react-flow__edge-path {
   stroke: #000000 !important;
-  stroke-width: 1px;
-  fill: none;
 }
 
 /* Selected edge styling */
