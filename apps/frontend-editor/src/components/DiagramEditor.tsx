@@ -11,6 +11,7 @@ import {
   OnConnectEnd,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { ArrowUpLeft } from 'lucide-react';
 import AddNodeButton from '@/components/ui/addNodeButton';
 import AvatarDemo from '@/components/ui/AvatarDemo';
 import Cursors from '@/components/ui/Cursors';
@@ -21,6 +22,7 @@ import {
   ConnectionContext,
   ConnectionState,
   isValidTargetHandle,
+  areNodesConnected,
 } from '@/lib/connectionUtils';
 import { DiagramNode } from '@/types/reactflow';
 
@@ -96,6 +98,14 @@ export default function DiagramEditor({
     },
     [],
   );
+
+  const handleBackButtonClick = useCallback(() => {
+    if (isViewMode) {
+      window.location.href = 'http://localhost:3000/hub/learning-path';
+    } else {
+      window.location.href = 'http://localhost:3000/creator/path-design';
+    }
+  }, [isViewMode]);
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
@@ -247,6 +257,17 @@ export default function DiagramEditor({
               // Prevent self-connections
               if (connection.source === connection.target) return false;
 
+              // Prevent duplicate connections (including reverse connections)
+              if (
+                areNodesConnected(
+                  storeEdges,
+                  connection.source,
+                  connection.target,
+                )
+              ) {
+                return false;
+              }
+
               // Find source and target nodes
               const sourceNode = storeNodes.find(
                 (n) => n.id === connection.source,
@@ -278,6 +299,17 @@ export default function DiagramEditor({
               />
             )}
             <Panel position="top-left" className="!top-5 !left-5">
+              <div
+                className="group p-2 py-2.5 bg-white text-black rounded-full font-[12px] border border-gray-300 cursor-pointer shadow-sm hover:bg-black hover:text-white hover:border-black hover:px-3 hover:py-2.5 hover:pr-5.5 transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap flex items-center gap-1"
+                onClick={handleBackButtonClick}
+              >
+                <ArrowUpLeft className="inline-block w-6 h-6 pl-1 " />
+                <span className="inline-block max-w-0 group-hover:max-w-xs transition-all duration-400 ease-in-out overflow-hidden ">
+                  Back to Learning Paths
+                </span>
+              </div>
+            </Panel>
+            <Panel position="top-left" className="!top-15 !left-5">
               <AvatarDemo />
             </Panel>
             {isViewMode ? (
