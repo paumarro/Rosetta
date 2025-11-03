@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo } from 'react';
-import { Node, Position } from '@xyflow/react';
+import { Node, Position, Edge } from '@xyflow/react';
 
 export interface ConnectionState {
   sourceNode: Node | null;
@@ -114,6 +114,22 @@ export function isValidTargetHandle(
 }
 
 /**
+ * Checks if two nodes are connected by any edge (bidirectional).
+ * Returns true if there's any connection between nodeA and nodeB in either direction.
+ */
+export function areNodesConnected(
+  edges: Edge[],
+  nodeAId: string,
+  nodeBId: string,
+): boolean {
+  return edges.some(
+    (edge) =>
+      (edge.source === nodeAId && edge.target === nodeBId) ||
+      (edge.source === nodeBId && edge.target === nodeAId),
+  );
+}
+
+/**
  * Hook to determine which handles should be visible on a node during connection drag.
  * Consolidates handle visibility logic based on connection state.
  */
@@ -122,6 +138,7 @@ export function useHandleVisibility(
   nodeType: string | undefined,
   nodePosition: { x: number; y: number },
   nodeData: { label: string; [key: string]: unknown },
+  edges: Edge[],
 ): { t: boolean; r: boolean; b: boolean; l: boolean } {
   const connectionState = useContext(ConnectionContext);
 
@@ -139,6 +156,11 @@ export function useHandleVisibility(
         b: connectionState.sourceHandleId === 'b',
         l: connectionState.sourceHandleId === 'l',
       };
+    }
+
+    // Check if nodes are already connected (prevents duplicate connections)
+    if (areNodesConnected(edges, connectionState.sourceNode.id, nodeId)) {
+      return { t: false, r: false, b: false, l: false };
     }
 
     // For other nodes, check which handles are valid targets
@@ -175,7 +197,7 @@ export function useHandleVisibility(
         'l',
       ),
     };
-  }, [connectionState, nodeId, nodeType, nodePosition, nodeData]);
+  }, [connectionState, nodeId, nodeType, nodePosition, nodeData, edges]);
 }
 
 /**

@@ -15,6 +15,7 @@ interface User {
   cursor?: { x: number; y: number };
   selection?: string[];
   color?: string;
+  mode?: 'edit' | 'view'; // User's current mode for future role-based features
 }
 
 // Constants for node positioning
@@ -226,14 +227,21 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         // Generate user color and update current user
         const userColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
 
-        // Update the stored currentUser to include the color
-        set({ currentUser: { ...user, color: userColor } });
+        // Update the stored currentUser to include the color and mode
+        set({
+          currentUser: {
+            ...user,
+            color: userColor,
+            mode: isViewMode ? 'view' : 'edit',
+          },
+        });
 
         // Set local awareness state with user info
         awareness.setLocalState({
           userId: user.userId,
           userName: user.userName,
           color: userColor,
+          mode: isViewMode ? 'view' : 'edit',
         });
 
         // Function to update connected users from awareness
@@ -249,6 +257,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
                 color: state.color as string,
                 cursor: state.cursor as { x: number; y: number },
                 selection: state.selection as string[],
+                mode: state.mode as 'edit' | 'view',
               });
             }
           });
