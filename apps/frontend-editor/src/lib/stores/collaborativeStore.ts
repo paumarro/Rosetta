@@ -26,6 +26,20 @@ const NODE_SPACING = {
   SUBTOPIC_X: 200,
 } as const;
 
+// Curated avatar color palette - professional UI colors that work well on gray backgrounds
+const AVATAR_COLORS = [
+  '#6366f1', // Indigo - primary, professional
+  '#14b8a6', // Teal - fresh, distinct
+  '#a855f7', // Purple - creative
+  '#f43f5e', // Rose - warm, noticeable
+  '#f59e0b', // Amber - energetic
+  '#10b981', // Emerald - vibrant green
+  '#0ea5e9', // Sky - bright blue
+  '#ec4899', // Pink - playful
+  '#f97316', // Orange - bold
+  '#06b6d4', // Cyan - cool tone
+] as const;
+
 // Helper to calculate Node Side from Node Position
 const calculateNodeSide = (x: number): 1 | 2 => {
   return x >= 0 ? 1 : 2;
@@ -224,26 +238,6 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         // Use Awareness for user presence - it automatically handles disconnections
         const awareness = provider.awareness;
 
-        // Generate user color and update current user
-        const userColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
-
-        // Update the stored currentUser to include the color and mode
-        set({
-          currentUser: {
-            ...user,
-            color: userColor,
-            mode: isViewMode ? 'view' : 'edit',
-          },
-        });
-
-        // Set local awareness state with user info
-        awareness.setLocalState({
-          userId: user.userId,
-          userName: user.userName,
-          color: userColor,
-          mode: isViewMode ? 'view' : 'edit',
-        });
-
         // Function to update connected users from awareness
         const updateConnectedUsers = () => {
           const states = awareness.getStates();
@@ -379,6 +373,44 @@ export const useCollaborativeStore = create<CollaborativeState>()(
           if (!isSynced) return;
 
           console.log('✅ Provider synced');
+
+          // Assign color after sync - now yUserColors has data from other clients
+          const yUserColors = doc.getMap<string>('userColors');
+
+          // Check if this user already has a color assigned
+          let userColor = yUserColors.get(user.userId);
+
+          if (!userColor) {
+            // Find first unused color from the palette
+            const usedColors = new Set(yUserColors.values());
+            userColor = AVATAR_COLORS.find((color) => !usedColors.has(color));
+
+            if (!userColor) {
+              // All colors in use - use modulo of total assigned colors
+              userColor =
+                AVATAR_COLORS[yUserColors.size % AVATAR_COLORS.length];
+            }
+
+            // Persist the color assignment
+            yUserColors.set(user.userId, userColor);
+          }
+
+          // Update the stored currentUser to include the color and mode
+          set({
+            currentUser: {
+              ...user,
+              color: userColor,
+              mode: isViewMode ? 'view' : 'edit',
+            },
+          });
+
+          // Set local awareness state with user info
+          awareness.setLocalState({
+            userId: user.userId,
+            userName: user.userName,
+            color: userColor,
+            mode: isViewMode ? 'view' : 'edit',
+          });
 
           applyFromY();
 

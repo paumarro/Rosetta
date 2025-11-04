@@ -1,14 +1,25 @@
 import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
 
 export default function Cursors() {
-  const { connectedUsers, currentUser, isViewMode } = useCollaborativeStore();
+  const { connectedUsers, currentUser, isViewMode, nodes } =
+    useCollaborativeStore();
 
-  // Filter out current user and users without cursor data
+  // Get usernames of users currently editing nodes
+  const editingUsers = new Set(
+    nodes
+      .filter((node) => node.isBeingEdited && node.editedBy)
+      .map((node) => node.editedBy),
+  );
+
+  // Filter out current user, users without cursor data, and users currently editing
   // In view mode, don't show any cursors from other users
   const otherUsersWithCursors = isViewMode
     ? []
     : connectedUsers.filter(
-        (user) => user.userId !== currentUser?.userId && user.cursor,
+        (user) =>
+          user.userId !== currentUser?.userId &&
+          user.cursor &&
+          !editingUsers.has(user.userName),
       );
 
   return (

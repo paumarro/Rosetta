@@ -20,7 +20,6 @@ export default function AvatarDemo() {
             src: '',
             alt: `@${currentUser.userName}`,
             fallback: currentUser.userName.slice(0, 2).toUpperCase(),
-            isActive: true,
             color: currentUser.color,
           },
         ]
@@ -30,7 +29,6 @@ export default function AvatarDemo() {
       src: '',
       alt: `@${user.userName}`,
       fallback: user.userName.slice(0, 2).toUpperCase(),
-      isActive: true,
       color: user.color,
     })),
   ];
@@ -50,15 +48,11 @@ export default function AvatarDemo() {
   }
 
   return (
-    <div className="mt-3">
-      <div className="flex -space-x-1 items-center">
+    <div className="">
+      <div className="flex -space-x-3 items-center">
         {visibleAuthors.map((author) => (
           <div key={author.userId}>
-            <Avatar
-              className="w-9 h-9"
-              isActive={author.isActive}
-              userColor={author.color}
-            >
+            <Avatar className="w-10 h-10" userColor={author.color}>
               <AvatarImage src={author.src} alt={author.alt} />
               <AvatarFallback className="text-sm" userColor={author.color}>
                 {author.fallback}
@@ -67,7 +61,7 @@ export default function AvatarDemo() {
           </div>
         ))}
         {remainingCount > 0 && (
-          <Avatar className="w-9 h-9" isActive={false}>
+          <Avatar className="w-9 h-9">
             <AvatarFallback className="text-sm  ">
               +{remainingCount}
             </AvatarFallback>
