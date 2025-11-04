@@ -264,11 +264,7 @@ const TopicNode = ({
       {/* Editing indicator - hidden in view mode */}
       {isBeingEdited && editingUser && !isViewMode && (
         <div className="absolute -right-3.5 top-1/2 -translate-y-1/2">
-          <Avatar
-            className="w-6 h-6"
-            isActive={true}
-            userColor={editingUser.color}
-          >
+          <Avatar className="w-7 h-7" userColor={editingUser.color}>
             <AvatarFallback
               className="text-xs text-white"
               userColor={editingUser.color}

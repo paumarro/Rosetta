@@ -309,9 +309,11 @@ export default function DiagramEditor({
                 </span>
               </div>
             </Panel>
-            <Panel position="top-left" className="!top-15 !left-5">
-              <AvatarDemo />
-            </Panel>
+            {!isViewMode && (
+              <Panel position="top-right" className="!top-5 !right-5">
+                <AvatarDemo />
+              </Panel>
+            )}
             {isViewMode ? (
               <Panel position="top-right" className="!top-5 !right-5">
                 <div className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-sm font-medium border border-blue-200">
