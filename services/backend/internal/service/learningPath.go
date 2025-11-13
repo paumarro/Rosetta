@@ -191,3 +191,73 @@ func (s *LearningPathService) DeleteLearningPath(ctx context.Context, lpID strin
 
 	return nil
 }
+
+// AddToFavorites adds a learning path to user's favorites
+func (s *LearningPathService) AddToFavorites(ctx context.Context, userID uint, lpID string) error {
+	// Parse string ID to UUID
+	lpUUID, err := uuid.Parse(lpID)
+	if err != nil {
+		return fmt.Errorf("invalid learning path ID format: %w", err)
+	}
+
+	// Check if relationship already exists
+	var userLP model.UserLP
+	err = s.DB.WithContext(ctx).
+		Where("user_id = ? AND lp_id = ?", userID, lpUUID).
+		First(&userLP).Error
+
+	if err == nil {
+		// Relationship exists, just update IsFavorite
+		userLP.IsFavorite = true
+		return s.DB.Save(&userLP).Error
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+
+	// Relationship doesn't exist, create favorite
+	userLP = model.UserLP{
+		UserID:     userID,
+		LPID:       lpUUID,
+		IsFavorite: true,
+	}
+
+	return s.DB.Create(&userLP).Error
+}
+
+// RemoveFromFavorites removes a learning path from user's favorites
+func (s *LearningPathService) RemoveFromFavorites(ctx context.Context, userID uint, lpID string) error {
+	// Parse string ID to UUID
+	lpUUID, err := uuid.Parse(lpID)
+	if err != nil {
+		return fmt.Errorf("invalid learning path ID format: %w", err)
+	}
+
+	return s.DB.WithContext(ctx).
+		Model(&model.UserLP{}).
+		Where("user_id = ? AND lp_id = ?", userID, lpUUID).
+		Update("is_favorite", false).Error
+}
+
+// GetUserFavorites retrieves all favorite learning paths for a user
+func (s *LearningPathService) GetUserFavorites(ctx context.Context, userID uint) ([]model.LearningPath, error) {
+	var paths []model.LearningPath
+	err := s.DB.WithContext(ctx).
+		Joins("JOIN user_lps ON user_lps.lp_id = learning_paths.id").
+		Where("user_lps.user_id = ? AND user_lps.is_favorite = ?", userID, true).
+		Preload("Skills.Skill").
+		Find(&paths).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract skills into SkillsList
+	for i := range paths {
+		paths[i].SkillsList = make([]model.Skill, 0, len(paths[i].Skills))
+		for _, lpSkill := range paths[i].Skills {
+			paths[i].SkillsList = append(paths[i].SkillsList, lpSkill.Skill)
+		}
+	}
+
+	return paths, nil
+}
