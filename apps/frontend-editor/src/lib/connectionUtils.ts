@@ -12,6 +12,55 @@ export const ConnectionContext = createContext<ConnectionState>({
 });
 
 /**
+ * Centralized constants for node dimensions and sizing
+ */
+export const NODE_DIMENSIONS = {
+  LABEL_THRESHOLD: 16,
+  TWO_LINE_HEIGHT: 75,
+  BASE_HEIGHT: {
+    TOPIC: 52,
+    SUBTOPIC: 38,
+  },
+  WIDTH_BREAKPOINTS: {
+    SMALL: 5,
+    MEDIUM: 8,
+  },
+  WIDTH_VALUES: {
+    SMALL: 72,
+    MEDIUM: 102,
+    LARGE: 170,
+  },
+  HEIGHT_CLASSES: {
+    TOPIC_SHORT: 'h-[52px]',
+    TOPIC_TALL: 'h-[75px]',
+    SUBTOPIC_SHORT: 'h-[38px]',
+    SUBTOPIC_TALL: 'h-[75px]',
+  },
+} as const;
+
+/**
+ * Gets the Tailwind height class for a node based on label length and type.
+ * Returns h-[75px] for labels > 16 chars, otherwise type-specific height.
+ */
+export function getNodeHeightClass(
+  label: string,
+  nodeType: string | undefined,
+): string {
+  const labelLength = label.length;
+  const isLong = labelLength > NODE_DIMENSIONS.LABEL_THRESHOLD;
+
+  if (nodeType === 'subtopic') {
+    return isLong
+      ? NODE_DIMENSIONS.HEIGHT_CLASSES.SUBTOPIC_TALL
+      : NODE_DIMENSIONS.HEIGHT_CLASSES.SUBTOPIC_SHORT;
+  } else {
+    return isLong
+      ? NODE_DIMENSIONS.HEIGHT_CLASSES.TOPIC_TALL
+      : NODE_DIMENSIONS.HEIGHT_CLASSES.TOPIC_SHORT;
+  }
+}
+
+/**
  * Maps handle ID to its position on the node
  */
 const handleIdToPosition: Record<string, Position> = {
@@ -43,19 +92,32 @@ function dotProduct(
 }
 
 /**
- * Gets node dimensions based on type and label length
+ * Gets node dimensions based on type and label length.
+ * Uses centralized NODE_DIMENSIONS constants.
  */
-function getNodeDimensions(node: Node): { width: number; height: number } {
-  const height = node.type === 'subtopic' ? 38 : 52;
+export function getNodeDimensions(node: Node): {
+  width: number;
+  height: number;
+} {
   const labelLength = (node.data.label as string).length || 0;
 
+  // Use 75px height for labels > 16 chars, otherwise type-specific base height
+  const baseHeight =
+    node.type === 'subtopic'
+      ? NODE_DIMENSIONS.BASE_HEIGHT.SUBTOPIC
+      : NODE_DIMENSIONS.BASE_HEIGHT.TOPIC;
+  const height =
+    labelLength > NODE_DIMENSIONS.LABEL_THRESHOLD
+      ? NODE_DIMENSIONS.TWO_LINE_HEIGHT
+      : baseHeight;
+
   let width: number;
-  if (labelLength <= 5) {
-    width = 72;
-  } else if (labelLength <= 8) {
-    width = 102;
+  if (labelLength <= NODE_DIMENSIONS.WIDTH_BREAKPOINTS.SMALL) {
+    width = NODE_DIMENSIONS.WIDTH_VALUES.SMALL;
+  } else if (labelLength <= NODE_DIMENSIONS.WIDTH_BREAKPOINTS.MEDIUM) {
+    width = NODE_DIMENSIONS.WIDTH_VALUES.MEDIUM;
   } else {
-    width = 170;
+    width = NODE_DIMENSIONS.WIDTH_VALUES.LARGE;
   }
 
   return { width, height };
@@ -64,7 +126,7 @@ function getNodeDimensions(node: Node): { width: number; height: number } {
 /**
  * Gets the center point of a node
  */
-function getNodeCenter(node: Node): { x: number; y: number } {
+export function getNodeCenter(node: Node): { x: number; y: number } {
   const { width, height } = getNodeDimensions(node);
   return {
     x: node.position.x + width / 2,

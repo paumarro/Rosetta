@@ -3,7 +3,12 @@ import { TopicNodeProps } from '@/types/reactflow';
 import { useNodeState } from '@/lib/hooks/useNodeState';
 import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { useHandleVisibility, getNodeWidthClass } from '@/lib/connectionUtils';
+import {
+  useHandleVisibility,
+  getNodeWidthClass,
+  getNodeHeightClass,
+  NODE_DIMENSIONS,
+} from '@/lib/connectionUtils';
 import { useMemo } from 'react';
 
 // Handle configuration type
@@ -76,6 +81,9 @@ const TopicNode = ({
 
   // Style based on the ReactFlow type and editing status
   const getNodeStyles = () => {
+    // Get height class from centralized utility
+    const heightClass = getNodeHeightClass(data.label, type);
+
     //Check if node is being edited - override all other styles
     // In view mode, don't show the white editing effect
     if (isBeingEdited && !isViewMode) {
@@ -83,7 +91,7 @@ const TopicNode = ({
         base: 'bg-white',
         border: 'border-black border-[2.5px] rounded-[5px]',
         hover: 'hover:bg-white',
-        height: type === 'subtopic' ? 'h-[38px]' : 'h-[52px]',
+        height: heightClass,
         text: {
           color: 'text-black',
           size: 'text-sm',
@@ -96,7 +104,7 @@ const TopicNode = ({
         base: selected ? 'bg-sub-hover' : 'bg-sub-bg',
         border: 'border-sub-border border-[2.5px] rounded-[5px]',
         hover: 'hover:bg-sub-hover',
-        height: 'h-[38px]',
+        height: heightClass,
         text: {
           color: 'text-white',
           size: 'text-sm',
@@ -108,7 +116,7 @@ const TopicNode = ({
         base: selected ? 'bg-topic-hover' : 'bg-topic-bg',
         border: 'border-topic-border border-[2.5px] rounded-[5px]',
         hover: 'hover:bg-topic-hover',
-        height: 'h-[52px]',
+        height: heightClass,
         text: {
           color: 'text-white',
           size: 'text-sm',
@@ -128,39 +136,89 @@ const TopicNode = ({
     window.dispatchEvent(event);
   };
 
-  // Truncate text to max 16 characters
-  const getTruncatedLabel = () => {
-    const maxLength = 16;
-    if (data.label.length <= maxLength) {
-      return data.label;
+  // Split label into two lines if length > LABEL_THRESHOLD
+  const splitLabelForDisplay = () => {
+    const label = data.label;
+    const maxLength = 30;
+    const threshold = NODE_DIMENSIONS.LABEL_THRESHOLD;
+
+    if (label.length <= threshold) {
+      // Short labels stay on one line
+      return { firstLine: label, secondLine: null };
     }
-    return data.label.substring(0, maxLength - 3) + '...'; // -3 for the ellipsis
+
+    // Find smart break point: look for last space within reasonable range
+    const searchStart = Math.max(0, threshold - 4); // Search from position 12-16
+    const searchEnd = Math.min(label.length, threshold);
+    let breakPoint = -1;
+
+    // Look for last space in the search range
+    for (let i = searchEnd - 1; i >= searchStart; i--) {
+      if (label[i] === ' ') {
+        breakPoint = i;
+        break;
+      }
+    }
+
+    // Determine first and second line based on break point
+    let firstLine: string;
+    let secondLine: string;
+
+    if (breakPoint !== -1) {
+      // Break at space (don't include the space)
+      firstLine = label.substring(0, breakPoint);
+      secondLine = label.substring(breakPoint + 1);
+    } else {
+      // No space found - break mid-word with hyphen
+      firstLine = label.substring(0, threshold - 1) + '-';
+      secondLine = label.substring(threshold - 1);
+    }
+
+    // Handle truncation if total length exceeds maxLength
+    if (label.length > maxLength) {
+      const remainingLength = maxLength - firstLine.length;
+      if (secondLine.length > remainingLength) {
+        secondLine = secondLine.substring(0, remainingLength - 3) + '...';
+      }
+    }
+
+    return { firstLine, secondLine };
   };
 
   // Determine which handles to render based on node type and nearest topic node
   const activeHandles = useMemo(() => {
-    // Helper to calculate node dimensions
-    const getNodeDimensions = (label: string, nodeType: string) => {
-      const height = nodeType === 'subtopic' ? 38 : 52;
+    // Helper to calculate node dimensions using centralized constants
+    const getLocalNodeDimensions = (label: string, nodeType: string) => {
       const labelLength = label.length || 0;
+
+      // Use 75px height for labels > LABEL_THRESHOLD, otherwise type-specific base height
+      const baseHeight =
+        nodeType === 'subtopic'
+          ? NODE_DIMENSIONS.BASE_HEIGHT.SUBTOPIC
+          : NODE_DIMENSIONS.BASE_HEIGHT.TOPIC;
+      const height =
+        labelLength > NODE_DIMENSIONS.LABEL_THRESHOLD
+          ? NODE_DIMENSIONS.TWO_LINE_HEIGHT
+          : baseHeight;
+
       let width: number;
-      if (labelLength <= 5) {
-        width = 72;
-      } else if (labelLength <= 8) {
-        width = 102;
+      if (labelLength <= NODE_DIMENSIONS.WIDTH_BREAKPOINTS.SMALL) {
+        width = NODE_DIMENSIONS.WIDTH_VALUES.SMALL;
+      } else if (labelLength <= NODE_DIMENSIONS.WIDTH_BREAKPOINTS.MEDIUM) {
+        width = NODE_DIMENSIONS.WIDTH_VALUES.MEDIUM;
       } else {
-        width = 170;
+        width = NODE_DIMENSIONS.WIDTH_VALUES.LARGE;
       }
       return { width, height };
     };
 
     // Helper to calculate node center position
-    const getNodeCenter = (
+    const getLocalNodeCenter = (
       position: { x: number; y: number },
       label: string,
       nodeType: string,
     ) => {
-      const { width, height } = getNodeDimensions(label, nodeType);
+      const { width, height } = getLocalNodeDimensions(label, nodeType);
       return {
         x: position.x + width / 2,
         y: position.y + height / 2,
@@ -177,7 +235,7 @@ const TopicNode = ({
       x: nodeProps.positionAbsoluteX || 0,
       y: nodeProps.positionAbsoluteY || 0,
     };
-    const currentCenter = getNodeCenter(currentPosition, data.label, type);
+    const currentCenter = getLocalNodeCenter(currentPosition, data.label, type);
 
     // Find all topic nodes
     const topicNodes = nodes.filter((n) => n.type === 'topic');
@@ -195,7 +253,7 @@ const TopicNode = ({
     let minDistance = Infinity;
 
     topicNodes.forEach((topicNode) => {
-      const topicCenter = getNodeCenter(
+      const topicCenter = getLocalNodeCenter(
         topicNode.position,
         topicNode.data.label,
         topicNode.type || 'topic',
@@ -211,7 +269,7 @@ const TopicNode = ({
     });
 
     // Calculate direction to nearest topic node
-    const nearestCenter = getNodeCenter(
+    const nearestCenter = getLocalNodeCenter(
       nearestTopic.position,
       nearestTopic.data.label,
       nearestTopic.type || 'topic',
@@ -237,7 +295,7 @@ const TopicNode = ({
   ]);
 
   const styles = getNodeStyles();
-  const displayLabel = getTruncatedLabel();
+  const { firstLine, secondLine } = splitLabelForDisplay();
 
   return (
     <div
@@ -256,10 +314,15 @@ const TopicNode = ({
         />
       ))}
 
-      <div className={`text-center`}>
+      <div className={`text-center flex flex-col justify-center`}>
         <div className={`${styles.text.color} ${styles.text.size}`}>
-          {displayLabel}
+          {firstLine}
         </div>
+        {secondLine && (
+          <div className={`${styles.text.color} ${styles.text.size}`}>
+            {secondLine}
+          </div>
+        )}
       </div>
       {/* Editing indicator - hidden in view mode */}
       {isBeingEdited && editingUser && !isViewMode && (
