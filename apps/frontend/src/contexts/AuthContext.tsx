@@ -5,6 +5,7 @@ import {
   useContext,
   ReactNode,
 } from 'react';
+import { useUserStore } from '@/store/userStore';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -20,6 +21,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { fetchCurrentUser, clearUser } = useUserStore();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -35,16 +37,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         const data = (await response.json()) as { authenticated: boolean };
         setIsAuthenticated(data.authenticated);
+
+        // Fetch user data if authenticated
+        if (data.authenticated) {
+          await fetchCurrentUser();
+        } else {
+          clearUser();
+        }
       } catch (err) {
         console.error('Error checking authentication:', err);
         setIsAuthenticated(false);
+        clearUser();
       } finally {
         setLoading(false);
       }
     };
 
     void checkAuth();
-  }, []);
+  }, [fetchCurrentUser, clearUser]);
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, loading }}>

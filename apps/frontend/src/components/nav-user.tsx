@@ -26,6 +26,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { useNavigate } from 'react-router-dom';
+import { useUserStore } from '@/store/userStore';
 
 export function NavUser({
   user,
@@ -38,6 +39,7 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const navigate = useNavigate();
+  const { clearUser } = useUserStore();
 
   const handleLogout = async () => {
     try {
@@ -50,6 +52,7 @@ export function NavUser({
       });
 
       if (response.ok) {
+        clearUser(); // Clear user data from store
         void navigate('/login');
       } else {
         console.error('Logout failed');
