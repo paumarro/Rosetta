@@ -9,11 +9,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// AuthCheck verifies if the user has a valid authentication token
+// NOTE: This duplicates OIDC verification logic from middleware.
+// Consider extracting shared OIDC provider initialization to reduce duplication.
 func AuthCheck(c *gin.Context) {
 	clientID := os.Getenv("CLIENT_ID")
 	tenantID := os.Getenv("TENANT_ID")
 
-	//Try to get access token from cookie
+	// Try to get access token from cookie
 	accessToken, err := c.Cookie("access_token")
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"authenticated": false})
