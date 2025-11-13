@@ -15,12 +15,13 @@ type UserSkill struct {
 
 type UserLP struct {
 	gorm.Model
-	UserID uint         `gorm:"not null"`
-	LPID   uuid.UUID    `gorm:"type:uuid;not null"`
-	RoleID uint         `gorm:"not null"`
-	User   User         `gorm:"foreignKey:UserID"`
-	LP     LearningPath `gorm:"foreignKey:LPID"`
-	Role   Role         `gorm:"foreignKey:RoleID"`
+	UserID     uint         `gorm:"not null"`
+	LPID       uuid.UUID    `gorm:"type:uuid;not null"`
+	IsFavorite bool         `gorm:"default:false"`
+	RoleID     *uint        `gorm:""`
+	User       User         `gorm:"foreignKey:UserID"`
+	LP         LearningPath `gorm:"foreignKey:LPID;references:ID"`
+	Role       *Role        `gorm:"foreignKey:RoleID"`
 }
 
 type LPSkill struct {
