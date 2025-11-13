@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,9 @@ import (
 	"os"
 	"strings"
 
+	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/initializer"
+	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/service"
+	"github.com/coreos/go-oidc"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,6 +21,7 @@ func Callback(c *gin.Context) {
 	log.Println("Callback handler called")
 	code := c.Query("code")
 	if code == "" {
+		log.Println("Error: Authorization code not found")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization code not found"})
 		return
 	}
@@ -47,7 +52,8 @@ func Callback(c *gin.Context) {
 
 	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(data.Encode()))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create request"})
+		log.Printf("Error: Failed to create token request: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create token request"})
 		return
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -55,7 +61,8 @@ func Callback(c *gin.Context) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get token", "details": err.Error()})
+		log.Printf("Error: Microsoft OAuth API error - Failed to exchange authorization code for token: %v", err)
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Microsoft OAuth API error"})
 		return
 	}
 	defer func() {
@@ -66,31 +73,74 @@ func Callback(c *gin.Context) {
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":    "Failed to get token",
-			"status":   resp.StatusCode,
-			"response": string(bodyBytes),
-		})
+		log.Printf("Error: Microsoft OAuth token exchange failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Microsoft OAuth API error"})
 		return
 	}
 
 	var tokenResponse map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode token response"})
+		log.Printf("Error: Failed to decode Microsoft OAuth token response: %v", err)
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Microsoft OAuth API error"})
 		return
 	}
 
 	accessToken, ok := tokenResponse["access_token"].(string)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid token response"})
+		log.Println("Error: access_token missing from Microsoft OAuth response")
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Microsoft OAuth API error"})
+		return
+	}
+
+	idToken, ok := tokenResponse["id_token"].(string)
+	if !ok {
+		log.Println("Error: id_token missing from Microsoft OAuth response")
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Microsoft OAuth API error"})
 		return
 	}
 
 	refreshToken, ok := tokenResponse["refresh_token"].(string)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid token response: missing refresh token"})
+		log.Println("Error: refresh_token missing from Microsoft OAuth response")
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Microsoft OAuth API error"})
 		return
 	}
+
+	// Verify and decode the ID token to create/update user in database
+	ctx := context.Background()
+	provider, err := oidc.NewProvider(ctx, "https://login.microsoftonline.com/"+tenantID+"/v2.0")
+	if err != nil {
+		log.Printf("Error: Failed to initialize OIDC provider: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize OIDC provider"})
+		return
+	}
+
+	verifier := provider.Verifier(&oidc.Config{ClientID: clientID})
+	parsedIDToken, err := verifier.Verify(ctx, idToken)
+	if err != nil {
+		log.Printf("Error: Failed to verify ID token: %v", err)
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to verify ID token"})
+		return
+	}
+
+	// Extract claims and create/update user
+	claims := map[string]interface{}{}
+	if err := parsedIDToken.Claims(&claims); err != nil {
+		log.Printf("Error: Failed to parse token claims: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse token claims"})
+		return
+	}
+
+	// Create or update user in database
+	userService := service.NewUserService(initializer.DB)
+	user, err := userService.GetOrCreateUser(claims)
+	if err != nil {
+		log.Printf("Error: Failed to create/update user: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user account"})
+		return
+	}
+
+	log.Printf("User successfully authenticated and registered: %s (%s)", user.Email, user.EntraID)
 
 	// Determine cookie domain based on the redirect domain
 	var cookieDomain string

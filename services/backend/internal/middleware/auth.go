@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"os"
 
+	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/initializer"
+	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/service"
 	"github.com/coreos/go-oidc"
 	"github.com/gin-gonic/gin"
 )
@@ -19,7 +21,7 @@ func redirectToLogin(c *gin.Context, originalURL string) {
 	redirectURL := fmt.Sprintf("http://%s/callback", rosettaDomain)
 
 	loginURL := fmt.Sprintf(
-		"https://login.microsoftonline.com/%s/oauth2/v2.0/authorize?client_id=%s&response_type=code&redirect_uri=%s&scope=api://academy-dev/GeneralAccess openid profile email offline_access",
+		"https://login.microsoftonline.com/%s/oauth2.0/authorize?client_id=%s&response_type=code&redirect_uri=%s&scope=api://academy-dev/GeneralAccess openid profile email offline_access User.Read",
 		tenantID,
 		clientID,
 		redirectURL,
@@ -49,7 +51,7 @@ func Auth() gin.HandlerFunc {
 			log.Print("No Auth header found")
 			accessToken, err := c.Cookie("access_token")
 			if err != nil {
-				fmt.Println("Error fetching access_token cookie:", err)
+				log.Printf("Error fetching access_token cookie: %v", err)
 				originalURL := c.Request.URL.String()
 				redirectToLogin(c, originalURL)
 				redirectToLogin(c, c.Request.URL.String())
@@ -74,6 +76,7 @@ func Auth() gin.HandlerFunc {
 			return
 		}
 
+		// Extract Entra ID from token
 		claims := map[string]interface{}{}
 		if err := idToken.Claims(&claims); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse claims: " + err.Error()})
@@ -81,8 +84,25 @@ func Auth() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("claims", claims)
+		entraID, ok := claims["oid"].(string)
+		if !ok || entraID == "" {
+			log.Printf("Missing oid claim in token")
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token: missing user identifier"})
+			c.Abort()
+			return
+		}
 
+		// Load user from database (must already exist from callback)
+		userService := service.NewUserService(initializer.DB)
+		user, err := userService.GetUserByEntraID(entraID)
+		if err != nil {
+			log.Printf("User not found in database: %s - %v", entraID, err)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User account not found. Please log in again."})
+			c.Abort()
+			return
+		}
+
+		c.Set("user", user) // Make user available in handlers
 		c.Next()
 	}
 }
