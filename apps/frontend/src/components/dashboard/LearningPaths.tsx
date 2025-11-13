@@ -2,8 +2,8 @@ import { cn } from '@/lib/utils';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  BookmarkIcon,
   LayoutGrid,
+  BookmarkIcon,
   LayoutList,
   ChevronDown,
 } from 'lucide-react';
@@ -17,6 +17,13 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
+import { useEffect } from 'react';
+import {
+  useLearningPathStore,
+  type LearningPath,
+} from '@/store/learningPathStore';
+
+const DEV_EDITOR_FE_URL = import.meta.env.VITE_DEV_EDITOR_FE_URL as string;
 
 function NewBadge() {
   return (
@@ -27,11 +34,18 @@ function NewBadge() {
   );
 }
 
-function BookMarkButton({ isBookmarked }: { isBookmarked: boolean }) {
+function BookMarkButton({
+  isBookmarked,
+  onClick,
+}: {
+  isBookmarked: boolean;
+  onClick: (e: React.MouseEvent) => void;
+}) {
   return (
     <Button
       variant="ghost"
       size="icon"
+      onClick={onClick}
       className="absolute top-1 right-1  hover:opacity-100 group cursor-pointer"
     >
       <BookmarkIcon
@@ -49,120 +63,116 @@ function BookMarkButton({ isBookmarked }: { isBookmarked: boolean }) {
   );
 }
 
-interface LearningPath {
-  id: number;
-  title: string;
-  isPopular?: boolean;
-  isBookmarked: boolean;
-  isNew?: boolean;
-  knowledgeAreas: string[];
-}
-
 function PathCard({ path }: { path: LearningPath }) {
+  const { isFavorited, addToFavorites, removeFromFavorites } =
+    useLearningPathStore() as {
+      isFavorited: (id: string) => boolean;
+      addToFavorites: (id: string) => Promise<void>;
+      removeFromFavorites: (id: string) => Promise<void>;
+    };
+
+  // Check if path was created in the last 7 days
+  const isNew =
+    new Date(path.CreatedAt).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+  const handlePathClick = () => {
+    window.location.href = `${DEV_EDITOR_FE_URL}view/${path.Title}`;
+  };
+
+  const isBookmarked = isFavorited(path.ID);
+
+  const handleBookmarkToggle = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click event
+    void (async () => {
+      try {
+        if (isBookmarked) {
+          await removeFromFavorites(path.ID);
+        } else {
+          await addToFavorites(path.ID);
+        }
+      } catch (error) {
+        console.error('Failed to toggle bookmark:', error);
+      }
+    })();
+  };
+
   return (
     <Card
-      key={path.id}
+      key={path.ID}
       className="relative bg-card  hover:bg-secondary/50 cursor-pointer  transition-colors p-2"
+      onClick={handlePathClick}
     >
-      <BookMarkButton isBookmarked={path.isBookmarked} />
+      <BookMarkButton
+        isBookmarked={isBookmarked}
+        onClick={handleBookmarkToggle}
+      />
       <CardContent className="px-4 py-8 flex flex-col justify-center h-full">
-        <div>{path.title}</div>
-        {/* Knowledge area badges - positioned absolutely */}
+        <div>{path.Title}</div>
+        {/* Skill badges - positioned absolutely */}
         <div className=" absolute bottom-3 left-4 flex flex-wrap gap-1.5 max-w-[80%]">
-          {path.knowledgeAreas.slice(0, 4).map((area, index) => (
+          {path.Skills?.slice(0, 4).map((skill) => (
             <Badge
-              key={index}
+              key={skill.ID}
               variant="secondary"
               className="text-xs py-0.5 px-2"
             >
-              {area}
+              {skill.Name}
             </Badge>
           ))}
-          {path.knowledgeAreas.length > 4 && (
+          {path.Skills && path.Skills.length > 4 && (
             <Badge variant="outline" className="text-xs py-0.5 px-2">
-              +{path.knowledgeAreas.length - 4}
+              +{path.Skills.length - 4}
             </Badge>
           )}
         </div>
-        {path.isNew && <NewBadge />}
+        {isNew && <NewBadge />}
       </CardContent>
     </Card>
   );
 }
 
 export default function LearningPaths() {
-  // Sample learning paths data
-  const learningPaths = [
-    {
-      id: 1,
-      title: 'Frontend',
-      isPopular: true,
-      isBookmarked: false,
-      knowledgeAreas: ['HTML', 'CSS', 'JavaScript', 'React', 'TypeScript'],
-    },
-    {
-      id: 2,
-      title: 'Backend',
+  const {
+    fetchLearningPaths,
+    fetchUserFavorites,
+    learningPaths,
+    isLoading,
+    error,
+  } = useLearningPathStore() as {
+    fetchLearningPaths: () => Promise<void>;
+    fetchUserFavorites: () => Promise<void>;
+    learningPaths: LearningPath[];
+    isLoading: boolean;
+    error: string | null;
+  };
 
-      isPopular: true,
-      isBookmarked: true,
-      knowledgeAreas: ['Node.js', 'Express', 'SQL', 'NoSQL'],
-    },
-    {
-      id: 3,
-      title: 'DevOps',
-      isPopular: false,
-      isBookmarked: false,
-      knowledgeAreas: ['Docker', 'Kubernetes', 'CI/CD'],
-    },
-    {
-      id: 4,
-      title: 'Full Stack',
-      isPopular: true,
-      isBookmarked: true,
-      knowledgeAreas: ['React', 'Node.js', 'MongoDB', 'REST API', 'GraphQL'],
-    },
-    {
-      id: 5,
-      title: 'AI Engineer',
-      isPopular: false,
-      isBookmarked: false,
-      isNew: true,
-      knowledgeAreas: ['Python', 'TensorFlow', 'PyTorch', 'ML'],
-    },
-    {
-      id: 6,
-      title: 'Data Analyst',
-      isPopular: true,
-      isBookmarked: false,
-      isNew: true,
-      knowledgeAreas: [],
-    },
-    {
-      id: 7,
-      title: 'Mobile Development',
-      isPopular: false,
-      isBookmarked: false,
-      knowledgeAreas: ['React Native', 'Flutter', 'Swift', 'Kotlin'],
-    },
-    {
-      id: 8,
-      title: 'Cloud Architecture',
-      isPopular: true,
-      isBookmarked: false,
-      knowledgeAreas: ['AWS', 'Azure', 'GCP', 'Terraform'],
-    },
-    {
-      id: 9,
-      title: 'Cybersecurity',
-      isPopular: false,
-      isBookmarked: false,
-      isNew: true,
-      knowledgeAreas: ['Network Security', 'Cryptography', 'Threat Analysis'],
-    },
-  ];
+  useEffect(() => {
+    void fetchLearningPaths();
+    void fetchUserFavorites();
+  }, [fetchLearningPaths, fetchUserFavorites]);
 
   const recentlyViewedPaths = learningPaths.slice(0, 9);
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-muted-foreground">Loading learning paths...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600 font-semibold">Error</p>
+          <p className="text-red-600">{error}</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -181,7 +191,7 @@ export default function LearningPaths() {
                 <CarouselContent className="-ml-4">
                   {recentlyViewedPaths.map((path) => (
                     <CarouselItem
-                      key={path.id}
+                      key={path.ID}
                       className="pl-4 md:basis-1/2 lg:basis-1/3"
                     >
                       <PathCard path={path} />
@@ -228,20 +238,9 @@ export default function LearningPaths() {
 
           <div className="bg-muted rounded-2xl flex-1">
             <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Placeholder for learning paths call */}
-              {Array(30)
-                .fill(0)
-                .map((_, index) => {
-                  // Just use the existing paths and cycle through them
-                  const path = learningPaths[index % learningPaths.length];
-                  // Use a unique key by combining the original ID with the index
-                  return (
-                    <PathCard
-                      key={`${String(path.id)}-${String(index)}`}
-                      path={path}
-                    />
-                  );
-                })}
+              {learningPaths.map((path) => (
+                <PathCard key={path.ID} path={path} />
+              ))}
             </div>
           </div>
         </div>
