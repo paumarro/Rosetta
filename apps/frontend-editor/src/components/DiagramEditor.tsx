@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
+import { useUserStore } from '@/lib/stores/userStore';
 import {
   ReactFlow,
   Background,
@@ -53,9 +54,12 @@ export default function DiagramEditor({
     updateCursor,
   } = useCollaborativeStore();
 
-  const [currentUser] = useState({
-    userId: Math.random().toString(36).substring(2, 9),
-    userName: `${Math.random().toString(36).substring(2, 4)}-User`,
+  const { user, fetchCurrentUser, isLoading } = useUserStore();
+
+  // Fallback guest user when authentication is not available
+  const [guestUser] = useState({
+    userId: `guest-${Math.random().toString(36).substring(2, 9)}`,
+    userName: `Guest-${Math.random().toString(36).substring(2, 4).toUpperCase()}`,
   });
 
   // Track connection state for handle visibility
@@ -69,10 +73,34 @@ export default function DiagramEditor({
 
   const isViewMode = mode === 'view';
 
-  // Initialize collaboration when component mounts or diagram changes
+  // Fetch user data on mount (try to get real user)
   useEffect(() => {
+    void fetchCurrentUser();
+  }, [fetchCurrentUser]);
+
+  // Initialize collaboration with real user OR guest user
+  // Wait for initial load attempt to complete before initializing
+  useEffect(() => {
+    // Don't initialize until we've at least tried to fetch user (avoid double init)
+    if (isLoading) return;
+
+    // Use real user if available, otherwise use guest user
+    const currentUser = user
+      ? {
+          userId: user.EntraID,
+          userName: user.Name,
+        }
+      : guestUser;
+
     void initializeCollaboration(diagramName, currentUser, isViewMode);
-  }, [diagramName, currentUser, initializeCollaboration, isViewMode]);
+  }, [
+    diagramName,
+    user,
+    guestUser,
+    initializeCollaboration,
+    isViewMode,
+    isLoading,
+  ]);
 
   // Cleanup when component unmounts
   useEffect(() => {
