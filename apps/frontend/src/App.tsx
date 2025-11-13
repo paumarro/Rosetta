@@ -1,8 +1,6 @@
 import Home from '@/pages/Home';
-import ApiTest from '@/pages/Apitest';
 import Login from '@/pages/Login';
 import { Person } from '@/pages/Person';
-import Editor from '@/pages/Editor';
 import WelcomePage from '@/pages/Welcome';
 import './App.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
@@ -71,9 +69,7 @@ export default function App() {
           </Route>
 
           {/* Test and not implemented routes */}
-          <Route path="/test" element={<ApiTest />} />
           <Route path="/person" element={<Person />} />
-          <Route path="/editor" element={<Editor />} />
 
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
