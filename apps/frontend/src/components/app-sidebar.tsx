@@ -13,9 +13,24 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { data } from '@/lib/navigation';
+import { useUserStore } from '@/store/userStore';
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user } = useUserStore();
+
+  // Transform user data to match NavUser's expected format
+  const navUserData = user
+    ? {
+        name: user.Name,
+        email: user.Email,
+        avatar: user.PhotoURL || '/avatars/default.jpg',
+      }
+    : {
+        name: 'Loading...',
+        email: '',
+        avatar: '/avatars/default.jpg',
+      };
+
   return (
     <Sidebar
       className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
@@ -44,7 +59,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavSecondary className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={navUserData} />
       </SidebarFooter>
     </Sidebar>
   );
