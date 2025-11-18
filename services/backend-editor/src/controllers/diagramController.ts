@@ -71,17 +71,8 @@ export const createDiagramByLP = async (
   req: Request<object, object, { learningPathId: string; name?: string }>,
   res: Response,
 ) => {
-  console.log('createDiagramByLP request body:', JSON.stringify(req.body));
   const { learningPathId, name } = req.body;
   const finalName = name && name.trim() !== '' ? name : learningPathId;
-  console.log(
-    'learningPathId:',
-    learningPathId,
-    'name:',
-    name,
-    'finalName:',
-    finalName,
-  );
   try {
     const nodes = defaultDiagramTemplate.nodes;
 
