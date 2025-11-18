@@ -22,7 +22,8 @@ app.use(corsMiddleware);
 app.use('/api', diagramRoutes);
 
 // Yjs websocket server with MongoDB persistence
-const wss = new WebSocketServer({ server });
+// Use noServer: true to manually handle upgrade and authenticate BEFORE accepting connection
+const wss = new WebSocketServer({ noServer: true });
 
 const mongoUrl =
   process.env.MONGO_URL ||
@@ -30,8 +31,59 @@ const mongoUrl =
   'mongodb://localhost:27017/yjs';
 const yPersistence = new MongodbPersistence(mongoUrl);
 
-wss.on('connection', (conn: WebSocket, req: IncomingMessage) => {
-  setupWSConnection(conn, req, { persistence: yPersistence });
+// Handle WebSocket upgrade - authenticate BEFORE accepting connection
+server.on('upgrade', (req: IncomingMessage, socket, head) => {
+  void (async () => {
+    try {
+      // Validate authentication from the upgrade request
+      // Extract and validate token directly without needing a WebSocket object
+      const cookies: Record<string, string> = {};
+      const cookieHeader = req.headers.cookie;
+
+      if (cookieHeader) {
+        cookieHeader.split(';').forEach((cookie) => {
+          const [name, ...rest] = cookie.split('=');
+          const value = rest.join('=').trim();
+          if (name) {
+            cookies[name.trim()] = decodeURIComponent(value);
+          }
+        });
+      }
+
+      const accessToken = cookies['access_token'];
+      // Validate token (import authService at top of file)
+      const authService = (await import('./services/authService.js')).default;
+      const validationResult = await authService.validateToken(accessToken);
+      const user = authService.getUserFromValidation(validationResult);
+
+      if (!accessToken || !validationResult.valid || !user) {
+        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+        socket.destroy();
+        return;
+      }
+
+      // Authentication succeeded - now complete the WebSocket upgrade
+      wss.handleUpgrade(req, socket, head, (conn: WebSocket) => {
+        // Extract and decode document name from URL path
+        const urlPath = req.url || '/';
+        const docName = decodeURIComponent(urlPath.slice(1));
+
+        // Setup Yjs connection immediately - no async gap, no message loss!
+        setupWSConnection(conn, req, {
+          docName: docName,
+          persistence: yPersistence,
+          gc: true,
+        });
+
+        // Emit the 'connection' event for any other handlers
+        wss.emit('connection', conn, req);
+      });
+    } catch (error) {
+      console.error('Error during WebSocket upgrade:', error);
+      socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
+      socket.destroy();
+    }
+  })();
 });
 
 const startServer = async () => {
