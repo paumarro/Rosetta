@@ -56,12 +56,6 @@ export default function DiagramEditor({
 
   const { user, fetchCurrentUser, isLoading } = useUserStore();
 
-  // Fallback guest user when authentication is not available
-  const [guestUser] = useState({
-    userId: `guest-${Math.random().toString(36).substring(2, 9)}`,
-    userName: `Guest-${Math.random().toString(36).substring(2, 4).toUpperCase()}`,
-  });
-
   // Track connection state for handle visibility
   const [connectionState, setConnectionState] = useState<ConnectionState>({
     sourceNode: null,
@@ -73,39 +67,34 @@ export default function DiagramEditor({
 
   const isViewMode = mode === 'view';
 
-  // Fetch user data on mount (try to get real user)
+  // Fetch user data on mount
   useEffect(() => {
     void fetchCurrentUser();
   }, [fetchCurrentUser]);
 
-  // Initialize collaboration with real user OR guest user
-  // Wait for initial load attempt to complete before initializing
+  // Initialize collaboration once authentication completes
+  // Only proceed if user is authenticated
   useEffect(() => {
-    // Don't initialize until we've at least tried to fetch user (avoid double init)
+    // Wait for authentication check to complete
     if (isLoading) return;
 
-    // Use real user if available, otherwise use guest user
-    const currentUser = user
-      ? {
-          userId: user.EntraID,
-          userName: user.Name,
-        }
-      : guestUser;
+    // Only initialize if we have an authenticated user
+    if (!user) {
+      console.log('No authenticated user - collaboration not initialized');
+      return;
+    }
+
+    const currentUser = {
+      userId: user.EntraID,
+      userName: user.Name,
+    };
 
     void initializeCollaboration(diagramName, currentUser, isViewMode);
-  }, [
-    diagramName,
-    user,
-    guestUser,
-    initializeCollaboration,
-    isViewMode,
-    isLoading,
-  ]);
+  }, [diagramName, isViewMode, isLoading, user, initializeCollaboration]);
 
   // Cleanup when component unmounts
   useEffect(() => {
     return () => {
-      console.log('🧹 Component unmounting - calling cleanup');
       cleanup();
     };
   }, [cleanup]);
