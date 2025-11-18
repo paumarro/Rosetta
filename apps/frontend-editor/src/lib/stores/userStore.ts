@@ -29,7 +29,7 @@ export interface UserStore {
 
 export const useUserStore = create<UserStore>((set) => ({
   user: null,
-  isLoading: false,
+  isLoading: true,
   error: null,
 
   setError: (error: string | null) => {
@@ -44,20 +44,25 @@ export const useUserStore = create<UserStore>((set) => ({
       });
 
       if (!response.ok) {
-        const errorMessage =
-          response.status === 404
-            ? 'User not found'
-            : 'Failed to fetch user data';
-        set({ error: errorMessage, isLoading: false });
-      } else {
-        const data = (await response.json()) as User;
-        set({ user: data, isLoading: false, error: null });
+        // User is not authenticated - redirect to login
+        console.error('User not authenticated, redirecting to login');
+        set({ error: 'Not authenticated', isLoading: false, user: null });
+
+        // Redirect to the main auth service login
+        window.location.href = 'http://localhost:8080/auth/login';
+        return;
       }
+
+      const data = (await response.json()) as User;
+      set({ user: data, isLoading: false, error: null });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      set({ error: errorMessage, isLoading: false });
       console.error('Error fetching user:', error);
+      set({ error: errorMessage, isLoading: false, user: null });
+
+      // Network error or CORS issue - likely not authenticated
+      window.location.href = 'http://localhost:8080/auth/login';
     }
   },
 
