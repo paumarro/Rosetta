@@ -8,6 +8,7 @@ import { nanoid } from 'nanoid';
 import type { Awareness } from 'y-protocols/awareness';
 
 // TODO: Move types to the types folder later
+// TODO: Move helper functions to different folder later
 
 interface User {
   userId: string;
@@ -154,6 +155,7 @@ interface CollaborativeState {
   awareness: Awareness | null;
   awarenessCleanup: (() => void) | null;
   isViewMode: boolean;
+  syncTimeoutId: NodeJS.Timeout | null;
 
   //Loading States
   isInitializing: boolean;
@@ -196,6 +198,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     yProvider: null,
     awareness: null,
     awarenessCleanup: null,
+    syncTimeoutId: null,
     isInitializing: false,
     title: '',
     isViewMode: false,
@@ -207,6 +210,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       isViewMode = false,
     ) => {
       const state = get();
+
       if (
         state.isInitializing ||
         (state.yProvider && state.learningPathId === learningPathId)
@@ -255,23 +259,14 @@ export const useCollaborativeStore = create<CollaborativeState>()(
               });
             }
           });
-          console.log('👥 Connected Users from Awareness:', users);
           set({ connectedUsers: users });
         };
 
-        // Listen to awareness changes - this fires when users join/leave
-        // The change event provides info about added, updated, and removed clients
         const awarenessChangeHandler = (changes: {
           added: number[];
           updated: number[];
           removed: number[];
         }) => {
-          console.log('🔔 Awareness changed:', {
-            added: changes.added,
-            updated: changes.updated,
-            removed: changes.removed,
-          });
-
           // Clean up editing states for disconnected users
           if (changes.removed.length > 0 && !isViewMode) {
             const states = awareness.getStates();
@@ -296,10 +291,6 @@ export const useCollaborativeStore = create<CollaborativeState>()(
                 editedBy &&
                 !currentUserNames.has(editedBy)
               ) {
-                console.log(
-                  '🧹 Cleaning up node edited by disconnected user:',
-                  editedBy,
-                );
                 yNode.set('isBeingEdited', false);
                 yNode.set('editedBy', null);
               }
@@ -316,7 +307,6 @@ export const useCollaborativeStore = create<CollaborativeState>()(
 
         // Add beforeunload handler to ensure cleanup on page close/refresh
         const handleBeforeUnload = () => {
-          console.log('🚪 Page unloading - clearing awareness state');
           awareness.setLocalState(null);
         };
 
@@ -326,11 +316,9 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         const cleanupAwareness = () => {
           awareness.off('change', awarenessChangeHandler);
           window.removeEventListener('beforeunload', handleBeforeUnload);
-          console.log('🧹 Awareness listener and beforeunload handler removed');
         };
 
         const applyFromY = () => {
-          // console.log('🔄 applyFromY called');
           const nodes = Array.from(yNodes.entries()).map(([id, yNode]) => {
             const type = (yNode.get('type') as string | undefined) ?? 'topic';
             const position = (yNode.get('position') as
@@ -366,86 +354,118 @@ export const useCollaborativeStore = create<CollaborativeState>()(
             } as DiagramEdge;
           });
 
-          set({ nodes, edges, title: learningPathId });
+          // Get diagram name from Yjs metadata
+          const yMetadata = doc.getMap<string>('metadata');
+          const diagramName = yMetadata.get('name') || learningPathId;
+
+          set({ nodes, edges, title: diagramName });
         };
 
         provider.once('sync', async (isSynced: boolean) => {
-          if (!isSynced) return;
+          try {
+            if (!isSynced) return;
 
-          console.log('✅ Provider synced');
+            // Clear timeout on successful sync
+            clearTimeout(syncTimeout);
 
-          // Assign color after sync - now yUserColors has data from other clients
-          const yUserColors = doc.getMap<string>('userColors');
+            // Assign color after sync - now yUserColors has data from other clients
+            const yUserColors = doc.getMap<string>('userColors');
 
-          // Check if this user already has a color assigned
-          let userColor = yUserColors.get(user.userId);
-
-          if (!userColor) {
-            // Find first unused color from the palette
-            const usedColors = new Set(yUserColors.values());
-            userColor = AVATAR_COLORS.find((color) => !usedColors.has(color));
+            // Check if this user already has a color assigned
+            let userColor = yUserColors.get(user.userId);
 
             if (!userColor) {
-              // All colors in use - use modulo of total assigned colors
-              userColor =
-                AVATAR_COLORS[yUserColors.size % AVATAR_COLORS.length];
+              // Find first unused color from the palette
+              const usedColors = new Set(yUserColors.values());
+              userColor = AVATAR_COLORS.find((color) => !usedColors.has(color));
+
+              if (!userColor) {
+                // All colors in use - use modulo of total assigned colors
+                userColor =
+                  AVATAR_COLORS[yUserColors.size % AVATAR_COLORS.length];
+              }
+
+              // Persist the color assignment
+              yUserColors.set(user.userId, userColor);
             }
 
-            // Persist the color assignment
-            yUserColors.set(user.userId, userColor);
-          }
+            // Update the stored currentUser to include the color and mode
+            set({
+              currentUser: {
+                ...user,
+                color: userColor,
+                mode: isViewMode ? 'view' : 'edit',
+              },
+            });
 
-          // Update the stored currentUser to include the color and mode
-          set({
-            currentUser: {
-              ...user,
+            // Set local awareness state with user info
+            awareness.setLocalState({
+              userId: user.userId,
+              userName: user.userName,
               color: userColor,
               mode: isViewMode ? 'view' : 'edit',
-            },
-          });
+            });
 
-          // Set local awareness state with user info
-          awareness.setLocalState({
-            userId: user.userId,
-            userName: user.userName,
-            color: userColor,
-            mode: isViewMode ? 'view' : 'edit',
-          });
+            // Fetch initial diagram data if not already loaded
+            if (yNodes.size === 0) {
+              try {
+                const response = await fetch(
+                  `http://localhost:3001/api/diagrams/${learningPathId}`,
+                );
 
-          applyFromY();
+                if (response.ok) {
+                  const diagram = (await response.json()) as {
+                    nodes: DiagramNode[];
+                    edges: DiagramEdge[];
+                    name: string;
+                  };
 
-          if (yNodes.size === 0) {
-            try {
-              const response = await fetch(
-                `http://localhost:3001/api/diagrams/${learningPathId}`,
-              );
-              if (response.ok) {
-                const diagram = (await response.json()) as {
-                  nodes: DiagramNode[];
-                  edges: DiagramEdge[];
-                };
+                  // Use transaction to batch all updates and fire observers only once
+                  doc.transact(() => {
+                    // Store diagram name in Yjs metadata for all clients
+                    const yMetadata = doc.getMap<string>('metadata');
+                    if (!yMetadata.get('name')) {
+                      yMetadata.set('name', diagram.name);
+                    }
 
-                diagram.nodes.forEach((node) => {
-                  const yNode = new Y.Map<unknown>();
-                  yNode.set('type', node.type);
-                  yNode.set('position', node.position);
-                  yNode.set('data', node.data);
-                  yNode.set('isBeingEdited', node.isBeingEdited || false);
-                  yNode.set('editedBy', node.editedBy || null);
-                  yNodes.set(node.id, yNode);
-                });
-                diagram.edges.forEach((edge) => {
-                  const yEdge = new Y.Map<unknown>();
-                  yEdge.set('source', edge.source);
-                  yEdge.set('target', edge.target);
-                  yEdge.set('sourceHandle', edge.sourceHandle ?? null);
-                  yEdge.set('targetHandle', edge.targetHandle ?? null);
-                  yEdges.set(edge.id, yEdge);
-                });
+                    diagram.nodes.forEach((node) => {
+                      const yNode = new Y.Map<unknown>();
+                      yNode.set('type', node.type);
+                      yNode.set('position', node.position);
+                      yNode.set('data', node.data);
+                      yNode.set('isBeingEdited', node.isBeingEdited || false);
+                      yNode.set('editedBy', node.editedBy || null);
+                      yNodes.set(node.id, yNode);
+                    });
+                    diagram.edges.forEach((edge) => {
+                      const yEdge = new Y.Map<unknown>();
+                      yEdge.set('source', edge.source);
+                      yEdge.set('target', edge.target);
+                      yEdge.set('sourceHandle', edge.sourceHandle ?? null);
+                      yEdge.set('targetHandle', edge.targetHandle ?? null);
+                      yEdges.set(edge.id, yEdge);
+                    });
+                  });
+
+                  // Observers will fire automatically after transaction
+                } else {
+                  console.error(
+                    `API returned error status: ${String(response.status)}`,
+                  );
+                }
+              } catch (error) {
+                console.error('Failed to fetch initial diagram:', error);
               }
-            } catch (error) {
-              console.error('Failed to fetch initial diagram:', error);
+            } else {
+              applyFromY();
             }
+
+            // Mark initialization as complete
+            set({ isInitializing: false });
+          } catch (error) {
+            console.error('Error in provider sync callback:', error);
+            clearTimeout(syncTimeout);
+            set({ isInitializing: false });
           }
         });
 
@@ -456,13 +476,62 @@ export const useCollaborativeStore = create<CollaborativeState>()(
           applyFromY();
         });
 
+        // Add initialization timeout to prevent infinite loading
+        const syncTimeout = setTimeout(() => {
+          const currentState = get();
+          if (currentState.isInitializing) {
+            console.error(
+              `WebSocket sync timeout after 30s for: "${learningPathId}"`,
+            );
+            set({ isInitializing: false, syncTimeoutId: null });
+          }
+        }, 30000);
+
+        set({ syncTimeoutId: syncTimeout });
+
         provider.on('status', (event: { status: string }) => {
           const isConnected = event.status === 'connected';
           set({ isConnected });
-          console.log(`🔌 Connection status: ${event.status}`);
         });
 
-        console.log('Ydoc:', doc);
+        // Handle connection errors (including authentication failures)
+        provider.on('connection-error', async (error: ErrorEvent) => {
+          const errorMsg =
+            error.message ||
+            (error instanceof Error ? error.message : 'Unknown error');
+          console.error('WebSocket connection error:', errorMsg);
+
+          const currentState = get();
+          if (currentState.isInitializing) {
+            if (currentState.syncTimeoutId) {
+              clearTimeout(currentState.syncTimeoutId);
+            }
+            set({ isInitializing: false, syncTimeoutId: null });
+          }
+
+          // Check for authentication error
+          const errorMessage = errorMsg;
+          if (
+            errorMessage.includes('4401') ||
+            errorMessage.includes('Unauthorized')
+          ) {
+            try {
+              const response = await fetch(
+                'http://localhost:8080/api/auth/check',
+                {
+                  method: 'GET',
+                  credentials: 'include',
+                },
+              );
+
+              if (!response.ok) {
+                window.location.href = 'http://localhost:8080/auth/login';
+              }
+            } catch {
+              window.location.href = 'http://localhost:8080/auth/login';
+            }
+          }
+        });
 
         set({
           ydoc: doc,
@@ -474,15 +543,16 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         const errorMessage =
           error instanceof Error ? error.message : 'Unknown error';
         console.error('Failed to load diagram:', errorMessage);
-      } finally {
         set({ isInitializing: false });
       }
     },
     cleanup: () => {
-      const { yProvider, ydoc, awareness, awarenessCleanup, currentUser } =
+      const { yProvider, ydoc, awareness, awarenessCleanup, syncTimeoutId } =
         get();
 
-      console.log('🧹 Cleanup called for user:', currentUser);
+      if (syncTimeoutId) {
+        clearTimeout(syncTimeoutId);
+      }
 
       // Remove awareness listener first
       if (awarenessCleanup) {
@@ -493,17 +563,22 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       if (awareness) {
         // Setting local state to null removes this client from awareness
         awareness.setLocalState(null);
-        console.log('🧹 Awareness state cleared');
       }
 
       // Destroy provider and doc
       if (yProvider) {
-        yProvider.destroy();
-        console.log('🧹 Provider destroyed');
+        try {
+          yProvider.destroy();
+        } catch {
+          // Ignore errors during provider destruction (e.g., WebSocket already closed)
+        }
       }
       if (ydoc) {
-        ydoc.destroy();
-        console.log('🧹 Doc destroyed');
+        try {
+          ydoc.destroy();
+        } catch {
+          // Ignore errors during doc destruction
+        }
       }
 
       set({
@@ -511,6 +586,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         ydoc: null,
         awareness: null,
         awarenessCleanup: null,
+        syncTimeoutId: null,
         isConnected: false,
         connectedUsers: [],
         currentUser: null,
@@ -538,14 +614,6 @@ export const useCollaborativeStore = create<CollaborativeState>()(
           'editedBy',
           isBeingEdited ? currentUser?.userName || null : null,
         );
-        if (isBeingEdited) {
-          console.log(
-            '✅ Node marked as being edited by:',
-            currentUser?.userName,
-          );
-        }
-      } else {
-        console.log('❌ yNode not found for id:', id);
       }
     },
 
@@ -700,9 +768,6 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       const yNode = yNodes.get(nodeId);
       if (yNode) {
         yNode.set('data', data);
-        console.log('✅ Node data updated:', nodeId, data);
-      } else {
-        console.log('❌ yNode not found for id:', nodeId);
       }
     },
     updateCursor: (position: { x: number; y: number }) => {
