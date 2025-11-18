@@ -327,12 +327,16 @@ const TopicNode = ({
       {/* Editing indicator - hidden in view mode */}
       {isBeingEdited && editingUser && !isViewMode && (
         <div className="absolute -right-3.5 top-1/2 -translate-y-1/2">
-          <Avatar className="w-7 h-7" userColor={editingUser.color}>
+          <Avatar className="w-8 h-8" userColor={editingUser.color}>
             <AvatarFallback
               className="text-xs text-white"
               userColor={editingUser.color}
             >
-              {editingUser.userName.slice(0, 2).toUpperCase()}
+              {editingUser.userName
+                .split(' ')
+                .map((word) => word[0])
+                .join('')
+                .toUpperCase()}
             </AvatarFallback>
           </Avatar>
         </div>

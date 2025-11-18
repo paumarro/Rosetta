@@ -4,8 +4,6 @@ import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
 export default function AvatarDemo() {
   const { connectedUsers, currentUser } = useCollaborativeStore();
 
-  console.log('🎭 AvatarDemo render:', { connectedUsers, currentUser });
-
   const otherUsers = connectedUsers.filter(
     (user) => user.userId !== currentUser?.userId,
   );
@@ -19,7 +17,11 @@ export default function AvatarDemo() {
             userId: currentUser.userId,
             src: '',
             alt: `@${currentUser.userName}`,
-            fallback: currentUser.userName.slice(0, 2).toUpperCase(),
+            fallback: currentUser.userName
+              .split(' ')
+              .map((word) => word[0])
+              .join('')
+              .toUpperCase(),
             color: currentUser.color,
           },
         ]
@@ -28,14 +30,16 @@ export default function AvatarDemo() {
       userId: user.userId,
       src: '',
       alt: `@${user.userName}`,
-      fallback: user.userName.slice(0, 2).toUpperCase(),
+      fallback: user.userName
+        .split(' ')
+        .map((word) => word[0])
+        .join('')
+        .toUpperCase(),
       color: user.color,
     })),
   ];
 
   const allAuthors = [...connectedAuthors];
-
-  console.log('👥 All authors:', allAuthors);
 
   const maxVisible = 4;
   const visibleAuthors = allAuthors.slice(0, maxVisible);
@@ -43,7 +47,6 @@ export default function AvatarDemo() {
 
   // Don't render if no users
   if (allAuthors.length === 0) {
-    console.log('⚠️ No authors to display');
     return null;
   }
 
