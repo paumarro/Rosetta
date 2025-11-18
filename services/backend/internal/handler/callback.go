@@ -149,12 +149,26 @@ func Callback(c *gin.Context) {
 	} else {
 		cookieDomain = rosettaDomain
 	}
+
+	// For localhost, use "localhost" to share cookies across all ports
+	// For production, use ".yourdomain.com" to share across subdomains
+	isDevelopment := strings.Contains(cookieDomain, "localhost") || cookieDomain == "127.0.0.1"
+	if isDevelopment {
+		cookieDomain = "localhost"
+	}
+
+	// Secure flag should only be true in production (HTTPS)
+	// In development (HTTP), browsers won't send cookies with Secure flag
+	isSecure := !isDevelopment
+
 	// Optional: Add logging for debugging
-	fmt.Printf("Callback - State: %s, Redirect Domain: %s\n", state, redirectDomain)
+	fmt.Printf("Callback - State: %s, Redirect Domain: %s, Cookie Domain: %s, Secure: %v\n", state, redirectDomain, cookieDomain, isSecure)
 
-	c.SetCookie("refresh_token", refreshToken, 3600*24, "/", cookieDomain, true, true)
-
-	c.SetCookie("access_token", accessToken, 3600, "/", cookieDomain, true, true)
+	// Set cookies with SameSite=Lax for cross-port access
+	// Note: Gin's SetCookie doesn't support SameSite directly, so we'll set it via header
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("refresh_token", refreshToken, 3600*24, "/", cookieDomain, isSecure, true)
+	c.SetCookie("access_token", accessToken, 3600, "/", cookieDomain, isSecure, true)
 
 	fmt.Printf("Access and refresh tokens set in cookies for domain: %s\n", cookieDomain)
 
