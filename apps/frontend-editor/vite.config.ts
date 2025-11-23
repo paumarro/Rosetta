@@ -7,6 +7,8 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
   return {
+    // Base path for when app is served at /studio/ via nginx
+    base: '/studio/',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: [
