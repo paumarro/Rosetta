@@ -1,6 +1,0 @@
-name: fe-prod
-services:
-  frontend:
-    build: .
-    ports:
-      - "3000:80"
