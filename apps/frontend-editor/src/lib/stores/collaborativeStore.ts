@@ -7,6 +7,12 @@ import { WebsocketProvider } from 'y-websocket';
 import { nanoid } from 'nanoid';
 import type { Awareness } from 'y-protocols/awareness';
 
+// With nginx reverse proxy, all paths are relative (same-origin):
+// - /editor/ws      → be-editor WebSocket
+// - /editor/*       → be-editor API
+// - /auth/*         → auth-service
+// - /login          → FE login page
+
 // TODO: Move types to the types folder later
 // TODO: Move helper functions to different folder later
 
@@ -230,11 +236,11 @@ export const useCollaborativeStore = create<CollaborativeState>()(
       });
       try {
         const doc = new Y.Doc();
-        const provider = new WebsocketProvider(
-          'ws://localhost:3001',
-          learningPathId,
-          doc,
-        );
+        // WebSocket URL uses the current host - nginx routes /editor/ws to be-editor
+        const wsProtocol =
+          window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.host}/editor/ws`;
+        const provider = new WebsocketProvider(wsUrl, learningPathId, doc);
 
         const yNodes = doc.getMap<Y.Map<unknown>>('nodes');
         const yEdges = doc.getMap<Y.Map<unknown>>('edges');
@@ -409,8 +415,9 @@ export const useCollaborativeStore = create<CollaborativeState>()(
             // Fetch initial diagram data if not already loaded
             if (yNodes.size === 0) {
               try {
+                // /editor/diagrams/:id → nginx → be-editor /api/diagrams/:id
                 const response = await fetch(
-                  `http://localhost:3001/api/diagrams/${learningPathId}`,
+                  `/editor/diagrams/${learningPathId}`,
                 );
 
                 if (response.ok) {
@@ -495,10 +502,13 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         });
 
         // Handle connection errors (including authentication failures)
-        provider.on('connection-error', async (error: ErrorEvent) => {
+        provider.on('connection-error', async (event: Event) => {
           const errorMsg =
-            error.message ||
-            (error instanceof Error ? error.message : 'Unknown error');
+            event instanceof ErrorEvent
+              ? event.message
+              : event instanceof Error
+                ? event.message
+                : 'Unknown error';
           console.error('WebSocket connection error:', errorMsg);
 
           const currentState = get();
@@ -516,19 +526,17 @@ export const useCollaborativeStore = create<CollaborativeState>()(
             errorMessage.includes('Unauthorized')
           ) {
             try {
-              const response = await fetch(
-                'http://localhost:8080/api/auth/check',
-                {
-                  method: 'GET',
-                  credentials: 'include',
-                },
-              );
+              // /auth/validate → nginx → auth-service
+              const response = await fetch('/auth/validate', {
+                method: 'GET',
+                credentials: 'include',
+              });
 
               if (!response.ok) {
-                window.location.href = 'http://localhost:8080/auth/login';
+                window.location.href = '/login';
               }
             } catch {
-              window.location.href = 'http://localhost:8080/auth/login';
+              window.location.href = '/login';
             }
           }
         });
