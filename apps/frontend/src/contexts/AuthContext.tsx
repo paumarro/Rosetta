@@ -18,6 +18,8 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// With nginx reverse proxy, we use relative paths for same-origin requests
+// This eliminates cross-origin issues and works in both dev (nginx) and production
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -26,7 +28,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch('/api/auth/check', {
+        // Relative path - nginx routes /auth/* to auth-service
+        // This is same-origin, so cookies flow automatically
+        const response = await fetch('/auth/validate', {
           method: 'GET',
           credentials: 'include',
         });
@@ -35,11 +39,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           throw new Error('Failed to fetch authentication status');
         }
 
-        const data = (await response.json()) as { authenticated: boolean };
-        setIsAuthenticated(data.authenticated);
+        const data = (await response.json()) as { valid: boolean };
+        setIsAuthenticated(data.valid);
 
         // Fetch user data if authenticated
-        if (data.authenticated) {
+        if (data.valid) {
           await fetchCurrentUser();
         } else {
           clearUser();
