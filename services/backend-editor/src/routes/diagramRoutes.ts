@@ -9,8 +9,12 @@ import {
   createDiagramByLP,
   deleteDiagramByLP,
 } from '../controllers/diagramController.js';
+import { authenticateRequest } from '../middleware/apiAuth.js';
 
 const router = Router();
+
+// Apply authentication middleware to all routes
+router.use(authenticateRequest);
 
 router.get('/diagrams', catchAsync(getDiagrams));
 router.get('/diagrams/:name', catchAsync(getDiagramByName));
