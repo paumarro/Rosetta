@@ -25,7 +25,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '@/store/userStore';
 
 export function NavUser({
@@ -38,28 +38,17 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const { clearUser } = useUserStore();
 
-  const handleLogout = async () => {
-    try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        clearUser(); // Clear user data from store
-        void navigate('/login');
-      } else {
-        console.error('Logout failed');
-      }
-    } catch (err) {
-      console.error('Error during logout:', err);
-    }
+  const handleLogout = () => {
+    // Clear user data from store
+    clearUser();
+    // Use relative path - nginx routes /auth/* to auth-service
+    // Don't use window.location.origin as it includes the port (e.g., localhost:3000)
+    // Always redirect to /login (nginx will handle routing)
+    const redirectUrl = encodeURIComponent('/login');
+    window.location.href = `/auth/logout?redirect=${redirectUrl}`;
   };
 
   return (
@@ -123,7 +112,7 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => void handleLogout()}>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOut />
               Log out
             </DropdownMenuItem>
