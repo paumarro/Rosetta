@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-
-const BE_API_URL = import.meta.env.VITE_BE_API_URL as string;
+import { apiFetch, getErrorMessage } from '@/lib/api';
 
 export interface User {
   ID: number;
@@ -41,9 +40,7 @@ export const useUserStore = create<UserStore>((set) => ({
   fetchCurrentUser: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await fetch(`${BE_API_URL}/api/user/me`, {
-        credentials: 'include',
-      });
+      const response = await apiFetch('/api/user/me');
 
       if (!response.ok) {
         const errorMessage =
@@ -56,9 +53,7 @@ export const useUserStore = create<UserStore>((set) => ({
         set({ user: data, isLoading: false, error: null });
       }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      set({ error: errorMessage, isLoading: false });
+      set({ error: getErrorMessage(error), isLoading: false });
       console.error('Error fetching user:', error);
     }
   },
@@ -66,12 +61,9 @@ export const useUserStore = create<UserStore>((set) => ({
   updateUserProfile: async (data: UpdateUserData) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await fetch(`${BE_API_URL}/api/user/me`, {
+      const response = await apiFetch('/api/user/me', {
         method: 'PATCH',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
 
@@ -82,11 +74,9 @@ export const useUserStore = create<UserStore>((set) => ({
       const updatedUser = (await response.json()) as User;
       set({ user: updatedUser, isLoading: false, error: null });
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      set({ error: errorMessage, isLoading: false });
+      set({ error: getErrorMessage(error), isLoading: false });
       console.error('Error updating user profile:', error);
-      throw error; // Re-throw so UI can handle it
+      throw error;
     }
   },
 
