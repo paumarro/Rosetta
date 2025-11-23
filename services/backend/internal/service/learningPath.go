@@ -46,7 +46,7 @@ func (s *LearningPathService) GetLearningPaths() ([]model.LearningPath, error) {
 	return paths, nil
 }
 
-func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, description string, isPublic bool, thumbnail string, skillNames []string) (*model.LearningPath, error) {
+func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, description string, isPublic bool, thumbnail string, skillNames []string, authToken string) (*model.LearningPath, error) {
 	lpID := uuid.New()
 
 	editorURL := os.Getenv("EDITOR_BASE_URL")
@@ -61,6 +61,9 @@ func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, des
 
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/api/diagrams/by-lp", editorURL), bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
+	if authToken != "" {
+		req.Header.Set("Authorization", "Bearer "+authToken)
+	}
 
 	httpClient := &http.Client{Timeout: 10 * time.Second}
 
