@@ -32,7 +32,8 @@ class AuthService {
    */
   async validateToken(token: string): Promise<TokenValidationResult> {
     try {
-      const response = await fetch(`${this.authServiceUrl}/api/auth/validate`, {
+      // auth-service routes are at /auth/* (not /api/auth/*)
+      const response = await fetch(`${this.authServiceUrl}/auth/validate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
