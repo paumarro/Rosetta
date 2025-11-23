@@ -2,10 +2,7 @@
 FROM golang:latest
 
 # Set the working directory for the service
-WORKDIR /BE
-
-# Install air for hot reloading
-RUN go install github.com/air-verse/air@latest
+WORKDIR /app
 
 # Copy go.mod and go.sum for dependency caching
 COPY go.mod go.sum ./
@@ -13,5 +10,11 @@ COPY go.mod go.sum ./
 # Download dependencies
 RUN go mod download
 
-# Command to run the application with hot reloading
-CMD ["air", "-c", ".air.toml"]
+# Copy all source code
+COPY . .
+
+# Build the application
+RUN go build -o main ./cmd/main.go
+
+# Command to run the application
+CMD ["./main"]
