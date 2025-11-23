@@ -17,11 +17,13 @@ export default defineConfig(({ mode }) => {
       ],
     },
     server: {
+      port: 3000,
       proxy: {
         '/api': {
           target: env.BE_API_URL,
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, '') || '/',
+          // Forward cookies from browser to BE
+          cookieDomainRewrite: 'localhost',
         },
       },
     },
