@@ -2,6 +2,11 @@ import { create } from 'zustand';
 
 import { Diagram, DiagramStore } from '@/types';
 
+// With nginx reverse proxy, we use relative paths for same-origin requests:
+// - /editor/* routes to be-editor API
+// - /auth/*   routes to auth-service (for redirects)
+// This eliminates cross-origin cookie issues completely.
+
 export const useDiagramStore = create<DiagramStore>((set) => ({
   diagrams: [],
   isLoading: false,
@@ -17,8 +22,18 @@ export const useDiagramStore = create<DiagramStore>((set) => ({
   fetchDiagrams: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await fetch('http://localhost:3001/api/diagrams');
+      // /editor/diagrams → nginx → be-editor /api/diagrams
+      const response = await fetch('/editor/diagrams', {
+        credentials: 'include',
+      });
       if (!response.ok) {
+        // Handle authentication errors
+        if (response.status === 401) {
+          console.error('User not authenticated, redirecting to login');
+          window.location.href = '/login';
+          return;
+        }
+
         const errorMessage =
           response.status === 404
             ? 'Diagrams not found'
@@ -37,12 +52,11 @@ export const useDiagramStore = create<DiagramStore>((set) => ({
   },
   deleteDiagram: async (name: string) => {
     try {
-      const response = await fetch(
-        `http://localhost:3001/api/diagrams/${name}`,
-        {
-          method: 'DELETE',
-        },
-      );
+      // /editor/diagrams/:name → nginx → be-editor /api/diagrams/:name
+      const response = await fetch(`/editor/diagrams/${name}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
 
       if (response.ok || response.status === 204) {
         // Remove from local state
@@ -50,6 +64,11 @@ export const useDiagramStore = create<DiagramStore>((set) => ({
           diagrams: state.diagrams.filter((d) => d.name !== name),
           error: null,
         }));
+      } else if (response.status === 401) {
+        // Handle authentication errors
+        console.error('User not authenticated, redirecting to login');
+        window.location.href = '/login';
+        return;
       } else if (response.status === 409) {
         // Diagram has an associated learning path
         const errorData = (await response.json()) as {

@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 
+// With nginx reverse proxy, all paths are relative (same-origin):
+// - /api/*   → BE (user data via backend)
+// - /login   → FE login page
+
 export interface User {
   ID: number;
   CreatedAt: string;
@@ -48,8 +52,8 @@ export const useUserStore = create<UserStore>((set) => ({
         console.error('User not authenticated, redirecting to login');
         set({ error: 'Not authenticated', isLoading: false, user: null });
 
-        // Redirect to the main auth service login
-        window.location.href = 'http://localhost:8080/auth/login';
+        // Redirect to the FE login page which handles auth flow
+        window.location.href = '/login';
         return;
       }
 
@@ -62,7 +66,7 @@ export const useUserStore = create<UserStore>((set) => ({
       set({ error: errorMessage, isLoading: false, user: null });
 
       // Network error or CORS issue - likely not authenticated
-      window.location.href = 'http://localhost:8080/auth/login';
+      window.location.href = '/login';
     }
   },
 
