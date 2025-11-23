@@ -8,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/controller"
-	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/handler"
 	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/initializer"
 	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/middleware"
 	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/service"
@@ -35,30 +34,28 @@ func main() {
 		AllowCredentials: true,
 	}))
 
+	// Initialize services
+	userService := service.NewUserService(initializer.DB)
 	learningPathService := service.NewLearningPathService(initializer.DB)
+
+	// Initialize controllers
+	userController := controller.NewUserController(userService)
 	lpController := controller.NewLearningPathController(learningPathService)
 
-	// Public routes (no authentication required)
-	r.GET("/callback", handler.Callback)
-	r.GET("/auth/check", handler.AuthCheck)
-	r.GET("/auth/logout", handler.Logout)
-	r.GET("/auth/login", handler.Login)
-
-	// Protected routes - all require company authentication
+	// Protected routes - all require authentication
 	protected := r.Group("/")
 	protected.Use(middleware.Auth())
 	{
-		// Dashboard
-		protected.GET("/", handler.Dashboard)
 
-		// User API - all endpoints require auth
-		protected.GET("/api/user/me", handler.GetCurrentUser)
-		protected.PATCH("/api/user/me", handler.UpdateCurrentUser)
+		// User API
+		protected.GET("/api/user/me", userController.GetCurrentUser)
+		protected.PATCH("/api/user/me", userController.UpdateCurrentUser)
 
-		// Learning Paths API - all endpoints require auth
+		// Learning Paths API
 		protected.GET("/api/learning-paths", lpController.Index)
 		protected.POST("/api/learning-paths", lpController.Create)
 		protected.DELETE("/api/learning-paths/:id", lpController.Delete)
+		// LPs Favorites
 		protected.GET("/api/learning-paths/favorites", lpController.GetUserFavorites)
 		protected.POST("/api/learning-paths/:id/favorite", lpController.AddToFavorites)
 		protected.DELETE("/api/learning-paths/:id/favorite", lpController.RemoveFromFavorites)
