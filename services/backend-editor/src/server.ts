@@ -50,13 +50,14 @@ server.on('upgrade', (req: IncomingMessage, socket, head) => {
         });
       }
 
-      const accessToken = cookies['access_token'];
+      // Use id_token for user identity validation (not access_token)
+      const idToken = cookies['id_token'];
       // Validate token (import authService at top of file)
       const authService = (await import('./services/authService.js')).default;
-      const validationResult = await authService.validateToken(accessToken);
+      const validationResult = await authService.validateToken(idToken);
       const user = authService.getUserFromValidation(validationResult);
 
-      if (!accessToken || !validationResult.valid || !user) {
+      if (!idToken || !validationResult.valid || !user) {
         socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
         socket.destroy();
         return;
