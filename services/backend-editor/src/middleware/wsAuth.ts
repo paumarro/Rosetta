@@ -51,17 +51,17 @@ export async function authenticateWebSocket(
   conn: WebSocket,
   req: IncomingMessage,
 ): Promise<AuthenticatedUser | null> {
-  // Extract access token from cookies
+  // Extract id_token from cookies (used for user identity validation)
   const cookies = parseCookies(req.headers.cookie);
-  const accessToken = cookies['access_token'];
+  const idToken = cookies['id_token'];
 
-  if (!accessToken) {
-    conn.close(4401, 'Unauthorized: No access token provided');
+  if (!idToken) {
+    conn.close(4401, 'Unauthorized: No id_token provided');
     return null;
   }
 
   // Validate token with auth service
-  const validationResult = await authService.validateToken(accessToken);
+  const validationResult = await authService.validateToken(idToken);
 
   if (!validationResult.valid) {
     conn.close(4401, 'Unauthorized: Invalid or expired token');
