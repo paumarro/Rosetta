@@ -48,7 +48,10 @@ func (res *LearningPathController) Create(c *gin.Context) {
 		return
 	}
 
-	learningPath, err := res.LearningPathService.CreateLearningPath(c, req.PathName, req.Description, true, "", req.Skills)
+	// Extract token for service-to-service calls
+	authToken, _ := c.Cookie("id_token")
+
+	learningPath, err := res.LearningPathService.CreateLearningPath(c, req.PathName, req.Description, true, "", req.Skills, authToken)
 	if err != nil {
 		respondWithError(c, http.StatusInternalServerError, "Failed to create learning path", err)
 		return
@@ -73,15 +76,6 @@ func (res *LearningPathController) Delete(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// TODO(human): Implement AddToFavorites controller method
-// This method should:
-// 1. Extract the authenticated user from context using c.Get("user")
-// 2. Type assert to *model.User and handle the case where user doesn't exist
-// 3. Extract the learning path ID from URL parameters using c.Param("id")
-// 4. Validate that the ID is not empty
-// 5. Call res.LearningPathService.AddToFavorites(c, user.ID, id)
-// 6. Handle errors appropriately with respondWithError
-// 7. Return 200 OK with success message on success
 func (res *LearningPathController) AddToFavorites(c *gin.Context) {
 	// Extract authenticated user from context
 	user, exists := c.Get("user")
