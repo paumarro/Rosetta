@@ -19,9 +19,8 @@ COPY ./ ./
 RUN npm run build
 
 ### Production stage
-#Starts a new stage using nginx
+# Starts a new stage using nginx
 FROM nginx:stable-alpine AS production
-
 
 # Copy the nginx configuration inside conf.d folder
 COPY nginx/ /etc/nginx/conf.d/
@@ -29,7 +28,5 @@ COPY nginx/ /etc/nginx/conf.d/
 # Copy the build output from the dist folder into the Nginx html directory
 COPY --from=build /app/dist /usr/share/nginx/html
 
-
-
-#Expose port: Informs Docker that the container listens on port 80 at runtime.
+# Expose port 80 for nginx
 EXPOSE 80
