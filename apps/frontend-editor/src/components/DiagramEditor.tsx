@@ -56,6 +56,12 @@ export default function DiagramEditor({
 
   const { user, fetchCurrentUser, isLoading } = useUserStore();
 
+  // Fallback guest user when authentication is not available
+  const [guestUser] = useState({
+    userId: `guest-${Math.random().toString(36).substring(2, 9)}`,
+    userName: `Guest-${Math.random().toString(36).substring(2, 4).toUpperCase()}`,
+  });
+
   // Track connection state for handle visibility
   const [connectionState, setConnectionState] = useState<ConnectionState>({
     sourceNode: null,
@@ -67,34 +73,39 @@ export default function DiagramEditor({
 
   const isViewMode = mode === 'view';
 
-  // Fetch user data on mount
+  // Fetch user data on mount (try to get real user)
   useEffect(() => {
     void fetchCurrentUser();
   }, [fetchCurrentUser]);
 
-  // Initialize collaboration once authentication completes
-  // Only proceed if user is authenticated
+  // Initialize collaboration with real user OR guest user
+  // Wait for initial load attempt to complete before initializing
   useEffect(() => {
-    // Wait for authentication check to complete
+    // Don't initialize until we've at least tried to fetch user (avoid double init)
     if (isLoading) return;
 
-    // Only initialize if we have an authenticated user
-    if (!user) {
-      console.log('No authenticated user - collaboration not initialized');
-      return;
-    }
-
-    const currentUser = {
-      userId: user.EntraID,
-      userName: user.Name,
-    };
+    // Use real user if available, otherwise use guest user
+    const currentUser = user
+      ? {
+          userId: user.EntraID,
+          userName: user.Name,
+        }
+      : guestUser;
 
     void initializeCollaboration(diagramName, currentUser, isViewMode);
-  }, [diagramName, isViewMode, isLoading, user, initializeCollaboration]);
+  }, [
+    diagramName,
+    user,
+    guestUser,
+    initializeCollaboration,
+    isViewMode,
+    isLoading,
+  ]);
 
   // Cleanup when component unmounts
   useEffect(() => {
     return () => {
+      console.log('🧹 Component unmounting - calling cleanup');
       cleanup();
     };
   }, [cleanup]);
@@ -117,10 +128,11 @@ export default function DiagramEditor({
   );
 
   const handleBackButtonClick = useCallback(() => {
+    // Use relative paths - nginx routes / to FE (frontend)
     if (isViewMode) {
-      window.location.href = 'http://localhost:3000/hub/learning-path';
+      window.location.href = '/hub/learning-path';
     } else {
-      window.location.href = 'http://localhost:3000/creator/path-design';
+      window.location.href = '/creator/path-design';
     }
   }, [isViewMode]);
 
