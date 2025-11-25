@@ -1,0 +1,62 @@
+{
+  "name": "carbyte-academy-be-editor",
+  "version": "1.0.0",
+  "description": "Backend for the collaborative editor of learning paths",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false -r tsconfig-paths/register ./src/server.ts",
+    "build": "rm -rf dist && tsc && tsc-alias",
+    "start": "node ./dist/server.js",
+    "test": "echo \"Test to be implemented..🧪\" ",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
+    "prepare": "husky || true"
+  },
+  "lint-staged": {
+    "**/*.{ts,js}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "**/*.{json,md}": "prettier --write"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/mongoose": "^5.11.96",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "lint-staged": "^16.1.2",
+    "mongodb": "^6.20.0",
+    "mongoose": "^8.16.2",
+    "morgan": "^1.10.0",
+    "socket.io": "^4.8.1",
+    "ws": "^8.18.3",
+    "y-mongodb": "^0.1.11",
+    "y-websocket": "1.5.4",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.0",
+    "@eslint/json": "^0.12.0",
+    "@eslint/markdown": "^6.6.0",
+    "@types/express": "^5.0.3",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^24.0.10",
+    "@types/socket.io": "^3.0.1",
+    "@types/ws": "^8.18.1",
+    "eslint": "^9.30.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.5.1",
+    "globals": "^16.2.0",
+    "husky": "^9.1.7",
+    "prettier": "^3.6.2",
+    "ts-node": "^10.9.2",
+    "tsc-alias": "^1.8.16",
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.35.0"
+  }
+}
