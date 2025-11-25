@@ -1,0 +1,405 @@
+# Azure Pipeline for Rosetta Monorepo
+# Builds and tests all services and applications
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - services/*
+      - apps/*
+      - docker/*
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+
+# Define variables
+variables:
+  - group: rosetta-variables  # Variable group in Azure DevOps
+  - name: dockerRegistryServiceConnection
+    value: 'your-acr-connection'  # Update with your Azure Container Registry connection
+  - name: imageRepository
+    value: 'rosetta'
+  - name: containerRegistry
+    value: 'your-registry.azurecr.io'  # Update with your ACR
+  - name: dockerfilePathBackend
+    value: 'services/backend/Dockerfile'
+  - name: dockerfilePathBackendEditor
+    value: 'services/backend-editor/Dockerfile'
+  - name: dockerfilePathAuthService
+    value: 'services/auth-service/Dockerfile'
+  - name: dockerfilePathFrontend
+    value: 'apps/frontend/Dockerfile'
+  - name: dockerfilePathFrontendEditor
+    value: 'apps/frontend-editor/Dockerfile'
+  - name: tag
+    value: '$(Build.BuildId)'
+
+# Define stages
+stages:
+  # ============================================
+  # STAGE 1: BUILD & TEST
+  # ============================================
+  - stage: BuildAndTest
+    displayName: 'Build and Test All Services'
+    jobs:
+      # -------------------------------------
+      # Backend (Go)
+      # -------------------------------------
+      - job: BuildBackend
+        displayName: 'Build Backend (Go)'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+            fetchDepth: 1
+          
+          - task: GoTool@0
+            displayName: 'Install Go'
+            inputs:
+              version: '1.21'
+          
+          - script: |
+              cd services/backend
+              go mod download
+              go mod verify
+            displayName: 'Download Go dependencies'
+          
+          - script: |
+              cd services/backend
+              go test ./... -v -coverprofile=coverage.out
+            displayName: 'Run Go tests'
+          
+          - script: |
+              cd services/backend
+              go build -o main ./cmd/main.go
+            displayName: 'Build Go binary'
+          
+          - task: PublishTestResults@2
+            displayName: 'Publish test results'
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: '**/test-results.xml'
+              failTaskOnFailedTests: true
+            condition: succeededOrFailed()
+          
+          - task: PublishCodeCoverageResults@2
+            displayName: 'Publish code coverage'
+            inputs:
+              codeCoverageTool: 'Cobertura'
+              summaryFileLocation: 'services/backend/coverage.out'
+            condition: succeededOrFailed()
+
+      # -------------------------------------
+      # Auth Service (Go)
+      # -------------------------------------
+      - job: BuildAuthService
+        displayName: 'Build Auth Service (Go)'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+            fetchDepth: 1
+          
+          - task: GoTool@0
+            displayName: 'Install Go'
+            inputs:
+              version: '1.21'
+          
+          - script: |
+              cd services/auth-service
+              go mod download
+              go test ./... -v
+              go build -o main ./cmd/main.go
+            displayName: 'Build auth service'
+
+      # -------------------------------------
+      # Backend Editor (Node.js)
+      # -------------------------------------
+      - job: BuildBackendEditor
+        displayName: 'Build Backend Editor (Node.js)'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+            fetchDepth: 1
+          
+          - task: NodeTool@0
+            displayName: 'Install Node.js'
+            inputs:
+              versionSpec: '20.x'
+          
+          - script: |
+              cd services/backend-editor
+              npm ci
+            displayName: 'Install dependencies'
+          
+          - script: |
+              cd services/backend-editor
+              npm run build
+            displayName: 'Build TypeScript'
+          
+          - script: |
+              cd services/backend-editor
+              npm test
+            displayName: 'Run tests'
+            condition: succeededOrFailed()
+
+      # -------------------------------------
+      # Frontend (React)
+      # -------------------------------------
+      - job: BuildFrontend
+        displayName: 'Build Frontend (React)'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+            fetchDepth: 1
+          
+          - task: NodeTool@0
+            displayName: 'Install Node.js'
+            inputs:
+              versionSpec: '20.x'
+          
+          - script: |
+              cd apps/frontend
+              npm ci
+            displayName: 'Install dependencies'
+          
+          - script: |
+              cd apps/frontend
+              npm run build
+            displayName: 'Build React app'
+          
+          - script: |
+              cd apps/frontend
+              npm run lint
+            displayName: 'Run linting'
+            condition: succeededOrFailed()
+          
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish frontend build'
+            inputs:
+              pathToPublish: 'apps/frontend/dist'
+              artifactName: 'frontend-build'
+
+      # -------------------------------------
+      # Frontend Editor (React)
+      # -------------------------------------
+      - job: BuildFrontendEditor
+        displayName: 'Build Frontend Editor (React)'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+            fetchDepth: 1
+          
+          - task: NodeTool@0
+            displayName: 'Install Node.js'
+            inputs:
+              versionSpec: '20.x'
+          
+          - script: |
+              cd apps/frontend-editor
+              npm ci
+            displayName: 'Install dependencies'
+          
+          - script: |
+              cd apps/frontend-editor
+              npm run build
+            displayName: 'Build React app'
+          
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish editor build'
+            inputs:
+              pathToPublish: 'apps/frontend-editor/dist'
+              artifactName: 'frontend-editor-build'
+
+  # ============================================
+  # STAGE 2: BUILD DOCKER IMAGES
+  # ============================================
+  - stage: BuildDockerImages
+    displayName: 'Build Docker Images'
+    dependsOn: BuildAndTest
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: BuildAndPushImages
+        displayName: 'Build and Push All Images'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+          
+          # Backend
+          - task: Docker@2
+            displayName: 'Build and Push Backend'
+            inputs:
+              command: buildAndPush
+              repository: '$(imageRepository)/backend'
+              dockerfile: '$(dockerfilePathBackend)'
+              containerRegistry: '$(dockerRegistryServiceConnection)'
+              tags: |
+                $(tag)
+                latest
+          
+          # Backend Editor
+          - task: Docker@2
+            displayName: 'Build and Push Backend Editor'
+            inputs:
+              command: buildAndPush
+              repository: '$(imageRepository)/backend-editor'
+              dockerfile: '$(dockerfilePathBackendEditor)'
+              containerRegistry: '$(dockerRegistryServiceConnection)'
+              tags: |
+                $(tag)
+                latest
+          
+          # Auth Service
+          - task: Docker@2
+            displayName: 'Build and Push Auth Service'
+            inputs:
+              command: buildAndPush
+              repository: '$(imageRepository)/auth-service'
+              dockerfile: '$(dockerfilePathAuthService)'
+              containerRegistry: '$(dockerRegistryServiceConnection)'
+              tags: |
+                $(tag)
+                latest
+          
+          # Frontend
+          - task: Docker@2
+            displayName: 'Build and Push Frontend'
+            inputs:
+              command: buildAndPush
+              repository: '$(imageRepository)/frontend'
+              dockerfile: '$(dockerfilePathFrontend)'
+              containerRegistry: '$(dockerRegistryServiceConnection)'
+              tags: |
+                $(tag)
+                latest
+          
+          # Frontend Editor
+          - task: Docker@2
+            displayName: 'Build and Push Frontend Editor'
+            inputs:
+              command: buildAndPush
+              repository: '$(imageRepository)/frontend-editor'
+              dockerfile: '$(dockerfilePathFrontendEditor)'
+              containerRegistry: '$(dockerRegistryServiceConnection)'
+              tags: |
+                $(tag)
+                latest
+
+  # ============================================
+  # STAGE 3: DEPLOY TO DEV
+  # ============================================
+  - stage: DeployDev
+    displayName: 'Deploy to Development'
+    dependsOn: BuildDockerImages
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: DeployDevEnvironment
+        displayName: 'Deploy to Dev'
+        pool:
+          vmImage: 'ubuntu-latest'
+        environment: 'rosetta-dev'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                
+                - task: AzureWebAppContainer@1
+                  displayName: 'Deploy Backend'
+                  inputs:
+                    azureSubscription: 'your-azure-subscription'
+                    appName: 'rosetta-backend-dev'
+                    containers: '$(containerRegistry)/$(imageRepository)/backend:$(tag)'
+                
+                - task: AzureWebAppContainer@1
+                  displayName: 'Deploy Backend Editor'
+                  inputs:
+                    azureSubscription: 'your-azure-subscription'
+                    appName: 'rosetta-backend-editor-dev'
+                    containers: '$(containerRegistry)/$(imageRepository)/backend-editor:$(tag)'
+                
+                - task: AzureWebAppContainer@1
+                  displayName: 'Deploy Auth Service'
+                  inputs:
+                    azureSubscription: 'your-azure-subscription'
+                    appName: 'rosetta-auth-dev'
+                    containers: '$(containerRegistry)/$(imageRepository)/auth-service:$(tag)'
+                
+                - task: AzureWebAppContainer@1
+                  displayName: 'Deploy Frontend'
+                  inputs:
+                    azureSubscription: 'your-azure-subscription'
+                    appName: 'rosetta-frontend-dev'
+                    containers: '$(containerRegistry)/$(imageRepository)/frontend:$(tag)'
+                
+                - task: AzureWebAppContainer@1
+                  displayName: 'Deploy Frontend Editor'
+                  inputs:
+                    azureSubscription: 'your-azure-subscription'
+                    appName: 'rosetta-editor-dev'
+                    containers: '$(containerRegistry)/$(imageRepository)/frontend-editor:$(tag)'
+
+  # ============================================
+  # STAGE 4: DEPLOY TO PRODUCTION
+  # ============================================
+  - stage: DeployProd
+    displayName: 'Deploy to Production'
+    dependsOn: DeployDev
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: DeployProdEnvironment
+        displayName: 'Deploy to Production'
+        pool:
+          vmImage: 'ubuntu-latest'
+        environment: 'rosetta-prod'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                
+                - task: AzureWebAppContainer@1
+                  displayName: 'Deploy Backend'
+                  inputs:
+                    azureSubscription: 'your-azure-subscription'
+                    appName: 'rosetta-backend-prod'
+                    containers: '$(containerRegistry)/$(imageRepository)/backend:$(tag)'
+                
+                - task: AzureWebAppContainer@1
+                  displayName: 'Deploy Backend Editor'
+                  inputs:
+                    azureSubscription: 'your-azure-subscription'
+                    appName: 'rosetta-backend-editor-prod'
+                    containers: '$(containerRegistry)/$(imageRepository)/backend-editor:$(tag)'
+                
+                - task: AzureWebAppContainer@1
+                  displayName: 'Deploy Auth Service'
+                  inputs:
+                    azureSubscription: 'your-azure-subscription'
+                    appName: 'rosetta-auth-prod'
+                    containers: '$(containerRegistry)/$(imageRepository)/auth-service:$(tag)'
+                
+                - task: AzureWebAppContainer@1
+                  displayName: 'Deploy Frontend'
+                  inputs:
+                    azureSubscription: 'your-azure-subscription'
+                    appName: 'rosetta-frontend-prod'
+                    containers: '$(containerRegistry)/$(imageRepository)/frontend:$(tag)'
+                
+                - task: AzureWebAppContainer@1
+                  displayName: 'Deploy Frontend Editor'
+                  inputs:
+                    azureSubscription: 'your-azure-subscription'
+                    appName: 'rosetta-editor-prod'
+                    containers: '$(containerRegistry)/$(imageRepository)/frontend-editor:$(tag)'
+
