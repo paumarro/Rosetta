@@ -1,0 +1,5 @@
+# Define colors
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+echo "${GREEN}Push completed successfully!🚀${NC}"
