@@ -1,0 +1,50 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
+
+# OS
+.DS_Store
+Thumbs.db
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build outputs
+dist/
+build/
+tmp/
+*.exe
+main
+
+# Database data
+*.db
+postgres_data/
+mongodb_data/
+
+# Test coverage
+coverage/
+*.cover
+.coverage
+
+# Migration artifacts
+.migration-temp/
+rosetta-monorepo/
