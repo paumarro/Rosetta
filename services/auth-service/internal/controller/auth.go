@@ -1,0 +1,240 @@
+package controller
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"net/url"
+	"os"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/rosetta/auth-service/internal/service"
+	"github.com/rosetta/auth-service/internal/util"
+)
+
+type AuthController struct {
+	authService *service.AuthService
+}
+
+func NewAuthController(authService *service.AuthService) *AuthController {
+	return &AuthController{
+		authService: authService,
+	}
+}
+
+// Login initiates the OAuth login flow by redirecting to Microsoft
+// GET /auth/login
+func (ctrl *AuthController) Login(c *gin.Context) {
+	clientID := os.Getenv("OIDC_CLIENT_ID")
+	redirectURI := os.Getenv("OIDC_REDIRECT_URI")
+	tenantID := service.ExtractTenantID(os.Getenv("OIDC_ISSUER"))
+
+	scopes := "api://academy-dev/GeneralAccess openid profile email offline_access"
+	loginURL := fmt.Sprintf(
+		"https://login.microsoftonline.com/%s/oauth2/v2.0/authorize?client_id=%s&response_type=code&redirect_uri=%s&scope=%s",
+		tenantID,
+		clientID,
+		url.QueryEscape(redirectURI),
+		url.QueryEscape(scopes),
+	)
+
+	log.Printf("Redirecting to Microsoft login")
+	c.Redirect(http.StatusFound, loginURL)
+}
+
+// Callback handles the OAuth callback from Microsoft
+// GET /auth/callback?code=...
+func (ctrl *AuthController) Callback(c *gin.Context) {
+	code := c.Query("code")
+	if code == "" {
+		log.Println("Error: Authorization code not found in callback")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization code not found"})
+		return
+	}
+
+	clientID := os.Getenv("OIDC_CLIENT_ID")
+	clientSecret := os.Getenv("OIDC_CLIENT_SECRET")
+	redirectURI := os.Getenv("OIDC_REDIRECT_URI")
+	tenantID := service.ExtractTenantID(os.Getenv("OIDC_ISSUER"))
+
+	tokenURL := fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", tenantID)
+
+	data := url.Values{}
+	data.Set("grant_type", "authorization_code")
+	data.Set("code", code)
+	data.Set("redirect_uri", redirectURI)
+	data.Set("client_id", clientID)
+	data.Set("client_secret", clientSecret)
+	data.Set("scope", "api://academy-dev/GeneralAccess openid profile email offline_access")
+
+	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(data.Encode()))
+	if err != nil {
+		log.Printf("Error: Failed to create token request: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create token request"})
+		return
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Error: Microsoft OAuth API error - Failed to exchange code: %v", err)
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Microsoft OAuth API error"})
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		log.Printf("Error: Microsoft OAuth token exchange failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Microsoft OAuth API error"})
+		return
+	}
+
+	var tokenResponse map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
+		log.Printf("Error: Failed to decode Microsoft OAuth token response: %v", err)
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Microsoft OAuth API error"})
+		return
+	}
+
+	accessToken, ok := tokenResponse["access_token"].(string)
+	if !ok {
+		log.Println("Error: access_token missing from Microsoft OAuth response")
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Microsoft OAuth API error"})
+		return
+	}
+
+	idToken, ok := tokenResponse["id_token"].(string)
+	if !ok {
+		log.Println("Error: id_token missing from Microsoft OAuth response")
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Microsoft OAuth API error"})
+		return
+	}
+
+	refreshToken, ok := tokenResponse["refresh_token"].(string)
+	if !ok {
+		log.Println("Error: refresh_token missing from Microsoft OAuth response")
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Microsoft OAuth API error"})
+		return
+	}
+
+	validationResult := ctrl.authService.ValidateToken(idToken)
+	if !validationResult.Valid {
+		log.Printf("Error: ID token validation failed: %s", validationResult.Error)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid ID token"})
+		return
+	}
+
+	log.Printf("User successfully authenticated: %s (%s)", validationResult.Email, validationResult.EntraID)
+
+	util.SetCookiesFromTokens(c, accessToken, refreshToken, idToken)
+
+	redirectURL := util.GetRedirectURL()
+	log.Printf("Redirecting user to: %s", redirectURL)
+	c.Redirect(http.StatusFound, redirectURL)
+}
+
+// Logout clears authentication cookies
+// GET /auth/logout
+func (ctrl *AuthController) Logout(c *gin.Context) {
+	redirectTo := c.Query("redirect")
+	if redirectTo == "" {
+		redirectTo = util.GetRedirectURL()
+	}
+
+	cookieDomain := util.GetCookieDomain()
+	isSecure := !util.IsDevelopment()
+
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("id_token", "", -1, "/", cookieDomain, isSecure, true)
+	c.SetCookie("access_token", "", -1, "/", cookieDomain, isSecure, true)
+	c.SetCookie("refresh_token", "", -1, "/", cookieDomain, isSecure, true)
+
+	log.Printf("User logged out, redirecting to: %s", redirectTo)
+	c.Redirect(http.StatusFound, redirectTo)
+}
+
+// ValidateToken validates an access/ID token
+// GET/POST /auth/validate
+func (ctrl *AuthController) ValidateToken(c *gin.Context) {
+	var token string
+
+	// Try JSON body first
+	var req struct {
+		Token string `json:"token"`
+	}
+	if err := c.ShouldBindJSON(&req); err == nil && req.Token != "" {
+		token = req.Token
+	} else {
+		// Try Authorization header
+		authHeader := c.GetHeader("Authorization")
+		if authHeader != "" && len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+			token = authHeader[7:]
+		} else {
+			// Try id_token cookie
+			cookieToken, err := c.Cookie("id_token")
+			if err != nil {
+				log.Printf("Validation failed: No token provided - %v", err)
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Token required in body, Authorization header, or cookie"})
+				return
+			}
+			token = cookieToken
+		}
+	}
+
+	log.Printf("Validating token (length: %d)", len(token))
+
+	result := ctrl.authService.ValidateToken(token)
+
+	if !result.Valid {
+		log.Printf("Token validation failed: %s", result.Error)
+		c.JSON(http.StatusUnauthorized, result)
+		return
+	}
+
+	log.Printf("Token validated successfully for user: %s (%s)", result.Email, result.EntraID)
+	c.JSON(http.StatusOK, result)
+}
+
+// RefreshToken exchanges a refresh token for new tokens
+// POST /auth/refresh
+func (ctrl *AuthController) RefreshToken(c *gin.Context) {
+	var refreshToken string
+
+	// Try JSON body first
+	var req struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+	if err := c.ShouldBindJSON(&req); err == nil && req.RefreshToken != "" {
+		refreshToken = req.RefreshToken
+	} else {
+		// Try refresh_token cookie
+		cookieToken, err := c.Cookie("refresh_token")
+		if err != nil {
+			log.Printf("Refresh failed: No refresh token provided - %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Refresh token required in body or cookie"})
+			return
+		}
+		refreshToken = cookieToken
+	}
+
+	log.Printf("Refreshing token (length: %d)", len(refreshToken))
+
+	result := ctrl.authService.RefreshToken(refreshToken)
+
+	if !result.Success {
+		log.Printf("Token refresh failed: %s", result.Error)
+		c.JSON(http.StatusUnauthorized, result)
+		return
+	}
+
+	log.Printf("Token refreshed successfully, expires in: %d seconds", result.ExpiresIn)
+
+	util.SetCookiesFromTokens(c, result.AccessToken, result.RefreshToken, result.IDToken)
+
+	c.JSON(http.StatusOK, result)
+}
