@@ -28,14 +28,14 @@ services:
     restart: unless-stopped
 
   frontend:
-    build: ../FE
+    build: ../apps/frontend
     expose:
       - "3000"
     networks:
       - rosetta
 
   fe-editor:
-    build: ../fe-editor
+    build: ../apps/frontend-editor
     expose:
       - "80"
     networks:
@@ -43,7 +43,7 @@ services:
 
   # Backend Load Balancing - 3 replicas
   backend-1:
-    build: ../BE
+    build: ../services/backend
     container_name: backend-1
     expose:
       - "8080"
@@ -60,7 +60,7 @@ services:
       - rosetta
 
   backend-2:
-    build: ../BE
+    build: ../services/backend
     container_name: backend-2
     expose:
       - "8080"
@@ -77,7 +77,7 @@ services:
       - rosetta
 
   backend-3:
-    build: ../BE
+    build: ../services/backend
     container_name: backend-3
     expose:
       - "8080"
@@ -94,7 +94,7 @@ services:
       - rosetta
 
   be-editor:
-    build: ../be-editor
+    build: ../services/backend-editor
     expose:
       - "3001"
     environment:
@@ -107,7 +107,7 @@ services:
       - rosetta
 
   auth-service:
-    build: ../auth-service
+    build: ../services/auth-service
     expose:
       - "3002"
     environment:
