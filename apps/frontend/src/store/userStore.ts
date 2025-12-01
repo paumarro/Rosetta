@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { apiFetch, getErrorMessage } from '@/lib/api';
+import { apiFetch, getErrorMessage } from '@/services/api';
 
 export interface User {
   ID: number;

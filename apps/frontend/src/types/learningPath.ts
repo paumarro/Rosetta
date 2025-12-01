@@ -21,6 +21,9 @@ export interface LearningPathStore {
   favorites: LearningPath[];
   isLoading: boolean;
   error: string | null;
+  recentlyViewed: LearningPath[];
+
+  fetchRecentlyViewed: () => void;
   fetchLearningPaths: () => Promise<void>;
   fetchUserFavorites: () => Promise<void>;
   addToFavorites: (id: string) => Promise<void>;

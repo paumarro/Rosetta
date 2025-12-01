@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { cn } from '@/utils/cn';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -65,18 +65,14 @@ function BookMarkButton({
 
 function PathCard({ path }: { path: LearningPath }) {
   const { isFavorited, addToFavorites, removeFromFavorites } =
-    useLearningPathStore() as {
-      isFavorited: (id: string) => boolean;
-      addToFavorites: (id: string) => Promise<void>;
-      removeFromFavorites: (id: string) => Promise<void>;
-    };
+    useLearningPathStore();
 
   // Check if path was created in the last 7 days
   const isNew =
     new Date(path.CreatedAt).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000;
 
   const handlePathClick = () => {
-    window.location.href = `${DEV_EDITOR_FE_URL}view/${path.Title}`;
+    window.location.href = `${DEV_EDITOR_FE_URL}view/${path.Title}?pathId=${path.ID}`;
   };
 
   const isBookmarked = isFavorited(path.ID);
@@ -135,23 +131,29 @@ export default function LearningPaths() {
   const {
     fetchLearningPaths,
     fetchUserFavorites,
+    fetchRecentlyViewed,
+    recentlyViewed,
     learningPaths,
     isLoading,
     error,
   } = useLearningPathStore() as {
     fetchLearningPaths: () => Promise<void>;
     fetchUserFavorites: () => Promise<void>;
+    fetchRecentlyViewed: () => void;
+    recentlyViewed: LearningPath[];
     learningPaths: LearningPath[];
     isLoading: boolean;
     error: string | null;
   };
 
   useEffect(() => {
-    void fetchLearningPaths();
+    void fetchLearningPaths().then(() => {
+      fetchRecentlyViewed();
+    });
     void fetchUserFavorites();
-  }, [fetchLearningPaths, fetchUserFavorites]);
+  }, [fetchLearningPaths, fetchUserFavorites, fetchRecentlyViewed]);
 
-  const recentlyViewedPaths = learningPaths.slice(0, 9);
+  const recentlyViewedPaths = recentlyViewed.slice(0, 9);
 
   if (isLoading) {
     return (

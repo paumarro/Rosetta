@@ -1,14 +1,14 @@
 import { Handle, Position } from '@xyflow/react';
 import { TopicNodeProps } from '@/types/reactflow';
-import { useNodeState } from '@/lib/hooks/useNodeState';
-import { useCollaborativeStore } from '@/lib/stores/collaborativeStore';
+import { useNodeState } from '@/hooks/useNodeState';
+import { useCollaborativeStore } from '@/stores/collaborativeStore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   useHandleVisibility,
   getNodeWidthClass,
   getNodeHeightClass,
   NODE_DIMENSIONS,
-} from '@/lib/connectionUtils';
+} from '@/utils/nodeConnection';
 import { useMemo } from 'react';
 
 // Handle configuration type

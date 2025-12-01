@@ -3,7 +3,7 @@
 import { ChevronRight } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Link } from 'react-router-dom';
-import { routes } from '@/lib/routes';
+import { routes } from '@/services/routes';
 
 import {
   Collapsible,
