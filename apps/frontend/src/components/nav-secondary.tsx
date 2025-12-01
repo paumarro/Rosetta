@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useLocation } from 'react-router-dom';
-import { routes } from '@/lib/routes';
+import { routes } from '@/services/routes';
 import { Link } from 'react-router-dom';
 
 import {

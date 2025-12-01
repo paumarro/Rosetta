@@ -1,6 +1,5 @@
 import { Routes, Route, useParams } from 'react-router-dom';
-import DiagramEditor from './components/DiagramEditor';
-import DiagramsPage from './pages/Diagrams';
+import DiagramEditor from './pages/DiagramEditor';
 import Index from './pages/Index';
 import NotFound from './pages/NotFound';
 import './App.css';
@@ -9,7 +8,6 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Index />} />
-      <Route path="/diagrams" element={<DiagramsPage />} />
       <Route
         path="/editor/:diagramName"
         element={<DiagramEditorWrapper mode="edit" />}

@@ -1,6 +1,6 @@
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/utils/cn';
 import { Button } from '@/components/ui/button';
 import {
   Card,

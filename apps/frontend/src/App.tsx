@@ -1,7 +1,5 @@
-import Home from '@/pages/Home';
 import Login from '@/pages/Login';
 import { Person } from '@/pages/Person';
-import WelcomePage from '@/pages/Welcome';
 import './App.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import PathDesigner from '@/components/dashboard/PathDesigner';
@@ -20,18 +18,10 @@ export default function App() {
 
           {/* Protected routes - only logged-in users */}
           <Route
-            path="/welcome"
-            element={
-              <RequireAuth>
-                <WelcomePage />
-              </RequireAuth>
-            }
-          />
-          <Route
             path="/"
             element={
               <RequireAuth>
-                <Home />
+                <LearningPaths />
               </RequireAuth>
             }
           />

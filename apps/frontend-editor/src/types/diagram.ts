@@ -21,4 +21,5 @@ export interface DiagramStore extends BaseStore {
   // Actions
   fetchDiagrams: () => Promise<void>;
   deleteDiagram: (name: string) => Promise<void>;
+  addToRecentlyViewed: (id: string) => Promise<void>;
 }

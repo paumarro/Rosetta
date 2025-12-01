@@ -1,13 +1,16 @@
 import { create } from 'zustand';
 import type { LearningPath, LearningPathStore } from '@/types/learningPath';
-import { apiFetch, getErrorMessage } from '@/lib/api';
+import { apiFetch, getErrorMessage } from '@/services/api';
 
 // Re-export types for convenience
 export type { LearningPath };
 
+const RECENTLY_VIEWED_KEY = 'rosetta_recently_viewed';
+
 export const useLearningPathStore = create<LearningPathStore>((set, get) => ({
   learningPaths: [],
   favorites: [],
+  recentlyViewed: [],
   isLoading: false,
   error: null,
 
@@ -38,6 +41,23 @@ export const useLearningPathStore = create<LearningPathStore>((set, get) => ({
       set({ error: getErrorMessage(error), isLoading: false });
       console.error('Error fetching learning paths:', error);
     }
+  },
+
+  fetchRecentlyViewed: () => {
+    const stored = localStorage.getItem(RECENTLY_VIEWED_KEY);
+    if (!stored) {
+      set({ recentlyViewed: [] });
+      return;
+    }
+
+    const recentIds: string[] = JSON.parse(stored) as string[];
+    const { learningPaths } = get();
+
+    const recentPaths = recentIds
+      .map((id) => learningPaths.find((lp) => lp.ID === id))
+      .filter(Boolean) as LearningPath[];
+
+    set({ recentlyViewed: recentPaths });
   },
 
   deleteLearningPath: async (id: string) => {

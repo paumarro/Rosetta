@@ -5,7 +5,7 @@ import {
   findRouteByPath,
   getBreadcrumbsForPath,
   RouteItem,
-} from '@/lib/routes';
+} from '@/services/routes';
 
 //NavigationState Type
 export interface NavigationState {

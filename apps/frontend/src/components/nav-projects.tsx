@@ -1,5 +1,5 @@
 import { Folder, MoreHorizontal, Share, Trash2 } from 'lucide-react';
-import { routes } from '@/lib/routes';
+import { routes } from '@/services/routes';
 
 import {
   DropdownMenu,
