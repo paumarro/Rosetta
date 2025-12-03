@@ -29,7 +29,7 @@ func GetRedirectURL() string {
 }
 
 // SetCookiesFromTokens sets authentication cookies with the provided tokens
-func SetCookiesFromTokens(c *gin.Context, accessToken, refreshToken, idToken string) {
+func SetCookiesFromTokens(c *gin.Context, accessToken, refreshToken, idToken, graphAccessToken string) {
 	cookieDomain := GetCookieDomain()
 	isSecure := !IsDevelopment()
 
@@ -43,6 +43,12 @@ func SetCookiesFromTokens(c *gin.Context, accessToken, refreshToken, idToken str
 	c.SetCookie("id_token", idToken, 3600, "/", cookieDomain, isSecure, true)
 	c.SetCookie("access_token", accessToken, 3600, "/", cookieDomain, isSecure, true)
 	c.SetCookie("refresh_token", refreshToken, 3600*24, "/", cookieDomain, isSecure, true)
+
+	// Set Graph API access token if provided
+	if graphAccessToken != "" {
+		c.SetCookie("graph_access_token", graphAccessToken, 3600, "/", cookieDomain, isSecure, true)
+		log.Printf("Graph access token cookie set")
+	}
 
 	log.Printf("Cookies set for domain: %s (Secure: %v)", cookieDomain, isSecure)
 }

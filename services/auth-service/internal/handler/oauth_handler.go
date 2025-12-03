@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rosetta/auth-service/internal/service"
+	"github.com/rosetta/auth-service/internal/util"
 )
 
 type OAuthHandler struct {
@@ -32,7 +33,7 @@ func (h *OAuthHandler) Login(c *gin.Context) {
 
 	// Get tenant ID from issuer
 	issuer := os.Getenv("OIDC_ISSUER")
-	tenantID := ExtractTenantIDFromIssuer(issuer)
+	tenantID := service.ExtractTenantID(issuer)
 
 	// Use ROSETTA_DOMAIN as the redirect target (don't trust Referer port)
 	// In development with nginx, all services should be accessed through the proxy
@@ -40,7 +41,7 @@ func (h *OAuthHandler) Login(c *gin.Context) {
 	if rosettaDomain == "" {
 		rosettaDomain = "localhost"
 	}
-	
+
 	// Determine scheme from referer, default to http
 	scheme := "http"
 	referer := c.GetHeader("Referer")
@@ -49,7 +50,7 @@ func (h *OAuthHandler) Login(c *gin.Context) {
 			scheme = parsedReferer.Scheme
 		}
 	}
-	
+
 	redirectDomain := fmt.Sprintf("%s://%s", scheme, rosettaDomain)
 
 	// Build Microsoft OAuth URL
@@ -86,7 +87,7 @@ func (h *OAuthHandler) Callback(c *gin.Context) {
 	if rosettaDomain == "" {
 		rosettaDomain = "localhost"
 	}
-	
+
 	// Determine scheme from state parameter if available, default to http
 	scheme := "http"
 	state := c.Query("state")
@@ -97,7 +98,7 @@ func (h *OAuthHandler) Callback(c *gin.Context) {
 			}
 		}
 	}
-	
+
 	redirectDomain := fmt.Sprintf("%s://%s", scheme, rosettaDomain)
 
 	clientID := os.Getenv("OIDC_CLIENT_ID")
@@ -106,7 +107,7 @@ func (h *OAuthHandler) Callback(c *gin.Context) {
 
 	// Get tenant ID from issuer
 	issuer := os.Getenv("OIDC_ISSUER")
-	tenantID := ExtractTenantIDFromIssuer(issuer)
+	tenantID := service.ExtractTenantID(issuer)
 
 	// Exchange authorization code for tokens
 	tokenURL := fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", tenantID)
@@ -181,9 +182,18 @@ func (h *OAuthHandler) Callback(c *gin.Context) {
 
 	log.Printf("User successfully authenticated: %s (%s)", validationResult.Email, validationResult.EntraID)
 
+	// Request Graph API access token using the refresh token
+	graphAccessToken, err := h.authService.GetGraphToken(refreshToken)
+	if err != nil {
+		log.Printf("Warning: Failed to get Graph API token: %v", err)
+		graphAccessToken = "" // Continue without graph token
+	} else {
+		log.Printf("Graph API token obtained successfully")
+	}
+
 	// Set authentication cookies
 	// Note: User will be created lazily in BE database on first authenticated request
-	SetCookiesFromTokens(c, accessToken, refreshToken, idToken)
+	util.SetCookiesFromTokens(c, accessToken, refreshToken, idToken, graphAccessToken)
 
 	log.Printf("Redirecting user to: %s", redirectDomain)
 	c.Redirect(http.StatusFound, redirectDomain)
@@ -203,13 +213,14 @@ func (h *OAuthHandler) Logout(c *gin.Context) {
 	}
 
 	// Clear cookies by setting them with negative max age
-	cookieDomain := GetCookieDomain()
-	isSecure := !IsDevelopment()
+	cookieDomain := util.GetCookieDomain()
+	isSecure := !util.IsDevelopment()
 
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie("id_token", "", -1, "/", cookieDomain, isSecure, true)
 	c.SetCookie("access_token", "", -1, "/", cookieDomain, isSecure, true)
 	c.SetCookie("refresh_token", "", -1, "/", cookieDomain, isSecure, true)
+	c.SetCookie("graph_access_token", "", -1, "/", cookieDomain, isSecure, true)
 
 	log.Printf("User logged out, redirecting to: %s", redirectTo)
 	c.Redirect(http.StatusFound, redirectTo)
