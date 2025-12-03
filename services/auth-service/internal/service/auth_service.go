@@ -190,6 +190,49 @@ func (s *AuthService) RefreshToken(refreshToken string) *TokenRefreshResult {
 	}
 }
 
+// GetGraphToken exchanges a refresh token for a Graph API-specific access token
+func (s *AuthService) GetGraphToken(refreshToken string) (string, error) {
+	tokenURL := fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", s.tenantID)
+
+	data := url.Values{}
+	data.Set("grant_type", "refresh_token")
+	data.Set("refresh_token", refreshToken)
+	data.Set("client_id", s.clientID)
+	data.Set("client_secret", s.clientSecret)
+	data.Set("scope", "https://graph.microsoft.com/.default")
+
+	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(data.Encode()))
+	if err != nil {
+		return "", fmt.Errorf("failed to create graph token request: %w", err)
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to call graph token endpoint: %w", err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("graph token request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var tokenResponse map[string]interface{}
+	if err := json.Unmarshal(bodyBytes, &tokenResponse); err != nil {
+		return "", fmt.Errorf("failed to decode graph token response: %w", err)
+	}
+
+	accessToken, ok := tokenResponse["access_token"].(string)
+	if !ok || accessToken == "" {
+		return "", fmt.Errorf("missing access_token in graph token response")
+	}
+
+	return accessToken, nil
+}
+
 // ExtractTenantID extracts tenant ID from various issuer formats.
 // Supports plain tenant ID or full URL like "https://login.microsoftonline.com/TENANT_ID/v2.0"
 func ExtractTenantID(issuer string) string {
