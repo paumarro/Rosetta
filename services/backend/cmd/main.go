@@ -37,10 +37,12 @@ func main() {
 	// Initialize services
 	userService := service.NewUserService(initializer.DB)
 	learningPathService := service.NewLearningPathService(initializer.DB)
+	communityService := service.NewCommunityService()
 
 	// Initialize controllers
 	userController := controller.NewUserController(userService)
 	lpController := controller.NewLearningPathController(learningPathService)
+	communityController := controller.NewCommunityController(communityService)
 
 	// Protected routes - all require authentication
 	protected := r.Group("/")
@@ -50,6 +52,10 @@ func main() {
 		// User API
 		protected.GET("/api/user/me", userController.GetCurrentUser)
 		protected.PATCH("/api/user/me", userController.UpdateCurrentUser)
+		protected.POST("/api/user/me/community", userController.SetUserCommunity)
+
+		// Community API
+		protected.GET("/api/communities", communityController.GetCommunities)
 
 		// Learning Paths API
 		protected.GET("/api/learning-paths", lpController.Index)
