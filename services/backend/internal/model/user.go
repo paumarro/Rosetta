@@ -1,6 +1,8 @@
 package model
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -10,6 +12,8 @@ type User struct {
 	Email         string      `gorm:"size:100;unique;not null"`
 	EntraID       string      `gorm:"size:100;unique"`
 	PhotoURL      string      `gorm:"type:text"`
+	Community     string      `gorm:"size:100"`
+	LastGraphSync *time.Time  `gorm:"index"`
 	Skills        []UserSkill `gorm:"foreignKey:UserID"`
 	LearningPaths []UserLP    `gorm:"foreignKey:UserID"`
 }

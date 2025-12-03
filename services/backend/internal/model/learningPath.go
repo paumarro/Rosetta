@@ -13,6 +13,7 @@ type LearningPath struct {
 	Description string         `gorm:"type:text" json:"Description"`
 	IsPublic    bool           `gorm:"not null" json:"IsPublic"`
 	Thumbnail   string         `gorm:"type:text" json:"Thumbnail"`
+	Community   string         `gorm:"size:100"`
 	DiagramID   string         `gorm:"size:24;index:unique,unique_diagram_id;not null" json:"DiagramID"` // MongoDB ObjectID
 	Users       []UserLP       `gorm:"foreignKey:LPID" json:"Users,omitempty"`
 	Skills      []LPSkill      `gorm:"foreignKey:LPID" json:"-"`  // Don't serialize join table
