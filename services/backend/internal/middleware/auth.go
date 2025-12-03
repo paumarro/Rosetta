@@ -78,9 +78,17 @@ func Auth() gin.HandlerFunc {
 			return
 		}
 
+		// Get Graph API access token from cookie
+		graphAccessToken, err := c.Cookie("graph_access_token")
+		if err != nil {
+			log.Printf("Warning: graph_access_token not found in cookies: %v", err)
+			graphAccessToken = "" // Continue without graph token, community won't be updated
+		}
+
 		// Get or create user (lazy provisioning - user created on first authenticated request)
 		userService := service.NewUserService(initializer.DB)
-		user, err := userService.GetOrCreateUser(claims)
+		graphService := service.NewGraphService()
+		user, err := userService.GetOrCreateUser(claims, graphService, graphAccessToken)
 		if err != nil {
 			log.Printf("Failed to get/create user: %s - %v", entraID, err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process user account"})
