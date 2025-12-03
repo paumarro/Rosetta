@@ -14,6 +14,12 @@ type GraphService struct {
 	httpClient *http.Client
 }
 
+type Group struct {
+	ID          string `json:"id"`
+	DisplayName string `json:"displayName"`
+	Description string `json:"description"`
+}
+
 func NewGraphService() *GraphService {
 	return &GraphService{
 		httpClient: &http.Client{},
@@ -77,4 +83,44 @@ func (s *GraphService) GetUserProfile(ctx context.Context, accessToken string) (
 	}
 	log.Printf("User Profile: %+v", profile)
 	return profile, nil
+}
+
+// GetUserGroups fetches the groups the user belongs to from Microsoft Graph
+func (s *GraphService) GetUserGroups(ctx context.Context, accessToken string) ([]Group, error) {
+	req, err := http.NewRequestWithContext(
+		ctx,
+		"GET",
+		"https://graph.microsoft.com/v1.0/me/memberOf",
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("failed to fetch groups: status %d", resp.StatusCode)
+	}
+
+	var result struct {
+		Value []Group `json:"value"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	log.Printf("User belongs to %d groups", len(result.Value))
+	for _, group := range result.Value {
+		log.Printf("Group: %s (ID: %s)", group.DisplayName, group.ID)
+	}
+
+	return result.Value, nil
 }
