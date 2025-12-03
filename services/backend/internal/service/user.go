@@ -2,7 +2,13 @@
 package service
 
 import (
+	"context"
 	"errors"
+	"log"
+	"os"
+	"strconv"
+	"strings"
+	"time"
 
 	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/model"
 	"gorm.io/gorm"
@@ -32,7 +38,7 @@ func (s *UserService) GetUserByEntraID(entraID string) (*model.User, error) {
 }
 
 // GetOrCreateUser finds or creates a user based on JWT claims
-func (s *UserService) GetOrCreateUser(claims map[string]interface{}) (*model.User, error) {
+func (s *UserService) GetOrCreateUser(claims map[string]interface{}, graphService *GraphService, accessToken string) (*model.User, error) {
 	email, _ := claims["email"].(string)
 	name, _ := claims["name"].(string)
 	entraID, _ := claims["oid"].(string) // Object ID from Microsoft Entra
@@ -53,6 +59,18 @@ func (s *UserService) GetOrCreateUser(claims map[string]interface{}) (*model.Use
 			Email:   email,
 			EntraID: entraID,
 		}
+
+		// Fetch user groups and determine community for new users
+		if graphService != nil && accessToken != "" {
+			community, err := s.determineCommunityFromGroups(graphService, accessToken)
+			if err == nil && community != "" {
+				user.Community = community
+			}
+			// Set LastGraphSync timestamp
+			now := time.Now()
+			user.LastGraphSync = &now
+		}
+
 		if err := s.DB.Create(&user).Error; err != nil {
 			return nil, err
 		}
@@ -60,9 +78,32 @@ func (s *UserService) GetOrCreateUser(claims map[string]interface{}) (*model.Use
 		return nil, err
 	} else {
 		// User exists, update info if changed
+		shouldUpdate := false
 		if user.Name != name || user.Email != email {
 			user.Name = name
 			user.Email = email
+			shouldUpdate = true
+		}
+
+		// Update community only if data is stale
+		if graphService != nil && accessToken != "" && s.shouldUpdateFromGraph(&user) {
+			log.Printf("User %s graph data is stale, fetching from Graph API", user.Email)
+			community, err := s.determineCommunityFromGroups(graphService, accessToken)
+			if err == nil {
+				if community != "" && user.Community != community {
+					user.Community = community
+					shouldUpdate = true
+				}
+				// Update LastGraphSync timestamp
+				now := time.Now()
+				user.LastGraphSync = &now
+				shouldUpdate = true
+			}
+		} else if graphService != nil && accessToken != "" {
+			log.Printf("User %s graph data is fresh, skipping Graph API call", user.Email)
+		}
+
+		if shouldUpdate {
 			s.DB.Save(&user)
 		}
 	}
@@ -83,6 +124,7 @@ func (s *UserService) UpdateUser(userID uint, updates map[string]interface{}) (*
 	allowedFields := map[string]bool{
 		"name":      true,
 		"photo_url": true,
+		"community": true,
 	}
 
 	// Filter updates to only allowed fields
@@ -99,4 +141,64 @@ func (s *UserService) UpdateUser(userID uint, updates map[string]interface{}) (*
 	}
 
 	return &user, nil
+}
+
+// shouldUpdateFromGraph checks if user data should be refreshed from Graph API
+func (s *UserService) shouldUpdateFromGraph(user *model.User) bool {
+	if user.LastGraphSync == nil {
+		return true // Never synced before
+	}
+
+	// Get staleness threshold from environment (default 24 hours)
+	staleHoursStr := os.Getenv("GRAPH_SYNC_INTERVAL_HOURS")
+	staleHours := 24 // default
+	if staleHoursStr != "" {
+		if hours, err := strconv.Atoi(staleHoursStr); err == nil && hours > 0 {
+			staleHours = hours
+		}
+	}
+
+	staleThreshold := time.Duration(staleHours) * time.Hour
+	return time.Since(*user.LastGraphSync) > staleThreshold
+}
+
+// determineCommunityFromGroups fetches user groups and maps them to a community name
+func (s *UserService) determineCommunityFromGroups(graphService *GraphService, accessToken string) (string, error) {
+	ctx := context.Background()
+	groups, err := graphService.GetUserGroups(ctx, accessToken)
+	if err != nil {
+		log.Printf("Failed to fetch user groups: %v", err)
+		return "", err
+	}
+
+	// Get community group mappings from environment
+	// Format: GROUP_ID_1:CommunityName1,GROUP_ID_2:CommunityName2
+	communityMappings := os.Getenv("COMMUNITY_GROUP_MAPPINGS")
+	if communityMappings == "" {
+		log.Println("No COMMUNITY_GROUP_MAPPINGS configured")
+		return "", nil
+	}
+
+	// Parse the mappings
+	mappingPairs := strings.Split(communityMappings, ",")
+	groupToCommunity := make(map[string]string)
+	for _, pair := range mappingPairs {
+		parts := strings.Split(strings.TrimSpace(pair), ":")
+		if len(parts) == 2 {
+			groupID := strings.TrimSpace(parts[0])
+			communityName := strings.TrimSpace(parts[1])
+			groupToCommunity[groupID] = communityName
+		}
+	}
+
+	// Find the first matching group
+	for _, group := range groups {
+		if communityName, exists := groupToCommunity[group.ID]; exists {
+			log.Printf("User assigned to community '%s' via group '%s' (%s)", communityName, group.DisplayName, group.ID)
+			return communityName, nil
+		}
+	}
+
+	log.Println("User is not in any configured community groups")
+	return "", nil
 }
