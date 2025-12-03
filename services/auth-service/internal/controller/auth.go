@@ -131,7 +131,16 @@ func (ctrl *AuthController) Callback(c *gin.Context) {
 
 	log.Printf("User successfully authenticated: %s (%s)", validationResult.Email, validationResult.EntraID)
 
-	util.SetCookiesFromTokens(c, accessToken, refreshToken, idToken)
+	// Request Graph API access token using the refresh token
+	graphAccessToken, err := ctrl.authService.GetGraphToken(refreshToken)
+	if err != nil {
+		log.Printf("Warning: Failed to get Graph API token: %v", err)
+		graphAccessToken = "" // Continue without graph token
+	} else {
+		log.Printf("Graph API token obtained successfully")
+	}
+
+	util.SetCookiesFromTokens(c, accessToken, refreshToken, idToken, graphAccessToken)
 
 	redirectURL := util.GetRedirectURL()
 	log.Printf("Redirecting user to: %s", redirectURL)
@@ -234,7 +243,16 @@ func (ctrl *AuthController) RefreshToken(c *gin.Context) {
 
 	log.Printf("Token refreshed successfully, expires in: %d seconds", result.ExpiresIn)
 
-	util.SetCookiesFromTokens(c, result.AccessToken, result.RefreshToken, result.IDToken)
+	// Request Graph API access token using the refresh token
+	graphAccessToken, err := ctrl.authService.GetGraphToken(result.RefreshToken)
+	if err != nil {
+		log.Printf("Warning: Failed to get Graph API token during refresh: %v", err)
+		graphAccessToken = "" // Continue without graph token
+	} else {
+		log.Printf("Graph API token obtained successfully during refresh")
+	}
+
+	util.SetCookiesFromTokens(c, result.AccessToken, result.RefreshToken, result.IDToken, graphAccessToken)
 
 	c.JSON(http.StatusOK, result)
 }
