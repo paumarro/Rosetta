@@ -1,4 +1,5 @@
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import CommunitySelectionModal from '@/components/dashboard/CommunitySelectionModal';
 import { useUserStore } from '@/store/userStore';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -12,7 +13,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
 
-  const { fetchCurrentUser } = useUserStore();
+  const { user, fetchCurrentUser } = useUserStore();
+  const showCommunityModal = user && !user.Community;
 
   useEffect(() => {
     void fetchCurrentUser();
@@ -39,8 +41,13 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <DashboardLayout>
-      <div className="flex flex-col mt-10 py-5 items-start text-left">
+    <>
+      <CommunitySelectionModal
+        open={!!showCommunityModal}
+        communities={communities}
+      />
+      <DashboardLayout>
+        <div className="flex flex-col mt-10 py-5 items-start text-left">
         {/* <p className="text-xl font tracking-tight mb-2">
           Welcome to Rosseta, {firstName}
         </p> */}
@@ -64,5 +71,6 @@ export default function Dashboard() {
         )}
       </div>
     </DashboardLayout>
+    </>
   );
 }
