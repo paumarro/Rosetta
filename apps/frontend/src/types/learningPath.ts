@@ -25,6 +25,7 @@ export interface LearningPathStore {
 
   fetchRecentlyViewed: () => void;
   fetchLearningPaths: () => Promise<void>;
+  fetchLearningPathsByCommunity: (communityName: string) => Promise<LearningPath[]>;
   fetchUserFavorites: () => Promise<void>;
   addToFavorites: (id: string) => Promise<void>;
   removeFromFavorites: (id: string) => Promise<void>;
