@@ -1,38 +1,65 @@
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { useUserStore } from '@/store/userStore';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+interface communitiesResponse {
+  communities: string[];
+}
 
 export default function Dashboard() {
-  const { user, fetchCurrentUser } = useUserStore();
+  const [communities, setCommunities] = useState<string[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const navigate = useNavigate();
 
-  const fullName = user?.Name.split(' ');
-
-  const firstName = fullName ? fullName[0] : '';
+  const { fetchCurrentUser } = useUserStore();
 
   useEffect(() => {
     void fetchCurrentUser();
   }, [fetchCurrentUser]);
 
+  useEffect(() => {
+    const fetchCommunities = async () => {
+      try {
+        const response = await fetch('api/communities', {
+          credentials: 'include',
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch Communities');
+        }
+        const data = (await response.json()) as communitiesResponse;
+        setCommunities(data.communities);
+      } catch (error) {
+        console.error('Error fetching communities:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    void fetchCommunities();
+  }, []);
+
   return (
     <DashboardLayout>
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <h1 className="text-4xl font-bold tracking-tight mb-4">
+      <div className="flex flex-col mt-10 py-5 items-start text-left">
+        {/* <p className="text-xl font tracking-tight mb-2">
           Welcome to Rosseta, {firstName}
-        </h1>
-        <p className="text-xl text-muted-foreground mb-8 max-w-2xl">
-          Focus on what&apos;s important. Learn faster with content created by
-          the community for everyone&apos;s success.
-        </p>
-        <div className="flex gap-4 justify-center">
-          <Link to="/hub/learning-path">
-            <Button>Explore Learning Paths</Button>
-          </Link>
-          <Link to="/creator/path-design">
-            <Button variant={'secondary'}>Create Content</Button>
-          </Link>
-        </div>
+        </p> */}
+
+        {loading ? (
+          <p className="text-muted-foreground mt-2">Loading communities...</p>
+        ) : (
+          <div className="mt-6 flex flex-col w-full divide-y divide-gray-300 overflow-hidden">
+            {communities.map((community) => (
+              <button
+                key={community}
+                onClick={() => navigate(`/hub/${encodeURIComponent(community)}`)}
+                className="text-6xl px-5 py-4 text-left hover:translate-x-5 transition-all duration-200 ease-in-out hover:text-red-500"
+              >
+                {community}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

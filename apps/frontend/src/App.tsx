@@ -4,9 +4,11 @@ import './App.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import PathDesigner from '@/components/dashboard/PathDesigner';
 import LearningPaths from '@/components/dashboard/LearningPaths';
+import CommunityHub from '@/components/dashboard/CommunityHub';
 import CreateNewPath from '@/components/creator-studio/CreateNewPath';
 import { AuthProvider } from './contexts/AuthContext';
 import RequireAuth from './wrappers/RequireAuth';
+import Dashboard from './components/dashboard/Dashboard';
 
 export default function App() {
   return (
@@ -21,7 +23,7 @@ export default function App() {
             path="/"
             element={
               <RequireAuth>
-                <LearningPaths />
+                <Dashboard />
               </RequireAuth>
             }
           />
@@ -33,6 +35,14 @@ export default function App() {
               element={
                 <RequireAuth>
                   <LearningPaths />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path=":communityname"
+              element={
+                <RequireAuth>
+                  <CommunityHub />
                 </RequireAuth>
               }
             />
