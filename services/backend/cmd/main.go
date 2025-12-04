@@ -56,6 +56,7 @@ func main() {
 
 		// Community API
 		protected.GET("/api/communities", communityController.GetCommunities)
+		protected.GET("/api/communities/:communityname/learning-paths", lpController.GetByCommunity)
 
 		// Learning Paths API
 		protected.GET("/api/learning-paths", lpController.Index)
