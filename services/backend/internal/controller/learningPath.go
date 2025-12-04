@@ -161,3 +161,19 @@ func (res *LearningPathController) GetUserFavorites(c *gin.Context) {
 
 	c.JSON(http.StatusOK, favorites)
 }
+
+func (res *LearningPathController) GetByCommunity(c *gin.Context) {
+	communityName := c.Param("communityname")
+	if communityName == "" {
+		respondWithError(c, http.StatusBadRequest, "Community name is required", nil)
+		return
+	}
+
+	paths, err := res.LearningPathService.GetLearningPathsByCommunity(c, communityName)
+	if err != nil {
+		respondWithError(c, http.StatusInternalServerError, "Failed to fetch learning paths for community", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, paths)
+}

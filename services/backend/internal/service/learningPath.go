@@ -264,3 +264,26 @@ func (s *LearningPathService) GetUserFavorites(ctx context.Context, userID uint)
 
 	return paths, nil
 }
+
+// GetLearningPathsByCommunity retrieves all learning paths for a specific community
+func (s *LearningPathService) GetLearningPathsByCommunity(ctx context.Context, communityName string) ([]model.LearningPath, error) {
+	var paths []model.LearningPath
+	err := s.DB.WithContext(ctx).
+		Where("community = ?", communityName).
+		Preload("Skills.Skill").
+		Find(&paths).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract skills into SkillsList
+	for i := range paths {
+		paths[i].SkillsList = make([]model.Skill, 0, len(paths[i].Skills))
+		for _, lpSkill := range paths[i].Skills {
+			paths[i].SkillsList = append(paths[i].SkillsList, lpSkill.Skill)
+		}
+	}
+
+	return paths, nil
+}
