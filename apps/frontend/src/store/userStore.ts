@@ -26,7 +26,6 @@ export interface UserStore {
   setError: (error: string | null) => void;
   fetchCurrentUser: () => Promise<void>;
   updateUserProfile: (data: UpdateUserData) => Promise<void>;
-  setCommunity: (community: string) => Promise<void>;
   clearUser: () => void;
 }
 
@@ -78,28 +77,6 @@ export const useUserStore = create<UserStore>((set) => ({
     } catch (error) {
       set({ error: getErrorMessage(error), isLoading: false });
       console.error('Error updating user profile:', error);
-      throw error;
-    }
-  },
-
-  setCommunity: async (community: string) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await apiFetch('/api/user/me/community', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ community }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to set community');
-      }
-
-      const updatedUser = (await response.json()) as User;
-      set({ user: updatedUser, isLoading: false, error: null });
-    } catch (error) {
-      set({ error: getErrorMessage(error), isLoading: false });
-      console.error('Error setting community:', error);
       throw error;
     }
   },
