@@ -43,6 +43,24 @@ export const useLearningPathStore = create<LearningPathStore>((set, get) => ({
     }
   },
 
+  fetchLearningPathsByCommunity: async (communityName: string) => {
+    try {
+      const response = await apiFetch(`/api/communities/${encodeURIComponent(communityName)}/learning-paths`);
+      if (!response.ok) {
+        const errorMessage =
+          response.status === 404
+            ? 'Learning paths not found for this community'
+            : 'Failed to fetch community learning paths';
+        throw new Error(errorMessage);
+      }
+      const data = (await response.json()) as LearningPath[];
+      return data;
+    } catch (error) {
+      console.error('Error fetching community learning paths:', error);
+      throw error;
+    }
+  },
+
   fetchRecentlyViewed: () => {
     const stored = localStorage.getItem(RECENTLY_VIEWED_KEY);
     if (!stored) {
