@@ -62,9 +62,13 @@ func (s *UserService) GetOrCreateUser(claims map[string]interface{}, graphServic
 
 		// Fetch user groups and determine community for new users
 		if graphService != nil && accessToken != "" {
+			log.Printf("🆕 New user '%s' - fetching community from Graph API", email)
 			community, err := s.determineCommunityFromGroups(graphService, accessToken)
 			if err == nil && community != "" {
 				user.Community = community
+				log.Printf("✅ Set community '%s' for new user '%s'", community, email)
+			} else {
+				log.Printf("⚠️  No community determined for new user '%s'", email)
 			}
 			// Set LastGraphSync timestamp
 			now := time.Now()
@@ -87,20 +91,27 @@ func (s *UserService) GetOrCreateUser(claims map[string]interface{}, graphServic
 
 		// Update community only if data is stale
 		if graphService != nil && accessToken != "" && s.shouldUpdateFromGraph(&user) {
-			log.Printf("User %s graph data is stale, fetching from Graph API", user.Email)
+			log.Printf("🔄 User %s graph data is stale, fetching from Graph API", user.Email)
 			community, err := s.determineCommunityFromGroups(graphService, accessToken)
 			if err == nil {
 				if community != "" && user.Community != community {
+					log.Printf("🔄 Updating community for '%s': '%s' → '%s'", user.Email, user.Community, community)
 					user.Community = community
 					shouldUpdate = true
+				} else if community != "" {
+					log.Printf("✅ Community unchanged for '%s': '%s'", user.Email, user.Community)
+				} else {
+					log.Printf("⚠️  No community determined for '%s' (currently: '%s')", user.Email, user.Community)
 				}
 				// Update LastGraphSync timestamp
 				now := time.Now()
 				user.LastGraphSync = &now
 				shouldUpdate = true
+			} else {
+				log.Printf("❌ Error determining community for '%s': %v", user.Email, err)
 			}
 		} else if graphService != nil && accessToken != "" {
-			log.Printf("User %s graph data is fresh, skipping Graph API call", user.Email)
+			log.Printf("✅ User %s graph data is fresh (community: '%s'), skipping Graph API call", user.Email, user.Community)
 		}
 
 		if shouldUpdate {
@@ -165,40 +176,56 @@ func (s *UserService) shouldUpdateFromGraph(user *model.User) bool {
 // determineCommunityFromGroups fetches user groups and maps them to a community name
 func (s *UserService) determineCommunityFromGroups(graphService *GraphService, accessToken string) (string, error) {
 	ctx := context.Background()
+	log.Println("========== FETCHING USER GROUPS FROM GRAPH API ==========")
+
 	groups, err := graphService.GetUserGroups(ctx, accessToken)
 	if err != nil {
-		log.Printf("Failed to fetch user groups: %v", err)
+		log.Printf("❌ Failed to fetch user groups: %v", err)
 		return "", err
+	}
+
+	log.Printf("✅ Fetched %d groups from Graph API", len(groups))
+	for i, group := range groups {
+		log.Printf("   Group #%d: %s (ID: %s)", i+1, group.DisplayName, group.ID)
 	}
 
 	// Get community group mappings from environment
 	// Format: GROUP_ID_1:CommunityName1,GROUP_ID_2:CommunityName2
 	communityMappings := os.Getenv("COMMUNITY_GROUP_MAPPINGS")
+	log.Printf("📋 COMMUNITY_GROUP_MAPPINGS env var: '%s'", communityMappings)
+
 	if communityMappings == "" {
-		log.Println("No COMMUNITY_GROUP_MAPPINGS configured")
+		log.Println("⚠️  No COMMUNITY_GROUP_MAPPINGS configured - cannot map groups to communities")
 		return "", nil
 	}
 
 	// Parse the mappings
 	mappingPairs := strings.Split(communityMappings, ",")
 	groupToCommunity := make(map[string]string)
-	for _, pair := range mappingPairs {
+	log.Printf("📋 Parsing %d mapping pairs", len(mappingPairs))
+	for i, pair := range mappingPairs {
 		parts := strings.Split(strings.TrimSpace(pair), ":")
 		if len(parts) == 2 {
 			groupID := strings.TrimSpace(parts[0])
 			communityName := strings.TrimSpace(parts[1])
 			groupToCommunity[groupID] = communityName
+			log.Printf("   Mapping #%d: Group %s → Community '%s'", i+1, groupID, communityName)
+		} else {
+			log.Printf("   ⚠️  Invalid mapping format: '%s'", pair)
 		}
 	}
 
 	// Find the first matching group
+	log.Println("🔍 Searching for matching groups...")
 	for _, group := range groups {
 		if communityName, exists := groupToCommunity[group.ID]; exists {
-			log.Printf("User assigned to community '%s' via group '%s' (%s)", communityName, group.DisplayName, group.ID)
+			log.Printf("✅ MATCH FOUND! User assigned to community '%s' via group '%s' (%s)", communityName, group.DisplayName, group.ID)
+			log.Println("==========================================================")
 			return communityName, nil
 		}
 	}
 
-	log.Println("User is not in any configured community groups")
+	log.Println("⚠️  User is not in any configured community groups")
+	log.Println("==========================================================")
 	return "", nil
 }
