@@ -1,5 +1,4 @@
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import CommunitySelectionModal from '@/components/dashboard/CommunitySelectionModal';
 import { useUserStore } from '@/store/userStore';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -13,8 +12,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
 
-  const { user, fetchCurrentUser } = useUserStore();
-  const showCommunityModal = user && !user.Community;
+  const { fetchCurrentUser } = useUserStore();
 
   useEffect(() => {
     void fetchCurrentUser();
@@ -41,13 +39,8 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <>
-      <CommunitySelectionModal
-        open={!!showCommunityModal}
-        communities={communities}
-      />
-      <DashboardLayout>
-        <div className="flex flex-col mt-10 py-5 items-start text-left">
+    <DashboardLayout>
+      <div className="flex flex-col mt-10 py-5 items-start text-left">
         {/* <p className="text-xl font tracking-tight mb-2">
           Welcome to Rosseta, {firstName}
         </p> */}
@@ -55,7 +48,7 @@ export default function Dashboard() {
         {loading ? (
           <p className="text-muted-foreground mt-2">Loading communities...</p>
         ) : (
-          <div className="mt-6 flex flex-col w-full divide-y divide-gray-300 overflow-hidden">
+          <div className="mt-6 flex flex-col w-full divide-y divide-gray-300 overflow-hidden animate-in fade-in duration-700">
             {communities.map((community) => (
               <button
                 key={community}
@@ -71,6 +64,5 @@ export default function Dashboard() {
         )}
       </div>
     </DashboardLayout>
-    </>
   );
 }
