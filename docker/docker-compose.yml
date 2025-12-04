@@ -21,8 +21,6 @@ services:
       - backend-1
       - backend-2
       - backend-3
-      - frontend
-      - fe-editor
     networks:
       - rosetta
     restart: unless-stopped
@@ -48,11 +46,17 @@ services:
     expose:
       - "8080"
     environment:
+      - RUNNING_IN_DOCKER=true
       - DB_HOST=postgres
       - CLIENT_ID=${CLIENT_ID}
       - TENANT_ID=${TENANT_ID}
       - PG_DB_URL=${PG_DB_URL}
       - EDITOR_BASE_URL=${EDITOR_BASE_URL}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+      - ROSETTA_DOMAIN=${ROSETTA_DOMAIN}
+      - ROSETTA_FE=${ROSETTA_FE}
+      - COMMUNITY_GROUP_MAPPINGS=${COMMUNITY_GROUP_MAPPINGS:-}
+      - GRAPH_SYNC_INTERVAL_HOURS=${GRAPH_SYNC_INTERVAL_HOURS}
     depends_on:
       postgres:
         condition: service_healthy
@@ -65,11 +69,17 @@ services:
     expose:
       - "8080"
     environment:
+      - RUNNING_IN_DOCKER=true
       - DB_HOST=postgres
       - CLIENT_ID=${CLIENT_ID}
       - TENANT_ID=${TENANT_ID}
       - PG_DB_URL=${PG_DB_URL}
       - EDITOR_BASE_URL=${EDITOR_BASE_URL}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+      - ROSETTA_DOMAIN=${ROSETTA_DOMAIN}
+      - ROSETTA_FE=${ROSETTA_FE}
+      - COMMUNITY_GROUP_MAPPINGS=${COMMUNITY_GROUP_MAPPINGS:-}
+      - GRAPH_SYNC_INTERVAL_HOURS=${GRAPH_SYNC_INTERVAL_HOURS}
     depends_on:
       postgres:
         condition: service_healthy
@@ -82,11 +92,17 @@ services:
     expose:
       - "8080"
     environment:
+      - RUNNING_IN_DOCKER=true
       - DB_HOST=postgres
       - CLIENT_ID=${CLIENT_ID}
       - TENANT_ID=${TENANT_ID}
       - PG_DB_URL=${PG_DB_URL}
       - EDITOR_BASE_URL=${EDITOR_BASE_URL}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+      - ROSETTA_DOMAIN=${ROSETTA_DOMAIN}
+      - ROSETTA_FE=${ROSETTA_FE}
+      - COMMUNITY_GROUP_MAPPINGS=${COMMUNITY_GROUP_MAPPINGS:-}
+      - GRAPH_SYNC_INTERVAL_HOURS=${GRAPH_SYNC_INTERVAL_HOURS}
     depends_on:
       postgres:
         condition: service_healthy

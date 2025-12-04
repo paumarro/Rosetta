@@ -19,6 +19,8 @@ export default defineConfig(({ mode }) => {
       ],
     },
     server: {
+      host: '0.0.0.0', // Bind to all network interfaces (allows Docker to connect)
+      port: 5173,
       proxy: {
         '/api': {
           target: env.VITE_FE_URL,
