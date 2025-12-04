@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLearningPathStore } from '@/store/learningPathStore';
+import { useUserStore } from '@/store/userStore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bookmark } from 'lucide-react';
+import { Bookmark, Plus } from 'lucide-react';
 import type { LearningPath } from '@/types/learningPath';
 
 const DEV_EDITOR_FE_URL =
@@ -22,6 +23,8 @@ export default function CommunityHub() {
     removeFromFavorites,
     isFavorited,
   } = useLearningPathStore();
+
+  const { user } = useUserStore();
 
   useEffect(() => {
     if (communityname) {
@@ -77,6 +80,8 @@ export default function CommunityHub() {
     );
   }
 
+  const isUserCommunity = user?.Community === communityname;
+
   return (
     <div className="container mx-auto p-6">
       <div className="mb-8">
@@ -87,10 +92,24 @@ export default function CommunityHub() {
         >
           ← Back to Communities
         </Button>
-        <h1 className="text-4xl font-bold">{communityname}</h1>
-        <p className="text-muted-foreground mt-2">
-          {paths.length} learning path{paths.length !== 1 ? 's' : ''} available
-        </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-4xl font-bold">{communityname}</h1>
+            <p className="text-muted-foreground mt-2">
+              {paths.length} learning path{paths.length !== 1 ? 's' : ''}{' '}
+              available
+            </p>
+          </div>
+          {isUserCommunity && (
+            <Button
+              onClick={() => void navigate('/creator/path-design/create-new')}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Create Learning Path
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
