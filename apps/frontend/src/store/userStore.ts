@@ -10,6 +10,7 @@ export interface User {
   Email: string;
   EntraID: string;
   PhotoURL: string;
+  Community: string;
 }
 
 export interface UpdateUserData {
