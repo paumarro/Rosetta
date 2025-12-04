@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => {
       ],
     },
     server: {
+      host: '0.0.0.0', // Bind to all network interfaces (allows Docker to connect)
       port: 3000,
       proxy: {
         '/api': {
