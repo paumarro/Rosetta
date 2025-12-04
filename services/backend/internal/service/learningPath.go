@@ -46,7 +46,7 @@ func (s *LearningPathService) GetLearningPaths() ([]model.LearningPath, error) {
 	return paths, nil
 }
 
-func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, description string, isPublic bool, thumbnail string, skillNames []string, authToken string) (*model.LearningPath, error) {
+func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, description string, isPublic bool, thumbnail string, skillNames []string, authToken string, community string) (*model.LearningPath, error) {
 	lpID := uuid.New()
 
 	editorURL := os.Getenv("EDITOR_BASE_URL")
@@ -93,6 +93,7 @@ func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, des
 		IsPublic:    isPublic,
 		Thumbnail:   thumbnail,
 		DiagramID:   dr.ID,
+		Community:   community,
 	}
 
 	// Step 5: insert LP row; compensate on failure

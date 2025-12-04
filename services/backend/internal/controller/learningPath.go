@@ -48,10 +48,23 @@ func (res *LearningPathController) Create(c *gin.Context) {
 		return
 	}
 
+	// Get authenticated user for community assignment
+	user, exists := c.Get("user")
+	if !exists {
+		respondWithError(c, http.StatusUnauthorized, "User not authenticated", nil)
+		return
+	}
+
+	userModel, ok := user.(*model.User)
+	if !ok {
+		respondWithError(c, http.StatusInternalServerError, "Failed to get user information", nil)
+		return
+	}
+
 	// Extract token for service-to-service calls
 	authToken, _ := c.Cookie("id_token")
 
-	learningPath, err := res.LearningPathService.CreateLearningPath(c, req.PathName, req.Description, true, "", req.Skills, authToken)
+	learningPath, err := res.LearningPathService.CreateLearningPath(c, req.PathName, req.Description, true, "", req.Skills, authToken, userModel.Community)
 	if err != nil {
 		respondWithError(c, http.StatusInternalServerError, "Failed to create learning path", err)
 		return
