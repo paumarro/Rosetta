@@ -52,7 +52,9 @@ export default function Dashboard() {
             {communities.map((community) => (
               <button
                 key={community}
-                onClick={() => navigate(`/hub/${encodeURIComponent(community)}`)}
+                onClick={() =>
+                  void navigate(`/hub/${encodeURIComponent(community)}`)
+                }
                 className="text-6xl px-5 py-4 text-left hover:translate-x-5 transition-all duration-200 ease-in-out hover:text-red-500"
               >
                 {community}
