@@ -47,12 +47,12 @@ export default function CommunityHub() {
       setLoading(false);
     }
   };
-  
+
   const handlePathClick = (path: LearningPath) => {
-    const url = `${DEV_EDITOR_FE_URL}view/${encodeURIComponent(path.Title)}?pathId=${path.ID}&community=${encodeURIComponent(communityname || '')}`;
+    const url = `${DEV_EDITOR_FE_URL}view/${encodeURIComponent(communityname || '')}/${encodeURIComponent(path.Title)}?pathId=${path.ID}`;
     window.location.href = url;
   };
-  
+
   const handleToggleFavorite = async (e: React.MouseEvent, pathId: string) => {
     e.stopPropagation();
     try {
@@ -97,28 +97,36 @@ export default function CommunityHub() {
   }
 
   const isUserCommunity = user?.Community === communityname;
+  const isAdmin = user?.IsAdmin === true;
+  const canCreatePath = isUserCommunity || isAdmin;
 
   return (
     <DashboardLayout>
       <div className=" mx-25 mt-14 animate-in fade-in duration-700">
-        <div className="flex items-center align-center gap-5">
+        <div className="flex ">
           <div>
             <h1 className="text-5xl font">{communityname}</h1>
           </div>
-          {paths.length > 0 && (
-            <Button variant="secondary" className="!p-4.5 mt-0.5 ml-auto">
-              Sort by
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-          )}
-          {isUserCommunity && (
-            <Button
-              onClick={() => void navigate('/creator/path-design/create-new')}
-              className="relative overflow-hidden cursor-pointer before:absolute before:inset-0 before:rounded-[inherit] before:bg-[linear-gradient(135deg,transparent_25%,rgba(255,255,255,0.2)_50%,transparent_75%,transparent_100%)] before:bg-[length:250%_250%,100%_100%] before:bg-no-repeat before:[animation:shine_3000ms_linear_infinite]"
-            >
-              Create Learning Path
-            </Button>
-          )}
+          <div className="ml-auto flex items-center align-center gap-5">
+            {paths.length > 0 && (
+              <Button variant="secondary" className="!p-4.5 mt-0.5 ml-auto">
+                Sort by
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            )}
+            {canCreatePath && (
+              <Button
+                onClick={() =>
+                  void navigate(
+                    `/hub/${encodeURIComponent(communityname || '')}/create-path`,
+                  )
+                }
+                className="relative overflow-hidden cursor-pointer before:absolute before:inset-0 before:rounded-[inherit] before:bg-[linear-gradient(135deg,transparent_25%,rgba(255,255,255,0.2)_50%,transparent_75%,transparent_100%)] before:bg-[length:250%_250%,100%_100%] before:bg-no-repeat before:[animation:shine_3000ms_linear_infinite]"
+              >
+                Create Learning Path
+              </Button>
+            )}
+          </div>
         </div>
         <div className="h-px bg-gray-200 w-full mt-10"></div>
 

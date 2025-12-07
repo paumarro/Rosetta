@@ -48,7 +48,7 @@ func (res *LearningPathController) Create(c *gin.Context) {
 		return
 	}
 
-	// Get authenticated user for community assignment
+	// Get authenticated user
 	user, exists := c.Get("user")
 	if !exists {
 		respondWithError(c, http.StatusUnauthorized, "User not authenticated", nil)
@@ -61,10 +61,40 @@ func (res *LearningPathController) Create(c *gin.Context) {
 		return
 	}
 
+	// Determine community: from URL param (new way) or user's community (backward compat)
+	communityName := c.Param("communityname")
+	if communityName == "" {
+		// Backward compatibility: use user's community if no URL param
+		communityName = userModel.Community
+	}
+
+	// Validate community
+	if communityName == "" {
+		respondWithError(c, http.StatusForbidden, "You must be assigned to a community to create learning paths", nil)
+		return
+	}
+
+	// Validate community exists
+	communityService := service.NewCommunityService()
+	if !communityService.IsValidCommunity(c, communityName) {
+		respondWithError(c, http.StatusNotFound, "Community not found", nil)
+		return
+	}
+
+	// AUTHORIZATION: Check if user is admin
+	userService := service.NewUserService(res.LearningPathService.DB)
+	isAdmin := userService.IsAdmin(userModel.Email)
+
+	// AUTHORIZATION: User must be in community OR be admin
+	if userModel.Community != communityName && !isAdmin {
+		respondWithError(c, http.StatusForbidden, "You can only create learning paths for your own community", nil)
+		return
+	}
+
 	// Extract token for service-to-service calls
 	authToken, _ := c.Cookie("id_token")
 
-	learningPath, err := res.LearningPathService.CreateLearningPath(c, req.PathName, req.Description, true, "", req.Skills, authToken, userModel.Community)
+	learningPath, err := res.LearningPathService.CreateLearningPath(c, req.PathName, req.Description, true, "", req.Skills, authToken, communityName)
 	if err != nil {
 		respondWithError(c, http.StatusInternalServerError, "Failed to create learning path", err)
 		return

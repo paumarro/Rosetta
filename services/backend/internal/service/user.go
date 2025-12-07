@@ -229,3 +229,32 @@ func (s *UserService) determineCommunityFromGroups(graphService *GraphService, a
 	log.Println("==========================================================")
 	return "", nil
 }
+
+// IsAdmin checks if a user email is in the admin list
+func (s *UserService) IsAdmin(email string) bool {
+	adminEmails := os.Getenv("ADMIN_EMAILS")
+	log.Printf("🔐 IsAdmin check for email: '%s'", email)
+	log.Printf("🔐 ADMIN_EMAILS env var value: '%s'", adminEmails)
+
+	if adminEmails == "" {
+		log.Printf("⚠️  ADMIN_EMAILS is empty or not set")
+		return false
+	}
+
+	adminList := strings.Split(adminEmails, ",")
+	log.Printf("🔐 Parsed admin list: %v", adminList)
+
+	// Normalize email to lowercase for case-insensitive comparison
+	emailLower := strings.ToLower(strings.TrimSpace(email))
+
+	for _, admin := range adminList {
+		trimmedAdmin := strings.ToLower(strings.TrimSpace(admin))
+		log.Printf("🔐 Comparing: '%s' == '%s'? %v", trimmedAdmin, emailLower, trimmedAdmin == emailLower)
+		if trimmedAdmin == emailLower {
+			log.Printf("✅ Admin match found!")
+			return true
+		}
+	}
+	log.Printf("❌ No admin match found")
+	return false
+}

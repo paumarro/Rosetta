@@ -9,11 +9,11 @@ function App() {
     <Routes>
       <Route path="/" element={<Index />} />
       <Route
-        path="/editor/:diagramName"
+        path="/editor/:community/:diagramName"
         element={<DiagramEditorWrapper mode="edit" />}
       />
       <Route
-        path="/view/:diagramName"
+        path="/view/:community/:diagramName"
         element={<DiagramEditorWrapper mode="view" />}
       />
       <Route path="*" element={<NotFound />} />
@@ -21,10 +21,10 @@ function App() {
   );
 }
 
-// Wrapper component to handle diagram name from URL
+// Wrapper component to handle diagram name and community from URL
 function DiagramEditorWrapper({ mode }: { mode: 'edit' | 'view' }) {
-  const { diagramName } = useParams<{ diagramName: string }>();
-  return <DiagramEditor diagramName={diagramName} mode={mode} />;
+  const { diagramName, community } = useParams<{ diagramName: string; community: string }>();
+  return <DiagramEditor diagramName={diagramName} community={community} mode={mode} />;
 }
 
 export default App;
