@@ -141,12 +141,18 @@ export default function DiagramEditor({
 
   const handleBackButtonClick = useCallback(() => {
     // Use relative paths - nginx routes / to FE (frontend)
-    if (isViewMode) {
-      window.location.href = '/hub/learning-path';
+
+    // Check if user came from a specific community
+    const params = new URLSearchParams(window.location.search);
+    const community = params.get('community');
+
+    // Return to community hub if community parameter exists, otherwise generic learning paths
+    if (community) {
+      window.location.href = `/hub/${encodeURIComponent(community)}`;
     } else {
-      window.location.href = '/creator/path-design';
+      window.location.href = '/';
     }
-  }, [isViewMode]);
+  }, []);
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
@@ -245,6 +251,7 @@ export default function DiagramEditor({
   };
 
   const defaultEdgeOptions = {
+    type: 'default',
     selectable: true,
     deletable: true,
   };
