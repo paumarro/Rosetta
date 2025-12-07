@@ -12,8 +12,35 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// isDebugEnabled checks if auth debug logging is enabled
+func isDebugEnabled() bool {
+	return os.Getenv("AUTH_DEBUG") == "true"
+}
+
+// extractAuthToken extracts the authentication token from Authorization header or id_token cookie
+func extractAuthToken(c *gin.Context) (string, error) {
+	// Check Authorization header first (for API clients)
+	authHeader := c.GetHeader("Authorization")
+	if authHeader != "" && len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+		if isDebugEnabled() {
+			log.Print("[DEBUG] Token found in Authorization header")
+		}
+		return authHeader[7:], nil
+	}
+
+	// Fall back to id_token cookie (primary method for browser clients)
+	idToken, err := c.Cookie("id_token")
+	if err != nil {
+		return "", err
+	}
+
+	if isDebugEnabled() {
+		log.Print("[DEBUG] Token found in id_token cookie")
+	}
+	return idToken, nil
+}
+
 func Auth() gin.HandlerFunc {
-	log.Println("Auth Middleware called")
 	clientID := os.Getenv("CLIENT_ID")
 	tenantID := os.Getenv("TENANT_ID")
 
@@ -26,27 +53,10 @@ func Auth() gin.HandlerFunc {
 	verifier := provider.Verifier(&oidc.Config{ClientID: clientID})
 
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		log.Printf("Authorization Header: %s", authHeader)
-		if authHeader == "" {
-			log.Print("No Auth header found")
-			// Get id_token from cookie (used for user identity validation)
-			idToken, err := c.Cookie("id_token")
-			if err != nil {
-				log.Printf("Error fetching id_token cookie: %v", err)
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "No access token provided"})
-				c.Abort()
-				return
-			}
-			authHeader = "Bearer " + idToken
-			c.Request.Header.Set("Authorization", authHeader)
-		}
-
-		token := ""
-		if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
-			token = authHeader[7:]
-		} else {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format"})
+		token, err := extractAuthToken(c)
+		if err != nil {
+			log.Print("[ERROR] No valid authentication found")
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "No valid authentication found"})
 			c.Abort()
 			return
 		}
