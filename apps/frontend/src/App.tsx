@@ -1,5 +1,4 @@
 import Login from '@/pages/Login';
-import { Person } from '@/pages/Person';
 import './App.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import PathDesigner from '@/components/dashboard/PathDesigner';
@@ -67,9 +66,6 @@ export default function App() {
               }
             />
           </Route>
-
-          {/* Test and not implemented routes */}
-          <Route path="/person" element={<Person />} />
 
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
