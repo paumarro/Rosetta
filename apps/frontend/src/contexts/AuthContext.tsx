@@ -18,8 +18,6 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// With nginx reverse proxy, we use relative paths for same-origin requests
-// This eliminates cross-origin issues and works in both dev (nginx) and production
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);

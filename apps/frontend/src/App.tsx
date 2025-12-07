@@ -1,4 +1,3 @@
-import Login from '@/pages/Login';
 import './App.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import PathDesigner from '@/components/dashboard/PathDesigner';
@@ -14,9 +13,6 @@ export default function App() {
     <div className="min-h-screen bg-background">
       <AuthProvider>
         <Routes>
-          {/* Public route - anyone can access */}
-          <Route path="/login" element={<Login />} />
-
           {/* Protected routes - only logged-in users */}
           <Route
             path="/"

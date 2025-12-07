@@ -79,7 +79,7 @@ export default function CreateNewPath({
         <div className="">
           <div className={cn('flex flex-col ', className)} {...props}>
             <Card>
-              <CardHeader className="text-center min-w-sm">
+              <CardHeader className="min-w-sm">
                 <CardTitle className="text-2xl mt-5">
                   Create a Learning Path
                 </CardTitle>
