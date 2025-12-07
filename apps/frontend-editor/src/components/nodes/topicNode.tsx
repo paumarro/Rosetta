@@ -101,21 +101,21 @@ const TopicNode = ({
 
     if (type === 'subtopic') {
       return {
-        base: selected ? 'bg-sub-hover' : 'bg-sub-bg',
-        border: 'border-sub-border border-[2.5px] rounded-[5px]',
-        hover: 'hover:bg-sub-hover',
+        base: selected ? 'bg-gray-300' : 'bg-white',
+        border: 'border-gray-200 border-[1px] rounded-[5px]',
+        hover: 'hover:bg-gray-200',
         height: heightClass,
         text: {
-          color: 'text-white',
+          color: 'text-black',
           size: 'text-sm',
         },
       };
     } else {
       // topic (including the starting nodes)
       return {
-        base: selected ? 'bg-topic-hover' : 'bg-topic-bg',
-        border: 'border-topic-border border-[2.5px] rounded-[5px]',
-        hover: 'hover:bg-topic-hover',
+        base: selected ? 'bg-topic-hover' : 'bg-gray-900',
+        border: 'border-topic-border border-[1px] rounded-[5px]',
+        hover: 'hover:bg-gray-700',
         height: heightClass,
         text: {
           color: 'text-white',
@@ -299,7 +299,7 @@ const TopicNode = ({
 
   return (
     <div
-      className={`px-4 shadow-md transition-colors cursor-pointer flex items-center justify-center
+      className={`px-4 transition-colors cursor-pointer flex items-center justify-center
         ${styles.base} ${styles.border} ${styles.hover} ${widthClass} ${styles.height}`}
       data-view-mode={isViewMode}
       onClick={handleNodeClick}
