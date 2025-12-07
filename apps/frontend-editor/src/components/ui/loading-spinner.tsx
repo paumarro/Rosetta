@@ -22,7 +22,7 @@ export function LoadingSpinner({
       className={cn('flex items-center justify-center', className)}
     >
       <div className={cn('loading-spinner', sizeClasses[size])} />
-      <span className="sr-only">Loading...</span>
+
     </div>
   );
 }
