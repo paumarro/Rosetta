@@ -1,6 +1,7 @@
 import { Search } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { SidebarInput } from '@/components/ui/sidebar';
+import { cn } from '@/utils/cn';
 
 interface SearchFormProps
   extends Omit<React.ComponentProps<'form'>, 'onSubmit'> {
@@ -8,6 +9,7 @@ interface SearchFormProps
   onInputChange: (value: string) => void;
   onSearch: (value: string) => void;
   placeholder?: string;
+  inputClassName?: string;
 }
 
 export function SearchSkillForm({
@@ -15,12 +17,11 @@ export function SearchSkillForm({
   onInputChange,
   onSearch,
   placeholder = 'Type to search...',
+  inputClassName,
 }: SearchFormProps) {
   return (
     <div className="relative">
-      <Label htmlFor="search" className="sr-only">
-        Search
-      </Label>
+      <Label className="sr-only">Search</Label>
       <SidebarInput
         id="search"
         value={inputValue}
@@ -34,9 +35,8 @@ export function SearchSkillForm({
           }
         }}
         placeholder={placeholder}
-        className="h-8 pl-7"
+        className={cn('h-8 pl-7', inputClassName)}
       />
-      <Search className="pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2 opacity-50 select-none" />
     </div>
   );
 }

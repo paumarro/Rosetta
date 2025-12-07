@@ -75,32 +75,28 @@ export default function CreateNewPath({
 
   return (
     <DashboardLayout>
-      <div className="bg-muted flex h-full flex-col items-center justify-center gap-6  p-6 md:p-10">
-        {/* <h1 className="text-xl">Create a Game-Changing Learning Path</h1>
-        <h2>Share your experience, empower the community</h2> */}
-        <div className="max-w-sm">
+      <div className="flex h-full flex-col items-center justify-center ">
+        <div className="">
           <div className={cn('flex flex-col ', className)} {...props}>
             <Card>
-              <CardHeader className="text-center">
-                <CardTitle className="text-xl">
+              <CardHeader className="text-center min-w-sm">
+                <CardTitle className="text-2xl mt-5">
                   Create a Learning Path
                 </CardTitle>
                 <CardDescription>
                   Share your experience, empower the community
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="min-w-md mx-5 my-2">
                 <form
                   onSubmit={(e) => {
                     void handleSubmit(e);
                   }}
                 >
-                  <div className="grid gap-6">
+                  <div className="grid gap-6 mt-10">
                     <div className="grid gap-3">
                       <Label htmlFor="path-name">Learning Path Name</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Give your path an inspiring name for the community
-                      </p>
+
                       <Input
                         id="path-name"
                         type="text"
@@ -113,6 +109,7 @@ export default function CreateNewPath({
                           setPathNameCharacterCount(value.length);
                         }}
                         maxLength={50}
+                        className="border-0 border-b rounded-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-b-2"
                       />
                       <div className="text-xs text-muted-foreground text-right">
                         {pathNameCharacterCount}/50
@@ -120,9 +117,7 @@ export default function CreateNewPath({
                     </div>
                     <div className="grid gap-3">
                       <Label htmlFor="description">Description</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Give your path a short description for the community
-                      </p>
+
                       <Textarea
                         id="description"
                         placeholder="Add a short description..."
@@ -134,15 +129,11 @@ export default function CreateNewPath({
                           setDescription(e.target.value);
                         }}
                         rows={4}
-                        className="resize-none"
+                        className="resize-none border-0 border-b rounded-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-b-2"
                       />
                     </div>
                     <div className="grid gap-3">
                       <Label htmlFor="skills">Skills</Label>
-                      <p className="text-sm text-muted-foreground">
-                        These are the superpowers 🔥 your path will unlock for
-                        learners.
-                      </p>
                     </div>
                     <div className="flex flex-col gap-4">
                       <div className="grid gap-6">
@@ -152,7 +143,8 @@ export default function CreateNewPath({
                             inputValue={searchValue}
                             onInputChange={setSearchValue}
                             onSearch={handleSearchSubmit}
-                            placeholder="Add a skill"
+                            placeholder="I.e.: Scrum, HTML, Branding..."
+                            inputClassName="border-0 border-b rounded-none pl-7 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-b-2"
                           />
                         </div>
                       </div>
@@ -205,10 +197,6 @@ export default function CreateNewPath({
                 </form>
               </CardContent>
             </Card>
-            <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
-              Your learning path will join our collection of expert roadmaps
-              helping self-starters level up every day.
-            </div>
           </div>
         </div>
       </div>
