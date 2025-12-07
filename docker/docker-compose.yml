@@ -57,6 +57,7 @@ services:
       - ROSETTA_FE=${ROSETTA_FE}
       - COMMUNITY_GROUP_MAPPINGS=${COMMUNITY_GROUP_MAPPINGS:-}
       - GRAPH_SYNC_INTERVAL_HOURS=${GRAPH_SYNC_INTERVAL_HOURS}
+      - ADMIN_EMAILS=${ADMIN_EMAILS:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -80,6 +81,7 @@ services:
       - ROSETTA_FE=${ROSETTA_FE}
       - COMMUNITY_GROUP_MAPPINGS=${COMMUNITY_GROUP_MAPPINGS:-}
       - GRAPH_SYNC_INTERVAL_HOURS=${GRAPH_SYNC_INTERVAL_HOURS}
+      - ADMIN_EMAILS=${ADMIN_EMAILS:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -103,6 +105,7 @@ services:
       - ROSETTA_FE=${ROSETTA_FE}
       - COMMUNITY_GROUP_MAPPINGS=${COMMUNITY_GROUP_MAPPINGS:-}
       - GRAPH_SYNC_INTERVAL_HOURS=${GRAPH_SYNC_INTERVAL_HOURS}
+      - ADMIN_EMAILS=${ADMIN_EMAILS:-}
     depends_on:
       postgres:
         condition: service_healthy

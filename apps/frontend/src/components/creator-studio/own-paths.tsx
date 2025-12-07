@@ -18,6 +18,7 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel';
 import { useLearningPathStore } from '@/store/learningPathStore';
+import { useUserStore } from '@/store/userStore';
 
 // Frontend interface
 interface CreatorLearningPath {
@@ -124,6 +125,7 @@ function CreatorPathCard({
 }
 
 export default function OwnPaths() {
+  const { user } = useUserStore();
   const {
     learningPaths,
     isLoading,
@@ -163,9 +165,9 @@ export default function OwnPaths() {
   const handleEdit = (id: string) => {
     // Navigate to editor with the learning path's diagram
     const path = learningPaths.find((lp) => lp.ID === id);
-    if (path) {
-      // Use DiagramID to find the diagram name or use the learning path title
-      window.location.href = `${DEV_EDITOR_FE_URL}editor/${path.Title}`;
+    if (path && user?.Community) {
+      // Include user's community in editor URL
+      window.location.href = `${DEV_EDITOR_FE_URL}editor/${encodeURIComponent(user.Community)}/${path.Title}`;
     }
   };
 

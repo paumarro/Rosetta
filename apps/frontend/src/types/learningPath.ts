@@ -10,6 +10,7 @@ export interface LearningPath {
   IsPublic: boolean;
   Thumbnail: string;
   DiagramID: string;
+  Community?: string;
   CreatedAt: string;
   UpdatedAt: string;
   DeletedAt?: string;

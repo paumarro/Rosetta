@@ -11,6 +11,7 @@ export interface User {
   EntraID: string;
   PhotoURL: string;
   Community: string;
+  IsAdmin?: boolean;
 }
 
 export interface UpdateUserData {

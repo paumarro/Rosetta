@@ -41,6 +41,14 @@ export default function App() {
                 </RequireAuth>
               }
             />
+            <Route
+              path=":communityname/create-path"
+              element={
+                <RequireAuth>
+                  <CreateNewPath />
+                </RequireAuth>
+              }
+            />
           </Route>
 
           {/* Creator sections */}

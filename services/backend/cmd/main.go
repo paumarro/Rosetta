@@ -57,10 +57,11 @@ func main() {
 		// Community API
 		protected.GET("/api/communities", communityController.GetCommunities)
 		protected.GET("/api/communities/:communityname/learning-paths", lpController.GetByCommunity)
+		protected.POST("/api/communities/:communityname/learning-paths", lpController.Create)
 
 		// Learning Paths API
 		protected.GET("/api/learning-paths", lpController.Index)
-		protected.POST("/api/learning-paths", lpController.Create)
+		protected.POST("/api/learning-paths", lpController.Create) // Backward compatibility
 		protected.DELETE("/api/learning-paths/:id", lpController.Delete)
 		// LPs Favorites
 		protected.GET("/api/learning-paths/favorites", lpController.GetUserFavorites)

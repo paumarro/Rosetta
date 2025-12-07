@@ -72,7 +72,13 @@ function PathCard({ path }: { path: LearningPath }) {
     new Date(path.CreatedAt).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000;
 
   const handlePathClick = () => {
-    window.location.href = `${DEV_EDITOR_FE_URL}view/${path.Title}?pathId=${path.ID}`;
+    // Use path's Community field for URL
+    if (path.Community) {
+      window.location.href = `${DEV_EDITOR_FE_URL}view/${encodeURIComponent(path.Community)}/${path.Title}?pathId=${path.ID}`;
+    } else {
+      // Fallback to old URL structure if community is not available
+      window.location.href = `${DEV_EDITOR_FE_URL}view/${path.Title}?pathId=${path.ID}`;
+    }
   };
 
   const isBookmarked = isFavorited(path.ID);

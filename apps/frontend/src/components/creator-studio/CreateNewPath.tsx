@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { SearchSkillForm } from '@/components/welcome/search-skill-form';
 import { useState, FormEvent } from 'react';
 import { X } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 
 const BE_API_URL = import.meta.env.VITE_BE_API_URL as string;
 const DEV_EDITOR_FE_URL = import.meta.env.VITE_DEV_EDITOR_FE_URL as string;
@@ -25,12 +26,14 @@ export default function CreateNewPath({
   className,
   ...props
 }: React.ComponentProps<'div'>) {
+  const { communityname } = useParams<{ communityname?: string }>();
   const [pathName, setPathName] = useState<string>('');
   const [pathNameCharacterCount, setPathNameCharacterCount] =
     useState<number>(0);
   const [description, setDescription] = useState<string>('');
   const [skills, setSkills] = useState<string[]>([]);
   const [searchValue, setSearchValue] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const handleSearchSubmit = (value: string) => {
     if (value.trim() && !skills.includes(value.trim())) {
       setSkills([...skills, value.trim()]);
@@ -39,13 +42,23 @@ export default function CreateNewPath({
   };
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    // Validate community is present
+    if (!communityname) {
+      setErrorMessage(
+        'No community specified. Please navigate from a community page.',
+      );
+      return;
+    }
+
     const formData = {
       pathName: pathName,
       description: description,
       skills: skills,
     };
 
-    const LP_API_URL = `${BE_API_URL}/api/learning-paths`;
+    // Use new community-scoped endpoint
+    const LP_API_URL = `${BE_API_URL}/api/communities/${encodeURIComponent(communityname)}/learning-paths`;
 
     try {
       const response = await fetch(LP_API_URL, {
@@ -57,19 +70,31 @@ export default function CreateNewPath({
         body: JSON.stringify(formData),
       });
 
-      console.log('response:', response);
+      // Handle authorization errors
+      if (response.status === 403) {
+        const errorData = await response.json();
+        setErrorMessage(
+          errorData.error ||
+            'You do not have permission to create learning paths for this community.',
+        );
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status.toString()}`);
       }
 
-      window.location.href = `${DEV_EDITOR_FE_URL}editor/${pathName}`;
+      const createdPath = await response.json();
+
+      // Include community in editor URL
+      window.location.href = `${DEV_EDITOR_FE_URL}editor/${encodeURIComponent(communityname)}/${pathName}`;
     } catch (err) {
       if (err instanceof Error) {
         console.error('Error submitting form:', err.message);
       } else {
         console.error('Unknown error submitting form:', err);
       }
+      setErrorMessage('An error occurred while creating the learning path.');
     }
   };
 
@@ -79,15 +104,27 @@ export default function CreateNewPath({
         <div className="">
           <div className={cn('flex flex-col ', className)} {...props}>
             <Card>
-              <CardHeader className="min-w-sm">
-                <CardTitle className="text-2xl mt-5">
+              <CardHeader className="min-w-sm justify-center">
+                <CardTitle className="text-2xl mt-5 text-center">
                   Create a Learning Path
                 </CardTitle>
                 <CardDescription>
                   Share your experience, empower the community
                 </CardDescription>
+                {communityname && (
+                  <div className="flex justify-center mt-4">
+                    <Badge variant="secondary" className="text-sm">
+                      {decodeURIComponent(communityname)}
+                    </Badge>
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="min-w-md mx-5 my-2">
+                {errorMessage && (
+                  <div className="rounded-md bg-destructive/15 p-3 mb-4">
+                    <p className="text-sm text-destructive">{errorMessage}</p>
+                  </div>
+                )}
                 <form
                   onSubmit={(e) => {
                     void handleSubmit(e);

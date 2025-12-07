@@ -18,9 +18,20 @@ func (s *CommunityService) GetCommunities(ctx context.Context) []string {
 		"Connectivity",
 		"Cyber Security and Software Update",
 		"Data Analytics and Data Science",
-		"E2E Solutions",
+		"E2E Solution Architecture",
 		"Embedded Software Connect",
 		"Engineering Operations and Network Integration",
 		"Frontends and Digital Experiences",
 	}
+}
+
+// IsValidCommunity checks if a community name exists in the valid communities list
+func (s *CommunityService) IsValidCommunity(ctx context.Context, name string) bool {
+	validCommunities := s.GetCommunities(ctx)
+	for _, community := range validCommunities {
+		if community == name {
+			return true
+		}
+	}
+	return false
 }
