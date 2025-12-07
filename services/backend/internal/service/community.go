@@ -14,13 +14,13 @@ func NewCommunityService() *CommunityService {
 func (s *CommunityService) GetCommunities(ctx context.Context) []string {
 	return []string{
 		"Autonomous Systems",
-		"Cloud & Backend",
+		"Cloud and Backend",
 		"Connectivity",
-		"Cyber Security & Software Update",
+		"Cyber Security and Software Update",
 		"Data Analytics and Data Science",
-		"E2E Solutions Architecture",
+		"E2E Solutions",
 		"Embedded Software Connect",
 		"Engineering Operations and Network Integration",
-		"Frontends & Digital Experiences",
+		"Frontends and Digital Experiences",
 	}
 }
