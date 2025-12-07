@@ -1,6 +1,5 @@
-import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 
 interface RequireAuthProps {
   children: ReactNode;
@@ -9,11 +8,22 @@ interface RequireAuthProps {
 const RequireAuth: React.FC<RequireAuthProps> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
-  if (loading) return <p>Loading...</p>;
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      // Redirect directly to EntraID login
+      window.location.href = '/auth/login';
+    }
+  }, [loading, isAuthenticated]);
 
-  console.log('isAuthenticated:', isAuthenticated);
+  if (loading || !isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  return <>{children}</>;
 };
 
 export default RequireAuth;
