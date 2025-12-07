@@ -5,14 +5,16 @@ import { useUserStore } from '@/store/userStore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bookmark, Plus } from 'lucide-react';
+import { ChevronLeft, Bookmark, ChevronDown } from 'lucide-react';
 import type { LearningPath } from '@/types/learningPath';
+import DashboardLayout from './DashboardLayout';
 
-const DEV_EDITOR_FE_URL =
-  import.meta.env.VITE_DEV_EDITOR_FE_URL || 'http://localhost:3001/';
+const DEV_EDITOR_FE_URL: string =
+  (import.meta.env.VITE_DEV_EDITOR_FE_URL as string) ||
+  'http://localhost:3001/';
 
 export default function CommunityHub() {
-  const { communityname } = useParams<{ communityname: string }>();
+  const { communityname } = useParams<{ communityname?: string }>();
   const navigate = useNavigate();
   const [paths, setPaths] = useState<LearningPath[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,12 +47,12 @@ export default function CommunityHub() {
       setLoading(false);
     }
   };
-
+  
   const handlePathClick = (path: LearningPath) => {
-    const url = `${DEV_EDITOR_FE_URL}view/${encodeURIComponent(path.Title)}?pathId=${path.ID}`;
+    const url = `${DEV_EDITOR_FE_URL}view/${encodeURIComponent(path.Title)}?pathId=${path.ID}&community=${encodeURIComponent(communityname || '')}`;
     window.location.href = url;
   };
-
+  
   const handleToggleFavorite = async (e: React.MouseEvent, pathId: string) => {
     e.stopPropagation();
     try {
@@ -64,12 +66,26 @@ export default function CommunityHub() {
     }
   };
 
-  const isNew = (createdAt: string) => {
-    const created = new Date(createdAt);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - created.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 7;
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    const month = monthNames[date.getMonth()];
+    const year = date.getFullYear();
+    return `${String(day)} ${month} ${String(year)}`;
   };
 
   if (loading) {
@@ -83,87 +99,82 @@ export default function CommunityHub() {
   const isUserCommunity = user?.Community === communityname;
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-8">
-        <Button
-          variant="ghost"
-          onClick={() => void navigate('/')}
-          className="mb-4"
-        >
-          ← Back to Communities
-        </Button>
-        <div className="flex justify-between items-start">
+    <DashboardLayout>
+      <div className=" mx-25 mt-14 animate-in fade-in duration-700">
+        <div className="flex items-center align-center gap-5">
           <div>
-            <h1 className="text-4xl font-bold">{communityname}</h1>
-            <p className="text-muted-foreground mt-2">
-              {paths.length} learning path{paths.length !== 1 ? 's' : ''}{' '}
-              available
-            </p>
+            <h1 className="text-5xl font">{communityname}</h1>
           </div>
+          {paths.length > 0 && (
+            <Button variant="secondary" className="!p-4.5 mt-0.5 ml-auto">
+              Sort by
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          )}
           {isUserCommunity && (
             <Button
               onClick={() => void navigate('/creator/path-design/create-new')}
-              className="flex items-center gap-2"
+              className="relative overflow-hidden cursor-pointer before:absolute before:inset-0 before:rounded-[inherit] before:bg-[linear-gradient(135deg,transparent_25%,rgba(255,255,255,0.2)_50%,transparent_75%,transparent_100%)] before:bg-[length:250%_250%,100%_100%] before:bg-no-repeat before:[animation:shine_3000ms_linear_infinite]"
             >
-              <Plus className="h-4 w-4" />
               Create Learning Path
             </Button>
           )}
         </div>
-      </div>
+        <div className="h-px bg-gray-200 w-full mt-10"></div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {paths.map((path) => (
-          <Card
-            key={path.ID}
-            className="cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={() => {
-              handlePathClick(path);
-            }}
-          >
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-semibold flex-1">{path.Title}</h3>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => handleToggleFavorite(e, path.ID)}
-                  className="ml-2"
-                >
-                  <Bookmark
-                    className={`h-5 w-5 ${
-                      isFavorited(path.ID) ? 'fill-current' : ''
-                    }`}
-                  />
-                </Button>
-              </div>
+        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {paths.map((path) => (
+            <Card
+              key={path.ID}
+              className="cursor-pointer transition animate ease-in-out hover:scale-103 hover:shadow-md duration-400"
+              onClick={() => {
+                handlePathClick(path);
+              }}
+            >
+              <CardContent className="p-6">
+                <p className="text-xs">{formatDate(path.UpdatedAt)}</p>
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-xl font-medium flex-1">{path.Title}</h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => void handleToggleFavorite(e, path.ID)}
+                    className="ml-2"
+                  >
+                    <Bookmark
+                      className={`h-5 w-5 ${
+                        isFavorited(path.ID) ? 'fill-current' : ''
+                      }`}
+                    />
+                  </Button>
+                </div>
 
-              {path.Description && (
-                <p className="text-sm text-muted-foreground mb-4">
-                  {path.Description}
-                </p>
-              )}
+                {path.Description && (
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {path.Description}
+                  </p>
+                )}
 
-              <div className="flex flex-wrap gap-2">
-                {isNew(path.CreatedAt) && <Badge variant="default">New</Badge>}
-                {path.Skills?.map((skill) => (
-                  <Badge key={skill.ID} variant="secondary">
-                    {skill.Name}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {paths.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">
-            No learning paths available for this community yet.
-          </p>
+                <div className="flex flex-wrap gap-2">
+                  {path.Skills?.map((skill) => (
+                    <Badge key={skill.ID} variant="secondary">
+                      {skill.Name}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-      )}
-    </div>
+
+        {paths.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">
+              No learning paths available for this community yet.
+            </p>
+          </div>
+        )}
+      </div>
+    </DashboardLayout>
   );
 }
