@@ -3,6 +3,7 @@ package controller
 import (
 	"log"
 	"net/http"
+	"strings"
 
 	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/model"
 	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/service"
@@ -96,6 +97,12 @@ func (res *LearningPathController) Create(c *gin.Context) {
 
 	learningPath, err := res.LearningPathService.CreateLearningPath(c, req.PathName, req.Description, true, "", req.Skills, authToken, communityName)
 	if err != nil {
+		// Check if error is about duplicate name
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "already exists") || strings.Contains(errMsg, "duplicate") {
+			respondWithError(c, http.StatusConflict, errMsg, err)
+			return
+		}
 		respondWithError(c, http.StatusInternalServerError, "Failed to create learning path", err)
 		return
 	}

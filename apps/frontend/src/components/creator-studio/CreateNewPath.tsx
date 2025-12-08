@@ -70,9 +70,9 @@ export default function CreateNewPath({
         body: JSON.stringify(formData),
       });
 
-      // Handle authorization errors
+      // Handle specific error statuses
       if (response.status === 403) {
-        const errorData = await response.json();
+        const errorData = (await response.json()) as { error?: string };
         setErrorMessage(
           errorData.error ||
             'You do not have permission to create learning paths for this community.',
@@ -80,21 +80,40 @@ export default function CreateNewPath({
         return;
       }
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status.toString()}`);
+      if (response.status === 409 || response.status === 500) {
+        const errorData = (await response.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        const errorMsg =
+          errorData.error ||
+          'A learning path with this name already exists. Please choose a different name.';
+        setErrorMessage(errorMsg);
+        return;
       }
 
-      const createdPath = await response.json();
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        setErrorMessage(
+          errorData.error ||
+            `An error occurred while creating the learning path. (Status: ${response.status.toString()})`,
+        );
+        return;
+      }
+
+      await response.json();
 
       // Include community in editor URL
       window.location.href = `${DEV_EDITOR_FE_URL}editor/${encodeURIComponent(communityname)}/${pathName}`;
     } catch (err) {
       if (err instanceof Error) {
         console.error('Error submitting form:', err.message);
+        setErrorMessage(err.message);
       } else {
         console.error('Unknown error submitting form:', err);
+        setErrorMessage('An error occurred while creating the learning path.');
       }
-      setErrorMessage('An error occurred while creating the learning path.');
     }
   };
 
@@ -121,7 +140,7 @@ export default function CreateNewPath({
               </CardHeader>
               <CardContent className="min-w-md mx-5 my-2">
                 {errorMessage && (
-                  <div className="rounded-md bg-destructive/15 p-3 mb-4">
+                  <div className="rounded-md bg-destructive/15 p-3 ">
                     <p className="text-sm text-destructive">{errorMessage}</p>
                   </div>
                 )}

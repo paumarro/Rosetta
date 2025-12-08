@@ -75,6 +75,13 @@ func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, des
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		// Try to read error message from response body
+		var errorResp map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&errorResp); err == nil {
+			if errorMsg, ok := errorResp["error"].(string); ok {
+				return nil, fmt.Errorf("create diagram failed: %s", errorMsg)
+			}
+		}
 		return nil, fmt.Errorf("create diagram failed: status %d", resp.StatusCode)
 	}
 

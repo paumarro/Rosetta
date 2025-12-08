@@ -86,10 +86,20 @@ export const createDiagramByLP = async (
     await diagram.save();
     return res.status(201).json(diagram);
   } catch (err) {
-    // If duplicate key on learningPathId, return the existing document
+    // Handle duplicate key errors (E11000)
     if ((err as Error & { code?: number }).code === 11000) {
-      const existing = await DiagramModel.findOne({ learningPathId });
-      if (existing) return res.status(200).json(existing);
+      // Check if it's a duplicate learningPathId (idempotency case)
+      const existingByLP = await DiagramModel.findOne({ learningPathId });
+      if (existingByLP) return res.status(200).json(existingByLP);
+      
+      // Check if it's a duplicate name
+      const existingByName = await DiagramModel.findOne({ name: finalName });
+      if (existingByName) {
+        return res.status(409).json({
+          error: 'A learning path with this name already exists',
+          message: `A diagram with the name "${finalName}" already exists`,
+        });
+      }
     }
     res.status(500);
     throw new Error(`Error: ${(err as Error).message}`);
