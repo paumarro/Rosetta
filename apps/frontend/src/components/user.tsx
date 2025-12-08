@@ -5,7 +5,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, User as UserIcon } from 'lucide-react';
+import { Bookmark, LogOut, User as UserIcon } from 'lucide-react';
 import { useUserStore } from '@/store/userStore';
 
 export function User() {
@@ -18,6 +18,10 @@ export function User() {
   };
 
   const handleProfile = () => {
+    // Navigate to profile page or implement profile logic
+  };
+
+  const handleFavorites = () => {
     // Navigate to profile page or implement profile logic
   };
 
@@ -46,6 +50,10 @@ export function User() {
         <DropdownMenuItem onClick={handleProfile} className="cursor-pointer">
           <UserIcon className="mr-2 h-4 w-4" />
           Profile
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleFavorites} className="cursor-pointer">
+          <Bookmark className="mr-2 h-4 w-4" />
+          Bookmarks
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
           <LogOut className="mr-2 h-4 w-4" />
