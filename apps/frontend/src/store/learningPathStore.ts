@@ -45,7 +45,9 @@ export const useLearningPathStore = create<LearningPathStore>((set, get) => ({
 
   fetchLearningPathsByCommunity: async (communityName: string) => {
     try {
-      const response = await apiFetch(`/api/communities/${encodeURIComponent(communityName)}/learning-paths`);
+      const response = await apiFetch(
+        `/api/communities/${encodeURIComponent(communityName)}/learning-paths`,
+      );
       if (!response.ok) {
         const errorMessage =
           response.status === 404
