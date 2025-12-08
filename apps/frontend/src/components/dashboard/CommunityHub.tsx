@@ -17,10 +17,12 @@ export default function CommunityHub() {
   const { communityname } = useParams<{ communityname?: string }>();
   const navigate = useNavigate();
   const [paths, setPaths] = useState<LearningPath[]>([]);
+  const [order, setOrder] = useState<string>('Last Update');
   const [loading, setLoading] = useState(true);
 
   const {
     fetchLearningPathsByCommunity,
+    fetchRecentlyViewed,
     addToFavorites,
     removeFromFavorites,
     isFavorited,
@@ -40,7 +42,28 @@ export default function CommunityHub() {
     setLoading(true);
     try {
       const fetchedPaths = await fetchLearningPathsByCommunity(communityname);
-      setPaths(fetchedPaths);
+      switch (order) {
+        case 'Last Update': {
+          // Latest updates first by default
+          const sortedPaths = fetchedPaths.sort(
+            (a, b) =>
+              new Date(b.UpdatedAt).getTime() - new Date(a.UpdatedAt).getTime(),
+          );
+          setPaths(sortedPaths);
+          break;
+        }
+        case 'alphabetical': {
+          const sortedPaths = fetchedPaths.sort((a, b) =>
+            a.Title.localeCompare(b.Title),
+          );
+          setPaths(sortedPaths);
+          break;
+        }
+        default: {
+          setPaths(fetchedPaths);
+          break;
+        }
+      }
     } catch (error) {
       console.error('Error fetching community paths:', error);
     } finally {
