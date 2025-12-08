@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLearningPathStore } from '@/store/learningPathStore';
 import { useUserStore } from '@/store/userStore';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Bookmark, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import type { LearningPath } from '@/types/learningPath';
 import DashboardLayout from './DashboardLayout';
+import { OrganizeDropdown } from './OrganizeDropdown';
+import { LearningPathCard } from './LearningPathCard';
+import { usePathOrganizer } from '@/hooks/usePathOrganizer';
 
 const DEV_EDITOR_FE_URL: string =
   (import.meta.env.VITE_DEV_EDITOR_FE_URL as string) ||
@@ -16,23 +17,33 @@ const DEV_EDITOR_FE_URL: string =
 export default function CommunityHub() {
   const { communityname } = useParams<{ communityname?: string }>();
   const navigate = useNavigate();
-  const [paths, setPaths] = useState<LearningPath[]>([]);
-  const [order, setOrder] = useState<string>('Last Update');
+  const [allPaths, setAllPaths] = useState<LearningPath[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const {
     fetchLearningPathsByCommunity,
     fetchRecentlyViewed,
+    fetchUserFavorites,
     addToFavorites,
     removeFromFavorites,
     isFavorited,
+    favorites,
   } = useLearningPathStore();
 
   const { user } = useUserStore();
 
+  const { filter, order, organizedPaths, setFilter, setOrder } =
+    usePathOrganizer({
+      allPaths,
+      isFavorited,
+      favorites,
+    });
+
   useEffect(() => {
     if (communityname) {
       fetchCommunityPaths();
+      fetchUserFavorites();
     }
   }, [communityname]);
 
@@ -42,28 +53,14 @@ export default function CommunityHub() {
     setLoading(true);
     try {
       const fetchedPaths = await fetchLearningPathsByCommunity(communityname);
-      switch (order) {
-        case 'Last Update': {
-          // Latest updates first by default
-          const sortedPaths = fetchedPaths.sort(
-            (a, b) =>
-              new Date(b.UpdatedAt).getTime() - new Date(a.UpdatedAt).getTime(),
-          );
-          setPaths(sortedPaths);
-          break;
-        }
-        case 'alphabetical': {
-          const sortedPaths = fetchedPaths.sort((a, b) =>
-            a.Title.localeCompare(b.Title),
-          );
-          setPaths(sortedPaths);
-          break;
-        }
-        default: {
-          setPaths(fetchedPaths);
-          break;
-        }
-      }
+      // Sort by default (Last Update)
+      const sortedPaths = fetchedPaths.sort(
+        (a, b) =>
+          new Date(b.UpdatedAt).getTime() - new Date(a.UpdatedAt).getTime(),
+      );
+      setAllPaths(sortedPaths);
+      // Fetch recently viewed for filtering
+      fetchRecentlyViewed();
     } catch (error) {
       console.error('Error fetching community paths:', error);
     } finally {
@@ -131,10 +128,18 @@ export default function CommunityHub() {
             <h1 className="text-5xl font">{communityname}</h1>
           </div>
           <div className="ml-auto flex items-center align-center gap-5">
-            {paths.length > 0 && (
-              <Button variant="secondary" className="!p-4.5 mt-0.5 ml-auto">
-                Sort by
-                <ChevronDown className="h-4 w-4" />
+            {allPaths.length > 0 && (
+              <Button
+                variant="secondary"
+                className="!p-4.5 mt-0.5 ml-auto"
+                onClick={() => {
+                  setIsDropdownOpen(!isDropdownOpen);
+                }}
+              >
+                Organize
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                />
               </Button>
             )}
             {canCreatePath && (
@@ -153,56 +158,31 @@ export default function CommunityHub() {
         </div>
         <div className="h-px bg-gray-200 w-full mt-10"></div>
 
+        <OrganizeDropdown
+          isOpen={isDropdownOpen}
+          filter={filter}
+          order={order}
+          onFilterChange={setFilter}
+          onSortChange={setOrder}
+          onClose={() => setIsDropdownOpen(false)}
+        />
+
         <div className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {paths.map((path) => (
-            <Card
+          {organizedPaths.map((path) => (
+            <LearningPathCard
               key={path.ID}
-              className="cursor-pointer transition animate ease-in-out hover:scale-103 hover:shadow-md duration-400"
-              onClick={() => {
-                handlePathClick(path);
-              }}
-            >
-              <CardContent className="p-6">
-                <p className="text-xs">{formatDate(path.UpdatedAt)}</p>
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-medium flex-1">{path.Title}</h3>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => void handleToggleFavorite(e, path.ID)}
-                    className="ml-2"
-                  >
-                    <Bookmark
-                      className={`h-5 w-5 ${
-                        isFavorited(path.ID) ? 'fill-current' : ''
-                      }`}
-                    />
-                  </Button>
-                </div>
-
-                {path.Description && (
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {path.Description}
-                  </p>
-                )}
-
-                <div className="flex flex-wrap gap-2">
-                  {path.Skills?.map((skill) => (
-                    <Badge key={skill.ID} variant="secondary">
-                      {skill.Name}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+              path={path}
+              isFavorited={isFavorited(path.ID)}
+              onPathClick={handlePathClick}
+              onToggleFavorite={handleToggleFavorite}
+              formatDate={formatDate}
+            />
           ))}
         </div>
 
-        {paths.length === 0 && (
+        {organizedPaths.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">
-              No learning paths available for this community yet.
-            </p>
+            <p className="text-muted-foreground">No learning paths here yet.</p>
           </div>
         )}
       </div>
