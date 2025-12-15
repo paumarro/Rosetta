@@ -23,8 +23,17 @@ function App() {
 
 // Wrapper component to handle diagram name and community from URL
 function DiagramEditorWrapper({ mode }: { mode: 'edit' | 'view' }) {
-  const { diagramName, community } = useParams<{ diagramName: string; community: string }>();
-  return <DiagramEditor diagramName={diagramName} community={community} mode={mode} />;
+  const { diagramName, community } = useParams<{
+    diagramName: string;
+    community: string;
+  }>();
+  return (
+    <DiagramEditor
+      diagramName={diagramName}
+      community={community}
+      mode={mode}
+    />
+  );
 }
 
 export default App;

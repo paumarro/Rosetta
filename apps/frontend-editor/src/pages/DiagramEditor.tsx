@@ -15,6 +15,7 @@ import '@xyflow/react/dist/style.css';
 import { ArrowUpLeft } from 'lucide-react';
 import AddNodeButton from '@/components/ui/addNodeButton';
 import AvatarDemo from '@/components/ui/AvatarDemo';
+import EditButton from '@/components/ui/editButton';
 import Cursors from '@/components/ui/Cursors';
 import TopicNode from '../components/nodes/topicNode';
 import { LoadingOverlay } from '../components/ui/loading-overlay';
@@ -73,6 +74,7 @@ export default function DiagramEditor({
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const lastCursorUpdate = useRef<number>(0);
+  const hasAddedToRecentRef = useRef(false);
 
   const isViewMode = mode === 'view';
 
@@ -106,15 +108,34 @@ export default function DiagramEditor({
   ]);
 
   useEffect(() => {
-    const params = new URLSearchParams(document.location.search);
-    const pathID = params.get('pathId');
-    if (pathID) {
-      addToRecentlyViewed(pathID);
-      console.log(`PathID Added to localStorage : ${pathID}`);
-    } else {
-      console.log('No pathID in URL');
+    console.log('[RecentlyViewed] Effect triggered', {
+      diagramName,
+      hasAddedAlready: hasAddedToRecentRef.current,
+    });
+
+    if (hasAddedToRecentRef.current) {
+      console.log('[RecentlyViewed] Skipping - already added this session');
+      return;
     }
-  });
+    if (!diagramName) {
+      console.log('[RecentlyViewed] Skipping - no diagramName');
+      return;
+    }
+
+    hasAddedToRecentRef.current = true;
+    // diagramName from URL params may be URL-encoded
+    const decodedPathID = decodeURIComponent(diagramName);
+    console.log('[RecentlyViewed] Adding to localStorage:', {
+      raw: diagramName,
+      decoded: decodedPathID,
+    });
+
+    addToRecentlyViewed(decodedPathID);
+
+    // Verify it was added
+    const stored = localStorage.getItem('rosetta_recently_viewed');
+    console.log('[RecentlyViewed] localStorage after add:', stored);
+  }, [diagramName]);
 
   // Cleanup when component unmounts
   useEffect(() => {
@@ -362,8 +383,8 @@ export default function DiagramEditor({
             )}
             {isViewMode ? (
               <Panel position="top-right" className="!top-5 !right-5">
-                <div className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-sm font-medium border border-blue-200">
-                  👁️ View Only
+                <div className="flex items-center gap-2">
+                  <EditButton community={community} />
                 </div>
               </Panel>
             ) : (
