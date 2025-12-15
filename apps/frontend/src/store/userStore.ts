@@ -25,7 +25,7 @@ export interface UserStore {
   error: string | null;
 
   setError: (error: string | null) => void;
-  fetchCurrentUser: () => Promise<void>;
+  fetchCurrentUser: () => Promise<User | null>;
   updateUserProfile: (data: UpdateUserData) => Promise<void>;
   clearUser: () => void;
 }
@@ -39,24 +39,31 @@ export const useUserStore = create<UserStore>((set) => ({
     set({ error });
   },
 
-  fetchCurrentUser: async () => {
+  fetchCurrentUser: async (): Promise<User | null> => {
     set({ isLoading: true, error: null });
     try {
       const response = await apiFetch('/api/user/me');
 
       if (!response.ok) {
+        // 401 means not authenticated - not an error, just not logged in
+        if (response.status === 401) {
+          set({ user: null, isLoading: false, error: null });
+          return null;
+        }
         const errorMessage =
           response.status === 404
             ? 'User not found'
             : 'Failed to fetch user data';
         set({ error: errorMessage, isLoading: false });
-      } else {
-        const data = (await response.json()) as User;
-        set({ user: data, isLoading: false, error: null });
+        return null;
       }
+      const data = (await response.json()) as User;
+      set({ user: data, isLoading: false, error: null });
+      return data;
     } catch (error) {
       set({ error: getErrorMessage(error), isLoading: false });
       console.error('Error fetching user:', error);
+      return null;
     }
   },
 

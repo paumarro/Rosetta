@@ -24,15 +24,21 @@ export function usePathOrganizer({
     // Apply filter
     switch (filter) {
       case FILTER_OPTIONS.RECENTLY_VIEWED: {
-        // Get recently viewed IDs directly from localStorage
+        // Get recently viewed LPs directly from localStorage
         const stored = localStorage.getItem('rosetta_recently_viewed');
+
         if (stored) {
-          const recentIds: string[] = JSON.parse(stored) as string[];
-          filteredPaths = filteredPaths.filter((p) => recentIds.includes(p.ID));
-          // Sort by recency - order in recentIds array (most recent first)
+          const recentLPs: string[] = JSON.parse(stored) as string[];
+
+          filteredPaths = filteredPaths.filter((p) => {
+            const matches = recentLPs.includes(p.Title);
+            return matches;
+          });
+
+          // Sort by recency - order in recentLPs array (most recent first)
           filteredPaths.sort((a, b) => {
-            const indexA = recentIds.indexOf(a.ID);
-            const indexB = recentIds.indexOf(b.ID);
+            const indexA = recentLPs.indexOf(a.Title);
+            const indexB = recentLPs.indexOf(b.Title);
             return indexA - indexB;
           });
         } else {

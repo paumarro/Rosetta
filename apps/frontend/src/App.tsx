@@ -1,6 +1,5 @@
 import './App.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import PathDesigner from '@/components/dashboard/PathDesigner';
 import LearningPaths from '@/components/dashboard/LearningPaths';
 import CommunityHub from '@/components/dashboard/CommunityHub';
 import CreateNewPath from '@/components/creator-studio/CreateNewPath';
@@ -43,26 +42,6 @@ export default function App() {
             />
             <Route
               path=":communityname/create-path"
-              element={
-                <RequireAuth>
-                  <CreateNewPath />
-                </RequireAuth>
-              }
-            />
-          </Route>
-
-          {/* Creator sections */}
-          <Route path="/creator">
-            <Route
-              path="path-design"
-              element={
-                <RequireAuth>
-                  <PathDesigner />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="path-design/create-new"
               element={
                 <RequireAuth>
                   <CreateNewPath />
