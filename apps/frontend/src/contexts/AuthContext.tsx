@@ -26,26 +26,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Relative path - nginx routes /auth/* to auth-service
-        // This is same-origin, so cookies flow automatically
-        const response = await fetch('/auth/validate', {
-          method: 'GET',
-          credentials: 'include',
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch authentication status');
-        }
-
-        const data = (await response.json()) as { valid: boolean };
-        setIsAuthenticated(data.valid);
-
-        // Fetch user data if authenticated
-        if (data.valid) {
-          await fetchCurrentUser();
-        } else {
-          clearUser();
-        }
+        // Check auth by fetching user data - nginx routes /api/* to backend
+        // 401 means not authenticated, 200 means authenticated
+        // This replaces the old /auth/validate call (which was redundant)
+        const user = await fetchCurrentUser();
+        setIsAuthenticated(!!user);
       } catch (err) {
         console.error('Error checking authentication:', err);
         setIsAuthenticated(false);

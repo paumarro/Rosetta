@@ -1,4 +1,3 @@
-import { Search } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { SidebarInput } from '@/components/ui/sidebar';
 import { cn } from '@/utils/cn';
