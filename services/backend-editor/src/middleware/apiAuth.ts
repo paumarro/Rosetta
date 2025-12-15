@@ -1,14 +1,13 @@
 /**
  * Express Authentication Middleware for REST API
  *
- * Validates access tokens before allowing access to protected routes
- * Uses auth-service for token validation (consistent with WebSocket auth)
+ * Validates tokens locally using OIDC and enriches with CBAC data.
+ * No external auth-service dependency.
  */
 
 import { Request, Response, NextFunction } from 'express';
-import authService, {
-  type AuthenticatedUser,
-} from '../services/authService.js';
+import authService, { type AuthenticatedUser } from '../services/authService.js';
+import { parseCookies } from '../utils/cookieParser.js';
 
 /**
  * Extends Express Request with authenticated user information
@@ -18,31 +17,7 @@ export interface AuthenticatedRequest extends Request {
 }
 
 /**
- * Parses cookies from the request
- */
-function getCookies(req: Request): Record<string, string> {
-  const cookies: Record<string, string> = {};
-  const cookieHeader = req.headers.cookie;
-
-  if (!cookieHeader) {
-    return cookies;
-  }
-
-  cookieHeader.split(';').forEach((cookie) => {
-    const [name, ...rest] = cookie.split('=');
-    const value = rest.join('=').trim();
-    if (name) {
-      cookies[name.trim()] = decodeURIComponent(value);
-    }
-  });
-
-  return cookies;
-}
-
-/**
  * Extracts id_token from request (cookies or Authorization header)
- * Note: We use id_token (not access_token) for user identity validation
- * The access_token cookie is for Microsoft Graph API calls
  */
 function extractToken(req: Request): string | null {
   // Try Authorization header first
@@ -51,15 +26,14 @@ function extractToken(req: Request): string | null {
     return authHeader.substring(7);
   }
 
-  // Fall back to id_token cookie (contains user identity)
-  const cookies = getCookies(req);
+  // Fall back to id_token cookie
+  const cookies = parseCookies(req.headers.cookie);
   return cookies['id_token'] || null;
 }
 
 /**
  * Authentication middleware for Express routes
- * Validates token with auth-service and attaches user to request
- * Always returns 401 JSON on failure - frontend handles navigation/redirects
+ * Validates token locally and attaches user with CBAC info to request
  */
 export async function authenticateRequest(
   req: Request,
@@ -76,29 +50,116 @@ export async function authenticateRequest(
     return;
   }
 
-  // Validate token with auth-service
-  const validationResult = await authService.validateToken(token);
+  // Validate token locally
+  const authResult = await authService.authenticateToken(token);
 
-  if (!validationResult.valid) {
+  if (!authResult.valid || !authResult.user) {
     res.status(401).json({
       error: 'Unauthorized',
-      message: validationResult.error || 'Invalid or expired token',
+      message: authResult.error || 'Invalid or expired token',
     });
     return;
   }
 
-  // Extract user info
-  const user = authService.getUserFromValidation(validationResult);
-  if (!user) {
-    res.status(401).json({
-      error: 'Unauthorized',
-      message: 'Invalid user information in token',
-    });
-    return;
-  }
-
-  // Attach user to request for use in route handlers
-  (req as AuthenticatedRequest).user = user;
+  // Attach user to request
+  (req as AuthenticatedRequest).user = authResult.user;
 
   next();
+}
+
+/**
+ * CBAC Middleware - Requires user to have access to a specific community
+ * Must be used AFTER authenticateRequest middleware
+ *
+ * Extracts community from URL parameter (e.g., /editor/:community/:diagramName)
+ */
+export function requireCommunityAccess(communityParam: string = 'community') {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const user = (req as AuthenticatedRequest).user;
+
+    if (!user) {
+      res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Authentication required',
+      });
+      return;
+    }
+
+    const targetCommunity = req.params[communityParam];
+
+    if (!targetCommunity) {
+      res.status(400).json({
+        error: 'Bad Request',
+        message: 'Community parameter required',
+      });
+      return;
+    }
+
+    const hasAccess = authService.canAccessCommunity(user, targetCommunity);
+
+    if (!hasAccess) {
+      res.status(403).json({
+        error: 'Forbidden',
+        message: `You must be a member of "${targetCommunity}" or an admin to access this resource`,
+      });
+      return;
+    }
+
+    next();
+  };
+}
+
+/**
+ * Extracts community from diagram name (format: "community/diagramName")
+ */
+function extractCommunityFromName(name: string): string | null {
+  if (!name || !name.includes('/')) {
+    return null;
+  }
+  const parts = name.split('/');
+  return parts[0] || null;
+}
+
+/**
+ * CBAC Middleware for diagram routes
+ * Extracts community from diagram name parameter and validates access
+ * Must be used AFTER authenticateRequest middleware
+ */
+export function requireDiagramAccess(nameParam: string = 'name') {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const user = (req as AuthenticatedRequest).user;
+
+    if (!user) {
+      res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Authentication required',
+      });
+      return;
+    }
+
+    const diagramName = req.params[nameParam];
+    const community = extractCommunityFromName(diagramName);
+
+    // If no community in name (legacy format), allow access for now
+    // This maintains backward compatibility while logging the access
+    if (!community) {
+      console.warn(
+        `[CBAC] Legacy diagram access without community: ${diagramName} by ${user.email}`,
+      );
+      next();
+      return;
+    }
+
+    const hasAccess = authService.canAccessCommunity(user, community);
+
+    if (!hasAccess) {
+      res.status(403).json({
+        error: 'Forbidden',
+        message: `You must be a member of "${community}" or an admin to access this diagram`,
+      });
+      return;
+    }
+
+    next();
+  };
 }

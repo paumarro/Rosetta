@@ -1,72 +1,78 @@
 /**
- * Auth Service Client
+ * Auth Service - Local OIDC validation with CBAC
  *
- * Communicates with the centralized auth-service to validate tokens
+ * Validates tokens locally using Microsoft Entra ID JWKS.
+ * Determines community membership and admin status from token claims.
+ *
+ * No external auth-service dependency required.
  */
 
-export interface TokenValidationResult {
-  valid: boolean;
-  claims?: Record<string, unknown>;
-  entra_id?: string;
-  email?: string;
-  name?: string;
-  error?: string;
-}
+import oidcService, { type ValidationResult } from './oidcService.js';
+import cbacService from './cbacService.js';
 
 export interface AuthenticatedUser {
   entraId: string;
   email: string;
   name: string;
+  community: string | null;
+  isAdmin: boolean;
+}
+
+export interface AuthResult {
+  valid: boolean;
+  user?: AuthenticatedUser;
+  error?: string;
 }
 
 class AuthService {
-  private authServiceUrl: string;
-
-  constructor() {
-    this.authServiceUrl =
-      process.env.AUTH_SERVICE_URL || 'http://localhost:3002';
-  }
-
   /**
-   * Validates an access token by calling the auth-service
+   * Validates a token and returns authenticated user with CBAC info
    */
-  async validateToken(token: string): Promise<TokenValidationResult> {
-    try {
-      // auth-service routes are at /auth/* (not /api/auth/*)
-      const response = await fetch(`${this.authServiceUrl}/auth/validate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token }),
-      });
+  async authenticateToken(token: string): Promise<AuthResult> {
+    // Validate token using local OIDC
+    const validationResult: ValidationResult =
+      await oidcService.validateToken(token);
 
-      const result = (await response.json()) as TokenValidationResult;
-      return result;
-    } catch (error) {
-      console.error('Error validating token with auth-service:', error);
+    if (!validationResult.valid || !validationResult.claims) {
       return {
         valid: false,
-        error: `Failed to communicate with auth service: ${error instanceof Error ? error.message : String(error)}`,
+        error: validationResult.error || 'Invalid token',
       };
     }
+
+    const claims = validationResult.claims;
+
+    // Extract user identity
+    const entraId = claims.oid;
+    const email = claims.email || claims.preferred_username || '';
+    const name = claims.name || 'Unknown User';
+
+    // Determine authorization from claims
+    const groups = claims.groups || [];
+    const community = cbacService.getCommunityFromGroups(groups);
+    const isAdmin = cbacService.isAdmin(email);
+
+    return {
+      valid: true,
+      user: {
+        entraId,
+        email,
+        name,
+        community,
+        isAdmin,
+      },
+    };
   }
 
   /**
-   * Extracts user information from validation result
+   * Check if user can access a specific community
    */
-  getUserFromValidation(
-    result: TokenValidationResult,
-  ): AuthenticatedUser | null {
-    if (!result.valid || !result.entra_id) {
-      return null;
-    }
-
-    return {
-      entraId: result.entra_id,
-      email: result.email || 'unknown@example.com',
-      name: result.name || 'Unknown User',
-    };
+  canAccessCommunity(user: AuthenticatedUser, targetCommunity: string): boolean {
+    return cbacService.canAccessCommunity(
+      user.community,
+      targetCommunity,
+      user.isAdmin,
+    );
   }
 }
 
