@@ -57,34 +57,6 @@ func (s *GraphService) GetUserPhoto(ctx context.Context, accessToken string) ([]
 	return io.ReadAll(resp.Body)
 }
 
-// GetUserProfile fetches basic user profile info
-func (s *GraphService) GetUserProfile(ctx context.Context, accessToken string) (map[string]interface{}, error) {
-	req, err := http.NewRequestWithContext(
-		ctx,
-		"GET",
-		"https://graph.microsoft.com/v1.0/me",
-		nil,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var profile map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&profile); err != nil {
-		return nil, err
-	}
-	log.Printf("User Profile: %+v", profile)
-	return profile, nil
-}
-
 // GetUserGroups fetches the groups the user belongs to from Microsoft Graph
 func (s *GraphService) GetUserGroups(ctx context.Context, accessToken string) ([]Group, error) {
 	req, err := http.NewRequestWithContext(

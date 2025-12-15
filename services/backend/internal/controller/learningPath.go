@@ -1,11 +1,9 @@
 package controller
 
 import (
-	"log"
 	"net/http"
 	"strings"
 
-	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/model"
 	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/service"
 	"github.com/gin-gonic/gin"
 )
@@ -18,12 +16,6 @@ func NewLearningPathController(learningPathService *service.LearningPathService)
 	return &LearningPathController{
 		LearningPathService: learningPathService,
 	}
-}
-
-// Helper function to send error responses
-func respondWithError(c *gin.Context, code int, message string, details interface{}) {
-	log.Printf("Error: %s, Details: %v", message, details)
-	c.JSON(code, gin.H{"error": message})
 }
 
 func (res *LearningPathController) Index(c *gin.Context) {
@@ -49,16 +41,8 @@ func (res *LearningPathController) Create(c *gin.Context) {
 		return
 	}
 
-	// Get authenticated user
-	user, exists := c.Get("user")
-	if !exists {
-		respondWithError(c, http.StatusUnauthorized, "User not authenticated", nil)
-		return
-	}
-
-	userModel, ok := user.(*model.User)
-	if !ok {
-		respondWithError(c, http.StatusInternalServerError, "Failed to get user information", nil)
+	userModel := getUserFromContext(c)
+	if userModel == nil {
 		return
 	}
 
@@ -127,16 +111,8 @@ func (res *LearningPathController) Delete(c *gin.Context) {
 }
 
 func (res *LearningPathController) AddToFavorites(c *gin.Context) {
-	// Extract authenticated user from context
-	user, exists := c.Get("user")
-	if !exists {
-		respondWithError(c, http.StatusUnauthorized, "User not authenticated", nil)
-		return
-	}
-
-	userModel, ok := user.(*model.User)
-	if !ok {
-		respondWithError(c, http.StatusInternalServerError, "Failed to get user information", nil)
+	userModel := getUserFromContext(c)
+	if userModel == nil {
 		return
 	}
 
@@ -158,16 +134,8 @@ func (res *LearningPathController) AddToFavorites(c *gin.Context) {
 }
 
 func (res *LearningPathController) RemoveFromFavorites(c *gin.Context) {
-	// Extract authenticated user from context
-	user, exists := c.Get("user")
-	if !exists {
-		respondWithError(c, http.StatusUnauthorized, "User not authenticated", nil)
-		return
-	}
-
-	userModel, ok := user.(*model.User)
-	if !ok {
-		respondWithError(c, http.StatusInternalServerError, "Failed to get user information", nil)
+	userModel := getUserFromContext(c)
+	if userModel == nil {
 		return
 	}
 
@@ -189,16 +157,8 @@ func (res *LearningPathController) RemoveFromFavorites(c *gin.Context) {
 }
 
 func (res *LearningPathController) GetUserFavorites(c *gin.Context) {
-	// Extract authenticated user from context
-	user, exists := c.Get("user")
-	if !exists {
-		respondWithError(c, http.StatusUnauthorized, "User not authenticated", nil)
-		return
-	}
-
-	userModel, ok := user.(*model.User)
-	if !ok {
-		respondWithError(c, http.StatusInternalServerError, "Failed to get user information", nil)
+	userModel := getUserFromContext(c)
+	if userModel == nil {
 		return
 	}
 
