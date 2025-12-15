@@ -57,11 +57,10 @@ func main() {
 
 	// Auth routes (all under /auth/*)
 	// These paths match nginx routing: /auth/* → auth-service
+	// Note: /auth/validate removed - backends validate tokens locally via JWKS
 	r.GET("/auth/login", authController.Login)
 	r.GET("/auth/callback", authController.Callback)
 	r.GET("/auth/logout", authController.Logout)
-	r.GET("/auth/validate", authController.ValidateToken)
-	r.POST("/auth/validate", authController.ValidateToken)
 	r.POST("/auth/refresh", authController.RefreshToken)
 
 	// Start server
