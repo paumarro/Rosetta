@@ -10,7 +10,7 @@ import type { Awareness } from 'y-protocols/awareness';
 // With nginx reverse proxy, all paths are relative (same-origin):
 // - /editor/ws      → be-editor WebSocket
 // - /editor/*       → be-editor API
-// - /auth/*         → auth-service
+// - /auth/login     → auth-service (OAuth flow)
 // - /login          → FE login page
 
 // TODO: Move types to the types folder later
@@ -217,10 +217,32 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     ) => {
       const state = get();
 
-      if (
-        state.isInitializing ||
-        (state.yProvider && state.learningPathId === learningPathId)
-      ) {
+      if (state.isInitializing) {
+        return;
+      }
+
+      // If we're already connected to this diagram, just update mode + user state
+      if (state.yProvider && state.learningPathId === learningPathId) {
+        if (state.isViewMode !== isViewMode) {
+          set({
+            isViewMode,
+            currentUser: state.currentUser
+              ? { ...state.currentUser, mode: isViewMode ? 'view' : 'edit' }
+              : null,
+          });
+
+          // Keep awareness in sync so other users see the mode change
+          if (state.awareness) {
+            const currentState = state.awareness.getLocalState() as Record<
+              string,
+              unknown
+            > | null;
+            state.awareness.setLocalState({
+              ...currentState,
+              mode: isViewMode ? 'view' : 'edit',
+            });
+          }
+        }
         return;
       }
       if (state.yProvider) {
@@ -502,7 +524,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         });
 
         // Handle connection errors (including authentication failures)
-        provider.on('connection-error', async (event: Event) => {
+        provider.on('connection-error', (event: Event) => {
           const errorMsg =
             event instanceof ErrorEvent
               ? event.message
@@ -519,25 +541,10 @@ export const useCollaborativeStore = create<CollaborativeState>()(
             set({ isInitializing: false, syncTimeoutId: null });
           }
 
-          // Check for authentication error
-          const errorMessage = errorMsg;
-          if (
-            errorMessage.includes('4401') ||
-            errorMessage.includes('Unauthorized')
-          ) {
-            try {
-              // /auth/validate → nginx → auth-service
-              const response = await fetch('/auth/validate', {
-                method: 'GET',
-                credentials: 'include',
-              });
-
-              if (!response.ok) {
-                window.location.href = '/login';
-              }
-            } catch {
-              window.location.href = '/login';
-            }
+          // On auth error (401/4401), redirect to login directly
+          // No need to validate - the error itself indicates invalid auth
+          if (errorMsg.includes('4401') || errorMsg.includes('Unauthorized')) {
+            window.location.href = '/login';
           }
         });
 

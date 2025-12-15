@@ -13,6 +13,8 @@ export interface User {
   Email: string;
   EntraID: string;
   PhotoURL: string;
+  Community: string;
+  IsAdmin: boolean;
 }
 
 export interface UpdateUserData {
