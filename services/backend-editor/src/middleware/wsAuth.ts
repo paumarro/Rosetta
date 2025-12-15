@@ -1,14 +1,14 @@
 /**
  * WebSocket Authentication Middleware
  *
- * Validates access tokens from cookies before allowing WebSocket connections
+ * Validates tokens locally and applies CBAC for WebSocket connections.
+ * Used for Yjs collaborative editing.
  */
 
 import { IncomingMessage } from 'http';
 import type { WebSocket } from 'ws';
-import authService, {
-  type AuthenticatedUser,
-} from '../services/authService.js';
+import authService, { type AuthenticatedUser } from '../services/authService.js';
+import { parseCookies } from '../utils/cookieParser.js';
 
 /**
  * Custom WebSocket type with user context
@@ -18,30 +18,72 @@ export interface AuthenticatedWebSocket extends WebSocket {
 }
 
 /**
- * Parses cookies from HTTP headers
+ * Extracts community from document name
+ * Document name format: "community/diagramName" or just "diagramName"
  */
-function parseCookies(
-  cookieHeader: string | undefined,
-): Record<string, string> {
-  const cookies: Record<string, string> = {};
+export function extractCommunityFromDocName(docName: string): string | null {
+  if (!docName) return null;
 
-  if (!cookieHeader) {
-    return cookies;
+  // If document name contains a slash, first part is community
+  const parts = docName.split('/');
+  if (parts.length >= 2) {
+    return parts[0];
   }
 
-  cookieHeader.split(';').forEach((cookie) => {
-    const [name, ...rest] = cookie.split('=');
-    const value = rest.join('=').trim();
-    if (name) {
-      cookies[name.trim()] = decodeURIComponent(value);
-    }
-  });
-
-  return cookies;
+  return null;
 }
 
 /**
- * Authenticates a WebSocket connection
+ * Authenticates a WebSocket upgrade request
+ * Returns user if valid, null if invalid
+ *
+ * @param req Incoming HTTP request (upgrade request)
+ * @returns AuthenticatedUser if valid, null if invalid
+ */
+export async function authenticateUpgradeRequest(
+  req: IncomingMessage,
+): Promise<AuthenticatedUser | null> {
+  const cookies = parseCookies(req.headers.cookie);
+  const idToken = cookies['id_token'];
+
+  if (!idToken) {
+    console.log('WebSocket auth failed: No id_token provided');
+    return null;
+  }
+
+  const authResult = await authService.authenticateToken(idToken);
+
+  if (!authResult.valid || !authResult.user) {
+    console.log('WebSocket auth failed:', authResult.error);
+    return null;
+  }
+
+  return authResult.user;
+}
+
+/**
+ * Checks if user can access a document based on CBAC
+ *
+ * @param user Authenticated user
+ * @param docName Document name (format: "community/diagramName")
+ * @returns true if user can access, false otherwise
+ */
+export function canAccessDocument(
+  user: AuthenticatedUser,
+  docName: string,
+): boolean {
+  const community = extractCommunityFromDocName(docName);
+
+  // If no community in doc name, allow access (legacy support)
+  if (!community) {
+    return true;
+  }
+
+  return authService.canAccessCommunity(user, community);
+}
+
+/**
+ * Authenticates a WebSocket connection (legacy interface)
  *
  * @param conn WebSocket connection
  * @param req Incoming HTTP request (upgrade request)
@@ -51,31 +93,14 @@ export async function authenticateWebSocket(
   conn: WebSocket,
   req: IncomingMessage,
 ): Promise<AuthenticatedUser | null> {
-  // Extract id_token from cookies (used for user identity validation)
-  const cookies = parseCookies(req.headers.cookie);
-  const idToken = cookies['id_token'];
+  const user = await authenticateUpgradeRequest(req);
 
-  if (!idToken) {
-    conn.close(4401, 'Unauthorized: No id_token provided');
-    return null;
-  }
-
-  // Validate token with auth service
-  const validationResult = await authService.validateToken(idToken);
-
-  if (!validationResult.valid) {
+  if (!user) {
     conn.close(4401, 'Unauthorized: Invalid or expired token');
     return null;
   }
 
-  // Extract user info
-  const user = authService.getUserFromValidation(validationResult);
-  if (!user) {
-    conn.close(4401, 'Unauthorized: Invalid user information');
-    return null;
-  }
-
-  // Attach user to WebSocket connection for later use
+  // Attach user to WebSocket connection
   (conn as AuthenticatedWebSocket).user = user;
 
   return user;

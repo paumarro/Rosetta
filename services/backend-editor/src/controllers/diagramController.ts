@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { DiagramModel } from '../models/diagramModel.js';
 import { DiagramBody, DiagramParams } from '../types/diagramTypes.js';
 import defaultDiagramTemplate from '../templates/defaultDiagram.json' with { type: 'json' };
+import { errors, sendError } from '../utils/errorResponse.js';
 
 export const getDiagrams = async (_req: Request, res: Response) => {
   const diagrams = await DiagramModel.find().select('name createdAt updatedAt');
@@ -14,7 +15,7 @@ export const getDiagramByName = async (
 ) => {
   const diagram = await DiagramModel.findOne({ name: req.params.name });
   if (!diagram) {
-    return res.status(404).json({ error: 'Diagram not found' });
+    return errors.notFound(res, 'Diagram');
   }
   res.json(diagram);
 };
@@ -26,7 +27,7 @@ export const createDiagram = async (
   try {
     const { name, nodes, edges, learningPathId } = req.body;
     if (!name || String(name).trim() === '') {
-      return res.status(400).json({ error: 'Name is required' });
+      return errors.badRequest(res, 'Name is required');
     }
     const diagram = new DiagramModel({
       name,
@@ -61,7 +62,7 @@ export const updateDiagram = async (
     { new: true },
   );
   if (!diagram) {
-    return res.status(404).json({ error: 'Diagram not found' });
+    return errors.notFound(res, 'Diagram');
   }
   res.json(diagram);
 };
@@ -116,7 +117,7 @@ export const deleteDiagramByName = async (
   // First, check if the diagram exists and has an associated learning path
   const diagram = await DiagramModel.findOne({ name });
   if (!diagram) {
-    return res.status(404).json({ error: 'Diagram not found' });
+    return errors.notFound(res, 'Diagram');
   }
 
   // Prevent deletion if it has an associated learning path
@@ -141,6 +142,6 @@ export const deleteDiagramByLP = async (
 ) => {
   const { lpId } = req.params;
   const result = await DiagramModel.findOneAndDelete({ learningPathId: lpId });
-  if (!result) return res.status(404).json({ error: 'Diagram not found' });
+  if (!result) return errors.notFound(res, 'Diagram');
   return res.status(204).send();
 };

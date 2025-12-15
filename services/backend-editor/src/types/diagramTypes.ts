@@ -1,5 +1,7 @@
+import { ParamsDictionary } from 'express-serve-static-core';
+
 // Define types for request parameters and body
-export interface DiagramParams {
+export interface DiagramParams extends ParamsDictionary {
   name: string;
 }
 

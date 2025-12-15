@@ -1,23 +1,24 @@
 import express from 'express';
 import diagramRoutes from './routes/diagramRoutes.js';
 import { createServer, IncomingMessage } from 'http';
-import corsMiddleware from './config/corsConfig.js';
 import { connectDB } from './config/db.js';
 import { WebSocketServer } from 'ws';
 import type { WebSocket } from 'ws';
 import { setupWSConnection } from 'y-websocket/bin/utils';
 import yMongo from 'y-mongodb';
+import {
+  authenticateUpgradeRequest,
+  canAccessDocument,
+} from './middleware/wsAuth.js';
+
 const { MongodbPersistence } = yMongo as unknown as {
   MongodbPersistence: new (url: string) => unknown;
 };
 
 const app = express();
-// eslint-disable-next-line @typescript-eslint/no-misused-promises
 const server = createServer(app);
 
 app.use(express.json());
-
-app.use(corsMiddleware);
 
 app.use('/api', diagramRoutes);
 
@@ -31,44 +32,37 @@ const mongoUrl =
   'mongodb://localhost:27017/yjs';
 const yPersistence = new MongodbPersistence(mongoUrl);
 
-// Handle WebSocket upgrade - authenticate BEFORE accepting connection
+// Handle WebSocket upgrade - authenticate and check CBAC BEFORE accepting connection
 server.on('upgrade', (req: IncomingMessage, socket, head) => {
   void (async () => {
     try {
-      // Validate authentication from the upgrade request
-      // Extract and validate token directly without needing a WebSocket object
-      const cookies: Record<string, string> = {};
-      const cookieHeader = req.headers.cookie;
+      // Extract document name from URL path for CBAC check
+      const urlPath = req.url || '/';
+      const docName = decodeURIComponent(urlPath.slice(1));
 
-      if (cookieHeader) {
-        cookieHeader.split(';').forEach((cookie) => {
-          const [name, ...rest] = cookie.split('=');
-          const value = rest.join('=').trim();
-          if (name) {
-            cookies[name.trim()] = decodeURIComponent(value);
-          }
-        });
-      }
+      // Authenticate user using local OIDC validation
+      const user = await authenticateUpgradeRequest(req);
 
-      // Use id_token for user identity validation (not access_token)
-      const idToken = cookies['id_token'];
-      // Validate token (import authService at top of file)
-      const authService = (await import('./services/authService.js')).default;
-      const validationResult = await authService.validateToken(idToken);
-      const user = authService.getUserFromValidation(validationResult);
-
-      if (!idToken || !validationResult.valid || !user) {
+      if (!user) {
         socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
         socket.destroy();
         return;
       }
 
-      // Authentication succeeded - now complete the WebSocket upgrade
-      wss.handleUpgrade(req, socket, head, (conn: WebSocket) => {
-        // Extract and decode document name from URL path
-        const urlPath = req.url || '/';
-        const docName = decodeURIComponent(urlPath.slice(1));
+      // Check CBAC - user must have access to the document's community
+      const hasAccess = canAccessDocument(user, docName);
 
+      if (!hasAccess) {
+        console.log(
+          `CBAC denied: User ${user.email} (community: ${user.community}) cannot access document ${docName}`,
+        );
+        socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
+        socket.destroy();
+        return;
+      }
+
+      // Authentication and authorization succeeded - complete the WebSocket upgrade
+      wss.handleUpgrade(req, socket, head, (conn: WebSocket) => {
         // Setup Yjs connection immediately - no async gap, no message loss!
         setupWSConnection(conn, req, {
           docName: docName,
@@ -92,7 +86,6 @@ const startServer = async () => {
 
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
   try {
-    // Bind to the configured port directly so clients can rely on ws://localhost:3001
     const listenPort = PORT;
     await new Promise<void>((resolve, reject) => {
       void server
