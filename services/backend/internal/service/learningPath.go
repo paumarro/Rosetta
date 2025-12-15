@@ -23,6 +23,21 @@ func NewLearningPathService(db *gorm.DB) *LearningPathService {
 	return &LearningPathService{DB: db}
 }
 
+// populateSkillsList extracts skills from the join table into SkillsList for a single path
+func populateSkillsList(lp *model.LearningPath) {
+	lp.SkillsList = make([]model.Skill, 0, len(lp.Skills))
+	for _, lpSkill := range lp.Skills {
+		lp.SkillsList = append(lp.SkillsList, lpSkill.Skill)
+	}
+}
+
+// populateSkillsListForPaths extracts skills from the join table into SkillsList for multiple paths
+func populateSkillsListForPaths(paths []model.LearningPath) {
+	for i := range paths {
+		populateSkillsList(&paths[i])
+	}
+}
+
 type diagramResponse struct {
 	ID             string `json:"_id"`
 	LearningPathID string `json:"learningPathId"`
@@ -35,13 +50,7 @@ func (s *LearningPathService) GetLearningPaths() ([]model.LearningPath, error) {
 		return nil, err
 	}
 
-	// Extract skills from join table into SkillsList
-	for i := range paths {
-		paths[i].SkillsList = make([]model.Skill, 0, len(paths[i].Skills))
-		for _, lpSkill := range paths[i].Skills {
-			paths[i].SkillsList = append(paths[i].SkillsList, lpSkill.Skill)
-		}
-	}
+	populateSkillsListForPaths(paths)
 
 	return paths, nil
 }
@@ -143,11 +152,7 @@ func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, des
 		fmt.Printf("Warning: failed to reload LP with skills: %v\n", err)
 	}
 
-	// Extract skills from join table into SkillsList
-	lp.SkillsList = make([]model.Skill, 0, len(lp.Skills))
-	for _, lpSkill := range lp.Skills {
-		lp.SkillsList = append(lp.SkillsList, lpSkill.Skill)
-	}
+	populateSkillsList(lp)
 
 	fmt.Println("LP created successfully with skills")
 
@@ -262,13 +267,7 @@ func (s *LearningPathService) GetUserFavorites(ctx context.Context, userID uint)
 		return nil, err
 	}
 
-	// Extract skills into SkillsList
-	for i := range paths {
-		paths[i].SkillsList = make([]model.Skill, 0, len(paths[i].Skills))
-		for _, lpSkill := range paths[i].Skills {
-			paths[i].SkillsList = append(paths[i].SkillsList, lpSkill.Skill)
-		}
-	}
+	populateSkillsListForPaths(paths)
 
 	return paths, nil
 }
@@ -285,13 +284,7 @@ func (s *LearningPathService) GetLearningPathsByCommunity(ctx context.Context, c
 		return nil, err
 	}
 
-	// Extract skills into SkillsList
-	for i := range paths {
-		paths[i].SkillsList = make([]model.Skill, 0, len(paths[i].Skills))
-		for _, lpSkill := range paths[i].Skills {
-			paths[i].SkillsList = append(paths[i].SkillsList, lpSkill.Skill)
-		}
-	}
+	populateSkillsListForPaths(paths)
 
 	return paths, nil
 }

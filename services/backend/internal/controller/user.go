@@ -3,7 +3,6 @@ package controller
 import (
 	"net/http"
 
-	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/model"
 	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/service"
 	"github.com/gin-gonic/gin"
 )
@@ -20,21 +19,14 @@ func NewUserController(userService *service.UserService) *UserController {
 	}
 }
 
-// Dashboard is a simple welcome endpoint
-// GET /
-func (ctrl *UserController) Dashboard(c *gin.Context) {
-}
-
 // GetCurrentUser returns the authenticated user
 // GET /api/user/me
 func (ctrl *UserController) GetCurrentUser(c *gin.Context) {
-	userInterface, exists := c.Get("user")
-	if !exists {
-		respondWithError(c, http.StatusUnauthorized, "User not found", nil)
+	user := getUserFromContext(c)
+	if user == nil {
 		return
 	}
 
-	user := userInterface.(*model.User)
 	isAdmin := ctrl.UserService.IsAdmin(user.Email)
 
 	response := map[string]interface{}{
@@ -84,13 +76,10 @@ type UpdateUserRequest struct {
 // UpdateCurrentUser updates the authenticated user's profile
 // PATCH /api/user/me
 func (ctrl *UserController) UpdateCurrentUser(c *gin.Context) {
-	userInterface, exists := c.Get("user")
-	if !exists {
-		respondWithError(c, http.StatusUnauthorized, "User not found", nil)
+	user := getUserFromContext(c)
+	if user == nil {
 		return
 	}
-
-	user := userInterface.(*model.User)
 
 	var req UpdateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -135,8 +124,10 @@ func (ctrl *UserController) SetUserCommunity(c *gin.Context) {
 		return
 	}
 
-	userInterface, _ := c.Get("user")
-	user := userInterface.(*model.User)
+	user := getUserFromContext(c)
+	if user == nil {
+		return
+	}
 
 	updates := map[string]interface{}{
 		"community": req.Community,
