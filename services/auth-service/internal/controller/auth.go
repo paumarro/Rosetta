@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rosetta/auth-service/internal/service"
@@ -32,13 +33,12 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 	redirectURI := os.Getenv("OIDC_REDIRECT_URI")
 	tenantID := service.ExtractTenantID(os.Getenv("OIDC_ISSUER"))
 
-	scopes := "api://academy-dev/GeneralAccess openid profile email offline_access"
 	loginURL := fmt.Sprintf(
 		"https://login.microsoftonline.com/%s/oauth2/v2.0/authorize?client_id=%s&response_type=code&redirect_uri=%s&scope=%s",
 		tenantID,
 		clientID,
 		url.QueryEscape(redirectURI),
-		url.QueryEscape(scopes),
+		url.QueryEscape(service.OAuthScope),
 	)
 
 	log.Printf("Redirecting to Microsoft login")
@@ -68,7 +68,7 @@ func (ctrl *AuthController) Callback(c *gin.Context) {
 	data.Set("redirect_uri", redirectURI)
 	data.Set("client_id", clientID)
 	data.Set("client_secret", clientSecret)
-	data.Set("scope", "api://academy-dev/GeneralAccess openid profile email offline_access")
+	data.Set("scope", service.OAuthScope)
 
 	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(data.Encode()))
 	if err != nil {
@@ -78,7 +78,7 @@ func (ctrl *AuthController) Callback(c *gin.Context) {
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("Error: Microsoft OAuth API error - Failed to exchange code: %v", err)
@@ -151,6 +151,14 @@ func (ctrl *AuthController) Callback(c *gin.Context) {
 // GET /auth/logout
 func (ctrl *AuthController) Logout(c *gin.Context) {
 	redirectTo := c.Query("redirect")
+
+	// Validate redirect URL to prevent open redirect attacks
+	if redirectTo != "" {
+		if !isAllowedRedirect(redirectTo) {
+			log.Printf("Warning: Blocked invalid redirect URL: %s", redirectTo)
+			redirectTo = ""
+		}
+	}
 	if redirectTo == "" {
 		redirectTo = util.GetRedirectURL()
 	}
@@ -158,55 +166,51 @@ func (ctrl *AuthController) Logout(c *gin.Context) {
 	cookieDomain := util.GetCookieDomain()
 	isSecure := !util.IsDevelopment()
 
-	c.SetSameSite(http.SameSiteLaxMode)
+	// Use environment-aware SameSite policy (consistent with SetCookiesFromTokens)
+	if util.IsDevelopment() {
+		c.SetSameSite(http.SameSiteLaxMode)
+	} else {
+		c.SetSameSite(http.SameSiteNoneMode)
+	}
+
+	// Clear all authentication cookies including graph_access_token
 	c.SetCookie("id_token", "", -1, "/", cookieDomain, isSecure, true)
 	c.SetCookie("access_token", "", -1, "/", cookieDomain, isSecure, true)
 	c.SetCookie("refresh_token", "", -1, "/", cookieDomain, isSecure, true)
+	c.SetCookie("graph_access_token", "", -1, "/", cookieDomain, isSecure, true)
 
 	log.Printf("User logged out, redirecting to: %s", redirectTo)
 	c.Redirect(http.StatusFound, redirectTo)
 }
 
-// ValidateToken validates an access/ID token
-// GET/POST /auth/validate
-func (ctrl *AuthController) ValidateToken(c *gin.Context) {
-	var token string
-
-	// Try JSON body first
-	var req struct {
-		Token string `json:"token"`
-	}
-	if err := c.ShouldBindJSON(&req); err == nil && req.Token != "" {
-		token = req.Token
-	} else {
-		// Try Authorization header
-		authHeader := c.GetHeader("Authorization")
-		if authHeader != "" && len(authHeader) > 7 && authHeader[:7] == "Bearer " {
-			token = authHeader[7:]
-		} else {
-			// Try id_token cookie
-			cookieToken, err := c.Cookie("id_token")
-			if err != nil {
-				log.Printf("Validation failed: No token provided - %v", err)
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Token required in body, Authorization header, or cookie"})
-				return
-			}
-			token = cookieToken
-		}
+// isAllowedRedirect validates that the redirect URL is safe
+func isAllowedRedirect(redirectURL string) bool {
+	// Allow relative paths
+	if strings.HasPrefix(redirectURL, "/") && !strings.HasPrefix(redirectURL, "//") {
+		return true
 	}
 
-	log.Printf("Validating token (length: %d)", len(token))
-
-	result := ctrl.authService.ValidateToken(token)
-
-	if !result.Valid {
-		log.Printf("Token validation failed: %s", result.Error)
-		c.JSON(http.StatusUnauthorized, result)
-		return
+	// Parse the URL
+	parsed, err := url.Parse(redirectURL)
+	if err != nil {
+		return false
 	}
 
-	log.Printf("Token validated successfully for user: %s (%s)", result.Email, result.EntraID)
-	c.JSON(http.StatusOK, result)
+	// Only allow http/https schemes
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return false
+	}
+
+	// Get allowed domain from environment
+	allowedDomain := util.GetRosettaDomain()
+
+	// Check if host matches allowed domain (including localhost for dev)
+	host := parsed.Hostname()
+	if host == "localhost" || host == allowedDomain || strings.HasSuffix(host, "."+allowedDomain) {
+		return true
+	}
+
+	return false
 }
 
 // RefreshToken exchanges a refresh token for new tokens

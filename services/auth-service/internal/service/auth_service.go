@@ -8,9 +8,13 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 )
+
+// OAuthScope is the standard OAuth scope used for token requests
+const OAuthScope = "api://academy-dev/GeneralAccess openid profile email offline_access"
 
 type AuthService struct {
 	provider     *oidc.Provider
@@ -126,7 +130,7 @@ func (s *AuthService) RefreshToken(refreshToken string) *TokenRefreshResult {
 	data.Set("refresh_token", refreshToken)
 	data.Set("client_id", s.clientID)
 	data.Set("client_secret", s.clientSecret)
-	data.Set("scope", "api://academy-dev/GeneralAccess openid profile email offline_access")
+	data.Set("scope", OAuthScope)
 
 	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(data.Encode()))
 	if err != nil {
@@ -137,7 +141,7 @@ func (s *AuthService) RefreshToken(refreshToken string) *TokenRefreshResult {
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return &TokenRefreshResult{
@@ -207,7 +211,7 @@ func (s *AuthService) GetGraphToken(refreshToken string) (string, error) {
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to call graph token endpoint: %w", err)
