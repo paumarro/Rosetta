@@ -35,13 +35,13 @@ const nodeTypes: NodeTypes = {
 };
 
 interface DiagramEditorProps {
-  diagramName?: string;
+  pathId?: string;
   community?: string;
   mode?: 'edit' | 'view';
 }
 
 export default function DiagramEditor({
-  diagramName = 'default',
+  pathId = 'default',
   community,
   mode = 'edit',
 }: DiagramEditorProps) {
@@ -97,19 +97,12 @@ export default function DiagramEditor({
         }
       : guestUser;
 
-    void initializeCollaboration(diagramName, currentUser, isViewMode);
-  }, [
-    diagramName,
-    user,
-    guestUser,
-    initializeCollaboration,
-    isViewMode,
-    isLoading,
-  ]);
+    void initializeCollaboration(pathId, currentUser, isViewMode);
+  }, [pathId, user, guestUser, initializeCollaboration, isViewMode, isLoading]);
 
   useEffect(() => {
     console.log('[RecentlyViewed] Effect triggered', {
-      diagramName,
+      pathId,
       hasAddedAlready: hasAddedToRecentRef.current,
     });
 
@@ -117,16 +110,16 @@ export default function DiagramEditor({
       console.log('[RecentlyViewed] Skipping - already added this session');
       return;
     }
-    if (!diagramName) {
-      console.log('[RecentlyViewed] Skipping - no diagramName');
+    if (!pathId) {
+      console.log('[RecentlyViewed] Skipping - no pathId');
       return;
     }
 
     hasAddedToRecentRef.current = true;
-    // diagramName from URL params may be URL-encoded
-    const decodedPathID = decodeURIComponent(diagramName);
+    // pathId from URL params may be URL-encoded
+    const decodedPathID = decodeURIComponent(pathId);
     console.log('[RecentlyViewed] Adding to localStorage:', {
-      raw: diagramName,
+      raw: pathId,
       decoded: decodedPathID,
     });
 
@@ -135,7 +128,7 @@ export default function DiagramEditor({
     // Verify it was added
     const stored = localStorage.getItem('rosetta_recently_viewed');
     console.log('[RecentlyViewed] localStorage after add:', stored);
-  }, [diagramName]);
+  }, [pathId]);
 
   // Cleanup when component unmounts
   useEffect(() => {

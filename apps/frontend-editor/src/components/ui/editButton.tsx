@@ -15,20 +15,20 @@ interface EditButtonProps {
  */
 export default function EditButton({ community }: EditButtonProps) {
   const navigate = useNavigate();
-  const { diagramName } = useParams<{ diagramName: string }>();
+  const { pathId } = useParams<{ pathId: string }>();
   const { user } = useUserStore();
 
   // Check if user can edit this diagram
   const canEdit = user && (user.IsAdmin || user.Community === community);
 
   // Don't render if user can't edit
-  if (!canEdit || !community || !diagramName) {
+  if (!canEdit || !community || !pathId) {
     return null;
   }
 
   const handleEdit = () => {
-    navigate(
-      `/editor/${encodeURIComponent(community)}/${encodeURIComponent(diagramName)}`,
+    void navigate(
+      `/editor/${encodeURIComponent(community)}/${encodeURIComponent(pathId)}`,
     );
   };
 
