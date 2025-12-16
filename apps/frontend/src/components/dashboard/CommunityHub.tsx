@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLearningPathStore } from '@/store/learningPathStore';
 import { useUserStore } from '@/store/userStore';
@@ -40,14 +40,7 @@ export default function CommunityHub() {
       favorites,
     });
 
-  useEffect(() => {
-    if (communityname) {
-      fetchCommunityPaths();
-      fetchUserFavorites();
-    }
-  }, [communityname]);
-
-  const fetchCommunityPaths = async () => {
+  const fetchCommunityPaths = useCallback(async () => {
     if (!communityname) return;
 
     setLoading(true);
@@ -66,10 +59,17 @@ export default function CommunityHub() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [communityname, fetchLearningPathsByCommunity, fetchRecentlyViewed]);
+
+  useEffect(() => {
+    if (communityname) {
+      void fetchCommunityPaths();
+      void fetchUserFavorites();
+    }
+  }, [communityname, fetchCommunityPaths, fetchUserFavorites]);
 
   const handlePathClick = (path: LearningPath) => {
-    const url = `${DEV_EDITOR_FE_URL}view/${encodeURIComponent(communityname || '')}/${encodeURIComponent(path.Title)}?pathId=${path.ID}`;
+    const url = `${DEV_EDITOR_FE_URL}view/${encodeURIComponent(communityname || '')}/${encodeURIComponent(path.ID)}`;
     window.location.href = url;
   };
 
@@ -164,7 +164,9 @@ export default function CommunityHub() {
           order={order}
           onFilterChange={setFilter}
           onSortChange={setOrder}
-          onClose={() => setIsDropdownOpen(false)}
+          onClose={() => {
+            setIsDropdownOpen(false);
+          }}
         />
 
         <div className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -174,7 +176,9 @@ export default function CommunityHub() {
               path={path}
               isFavorited={isFavorited(path.ID)}
               onPathClick={handlePathClick}
-              onToggleFavorite={handleToggleFavorite}
+              onToggleFavorite={(e) => {
+                void handleToggleFavorite(e, path.ID);
+              }}
               formatDate={formatDate}
             />
           ))}
