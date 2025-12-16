@@ -167,7 +167,7 @@ export default function OwnPaths() {
     const path = learningPaths.find((lp) => lp.ID === id);
     if (path && user?.Community) {
       // Include user's community in editor URL
-      window.location.href = `${DEV_EDITOR_FE_URL}editor/${encodeURIComponent(user.Community)}/${path.Title}`;
+      window.location.href = `${DEV_EDITOR_FE_URL}editor/${encodeURIComponent(user.Community)}/${encodeURIComponent(path.ID)}`;
     }
   };
 

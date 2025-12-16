@@ -102,10 +102,16 @@ export default function CreateNewPath({
         return;
       }
 
-      await response.json();
+      const created = (await response.json().catch(() => ({}))) as {
+        ID?: string;
+        id?: string;
+        learningPathId?: string;
+      };
+      const resolvedId =
+        created.learningPathId || created.ID || created.id || pathName;
 
-      // Include community in editor URL
-      window.location.href = `${DEV_EDITOR_FE_URL}editor/${encodeURIComponent(communityname)}/${pathName}`;
+      // Include community in editor URL using canonical ID when available
+      window.location.href = `${DEV_EDITOR_FE_URL}editor/${encodeURIComponent(communityname)}/${encodeURIComponent(resolvedId)}`;
     } catch (err) {
       if (err instanceof Error) {
         console.error('Error submitting form:', err.message);

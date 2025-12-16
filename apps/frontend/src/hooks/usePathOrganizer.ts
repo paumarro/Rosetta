@@ -30,15 +30,13 @@ export function usePathOrganizer({
         if (stored) {
           const recentLPs: string[] = JSON.parse(stored) as string[];
 
-          filteredPaths = filteredPaths.filter((p) => {
-            const matches = recentLPs.includes(p.Title);
-            return matches;
-          });
+          // Match by canonical ID
+          filteredPaths = filteredPaths.filter((p) => recentLPs.includes(p.ID));
 
           // Sort by recency - order in recentLPs array (most recent first)
           filteredPaths.sort((a, b) => {
-            const indexA = recentLPs.indexOf(a.Title);
-            const indexB = recentLPs.indexOf(b.Title);
+            const indexA = recentLPs.indexOf(a.ID);
+            const indexB = recentLPs.indexOf(b.ID);
             return indexA - indexB;
           });
         } else {

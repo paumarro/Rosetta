@@ -74,10 +74,10 @@ function PathCard({ path }: { path: LearningPath }) {
   const handlePathClick = () => {
     // Use path's Community field for URL
     if (path.Community) {
-      window.location.href = `${DEV_EDITOR_FE_URL}view/${encodeURIComponent(path.Community)}/${path.Title}?pathId=${path.ID}`;
+      window.location.href = `${DEV_EDITOR_FE_URL}view/${encodeURIComponent(path.Community)}/${encodeURIComponent(path.ID)}`;
     } else {
-      // Fallback to old URL structure if community is not available
-      window.location.href = `${DEV_EDITOR_FE_URL}view/${path.Title}?pathId=${path.ID}`;
+      // Fallback: legacy path without community
+      window.location.href = `${DEV_EDITOR_FE_URL}view/${encodeURIComponent(path.ID)}`;
     }
   };
 
