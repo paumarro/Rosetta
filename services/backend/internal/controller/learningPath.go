@@ -101,7 +101,10 @@ func (res *LearningPathController) Delete(c *gin.Context) {
 		return
 	}
 
-	err := res.LearningPathService.DeleteLearningPath(c, id)
+	// Extract token for service-to-service calls
+	authToken, _ := c.Cookie("id_token")
+
+	err := res.LearningPathService.DeleteLearningPath(c, id, authToken)
 	if err != nil {
 		respondWithError(c, http.StatusInternalServerError, "Failed to delete learning path", err)
 		return

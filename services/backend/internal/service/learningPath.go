@@ -115,7 +115,7 @@ func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, des
 	// Step 5: insert LP row; compensate on failure
 	if err := s.DB.WithContext(ctx).Create(lp).Error; err != nil {
 		// Compensation: delete the Mongo diagram we just created
-		_ = s.deleteDiagramByLP(ctx, httpClient, editorURL, lpID.String())
+		_ = s.deleteDiagramByLP(ctx, httpClient, editorURL, lpID.String(), authToken)
 		return nil, fmt.Errorf("postgres insert failed: %w", err)
 	}
 
@@ -159,13 +159,16 @@ func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, des
 	return lp, nil
 }
 
-func (s *LearningPathService) deleteDiagramByLP(_ context.Context, httpClient *http.Client, baseURL, lpID string) error {
+func (s *LearningPathService) deleteDiagramByLP(_ context.Context, httpClient *http.Client, baseURL, lpID, authToken string) error {
 	// For compensation/cleanup operations, use a background context with a short timeout
 	// to ensure cleanup completes even if the original request context is canceled
 	cleanupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	req, _ := http.NewRequestWithContext(cleanupCtx, http.MethodDelete, fmt.Sprintf("%s/api/diagrams/by-lp/%s", baseURL, lpID), nil)
+	if authToken != "" {
+		req.Header.Set("Authorization", "Bearer "+authToken)
+	}
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
@@ -178,7 +181,7 @@ func (s *LearningPathService) deleteDiagramByLP(_ context.Context, httpClient *h
 	return nil
 }
 
-func (s *LearningPathService) DeleteLearningPath(ctx context.Context, lpID string) error {
+func (s *LearningPathService) DeleteLearningPath(ctx context.Context, lpID string, authToken string) error {
 	// First, find the learning path to get its UUID and diagram ID
 	var lp model.LearningPath
 	if err := s.DB.WithContext(ctx).Where("id = ?", lpID).First(&lp).Error; err != nil {
@@ -196,7 +199,7 @@ func (s *LearningPathService) DeleteLearningPath(ctx context.Context, lpID strin
 	httpClient := &http.Client{Timeout: 10 * time.Second}
 
 	// Delete the diagram from MongoDB using the LP UUID
-	if err := s.deleteDiagramByLP(ctx, httpClient, editorURL, lp.ID.String()); err != nil {
+	if err := s.deleteDiagramByLP(ctx, httpClient, editorURL, lp.ID.String(), authToken); err != nil {
 		return fmt.Errorf("failed to delete diagram: %w", err)
 	}
 
