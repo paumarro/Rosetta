@@ -154,7 +154,6 @@ interface CollaborativeState {
   //Collaboration State
   connectedUsers: User[];
   currentUser: User | null;
-  diagramName: string;
   learningPathId: string;
   ydoc: Y.Doc | null;
   yProvider: WebsocketProvider | null;
@@ -198,7 +197,6 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     isConnected: false,
     connectedUsers: [],
     currentUser: null,
-    diagramName: '',
     learningPathId: 'default',
     ydoc: null,
     yProvider: null,
@@ -251,7 +249,6 @@ export const useCollaborativeStore = create<CollaborativeState>()(
 
       set({
         isInitializing: true,
-        diagramName: learningPathId,
         learningPathId,
         currentUser: user,
         isViewMode,
@@ -605,7 +602,6 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         isConnected: false,
         connectedUsers: [],
         currentUser: null,
-        diagramName: '',
         learningPathId: 'default',
       });
     },
