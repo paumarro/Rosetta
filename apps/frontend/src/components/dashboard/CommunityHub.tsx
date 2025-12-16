@@ -29,6 +29,7 @@ export default function CommunityHub() {
     removeFromFavorites,
     isFavorited,
     favorites,
+    deleteLearningPath,
   } = useLearningPathStore();
 
   const { user } = useUserStore();
@@ -83,6 +84,17 @@ export default function CommunityHub() {
       }
     } catch (error) {
       console.error('Error toggling favorite:', error);
+    }
+  };
+
+  const handleDeletePath = async (pathId: string) => {
+    try {
+      await deleteLearningPath(pathId);
+      // Update local state to remove the deleted path
+      setAllPaths((prev) => prev.filter((p) => p.ID !== pathId));
+    } catch (error) {
+      console.error('Error deleting learning path:', error);
+      throw error; // Re-throw to let the card component handle the error state
     }
   };
 
@@ -175,10 +187,12 @@ export default function CommunityHub() {
               key={path.ID}
               path={path}
               isFavorited={isFavorited(path.ID)}
+              canDelete={canCreatePath}
               onPathClick={handlePathClick}
               onToggleFavorite={(e) => {
                 void handleToggleFavorite(e, path.ID);
               }}
+              onDelete={handleDeletePath}
               formatDate={formatDate}
             />
           ))}

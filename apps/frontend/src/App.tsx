@@ -25,14 +25,6 @@ export default function App() {
           {/* Learning Hub sections */}
           <Route path="/hub">
             <Route
-              path="learning-path"
-              element={
-                <RequireAuth>
-                  <LearningPaths />
-                </RequireAuth>
-              }
-            />
-            <Route
               path=":communityname"
               element={
                 <RequireAuth>
