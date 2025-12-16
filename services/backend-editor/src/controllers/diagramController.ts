@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { DiagramModel } from '../models/diagramModel.js';
 import { DiagramBody, DiagramParams } from '../types/diagramTypes.js';
 import defaultDiagramTemplate from '../templates/defaultDiagram.json' with { type: 'json' };
-import { errors, sendError } from '../utils/errorResponse.js';
+import { errors } from '../utils/errorResponse.js';
 
 export const getDiagrams = async (_req: Request, res: Response) => {
   const diagrams = await DiagramModel.find().select('name createdAt updatedAt');
@@ -13,7 +13,11 @@ export const getDiagramByName = async (
   req: Request<DiagramParams>,
   res: Response,
 ) => {
-  const diagram = await DiagramModel.findOne({ name: req.params.name });
+  const key = req.params.name;
+  let diagram = await DiagramModel.findOne({ learningPathId: key });
+  if (!diagram) {
+    diagram = await DiagramModel.findOne({ name: key });
+  }
   if (!diagram) {
     return errors.notFound(res, 'Diagram');
   }
@@ -56,11 +60,19 @@ export const updateDiagram = async (
   res: Response,
 ) => {
   const { nodes, edges } = req.body;
-  const diagram = await DiagramModel.findOneAndUpdate(
-    { name: req.params.name },
+  const key = req.params.name;
+  let diagram = await DiagramModel.findOneAndUpdate(
+    { learningPathId: key },
     { $set: { nodes, edges } },
     { new: true },
   );
+  if (!diagram) {
+    diagram = await DiagramModel.findOneAndUpdate(
+      { name: key },
+      { $set: { nodes, edges } },
+      { new: true },
+    );
+  }
   if (!diagram) {
     return errors.notFound(res, 'Diagram');
   }
@@ -92,7 +104,7 @@ export const createDiagramByLP = async (
       // Check if it's a duplicate learningPathId (idempotency case)
       const existingByLP = await DiagramModel.findOne({ learningPathId });
       if (existingByLP) return res.status(200).json(existingByLP);
-      
+
       // Check if it's a duplicate name
       const existingByName = await DiagramModel.findOne({ name: finalName });
       if (existingByName) {
@@ -115,7 +127,10 @@ export const deleteDiagramByName = async (
   const { name } = req.params;
 
   // First, check if the diagram exists and has an associated learning path
-  const diagram = await DiagramModel.findOne({ name });
+  let diagram = await DiagramModel.findOne({ learningPathId: name });
+  if (!diagram) {
+    diagram = await DiagramModel.findOne({ name });
+  }
   if (!diagram) {
     return errors.notFound(res, 'Diagram');
   }
@@ -131,7 +146,9 @@ export const deleteDiagramByName = async (
   }
 
   // If no learning path is associated, allow deletion
-  await DiagramModel.findOneAndDelete({ name });
+  await DiagramModel.findOneAndDelete(
+    diagram.learningPathId ? { learningPathId: name } : { name },
+  );
   return res.status(204).send();
 };
 
