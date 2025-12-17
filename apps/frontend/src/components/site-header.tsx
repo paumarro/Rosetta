@@ -16,13 +16,8 @@
 import RosettaLogo from '@/assets/rosetta-logo.png';
 import CarbyteLogo from '@/assets/carbyte-logo.png';
 import { User } from './user';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from './ui/breadcrumb';
-import { Fragment } from 'react/jsx-runtime';
-import { Link } from 'react-router-dom';
 
 export function SiteHeader() {
-
-
   const handleLogoClick = (e: React.MouseEvent<HTMLImageElement>) => {
     e.preventDefault();
     window.location.href = '/';

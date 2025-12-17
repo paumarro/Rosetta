@@ -1,6 +1,5 @@
 import './App.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import LearningPaths from '@/components/dashboard/LearningPaths';
 import CommunityHub from '@/components/dashboard/CommunityHub';
 import CreateNewPath from '@/components/creator-studio/CreateNewPath';
 import { AuthProvider } from './contexts/AuthContext';
