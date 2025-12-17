@@ -78,7 +78,7 @@ class CBACService {
    * Returns the first matching community or null if no match
    */
   getCommunityFromGroups(groupIds: string[]): string | null {
-    if (!groupIds || groupIds.length === 0) {
+    if (groupIds.length === 0) {
       return null;
     }
 
