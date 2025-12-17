@@ -1,5 +1,6 @@
 import express from 'express';
 import diagramRoutes from './routes/diagramRoutes.js';
+import healthRoutes from './routes/healthRoutes.js';
 import { createServer, IncomingMessage } from 'http';
 import { connectDB } from './config/db.js';
 import { WebSocketServer } from 'ws';
@@ -21,6 +22,7 @@ const server = createServer(app);
 app.use(express.json());
 
 app.use('/api', diagramRoutes);
+app.use('/', healthRoutes);
 
 // Yjs websocket server with MongoDB persistence
 // Use noServer: true to manually handle upgrade and authenticate BEFORE accepting connection
@@ -63,12 +65,14 @@ server.on('upgrade', (req: IncomingMessage, socket, head) => {
 
       // Authentication and authorization succeeded - complete the WebSocket upgrade
       wss.handleUpgrade(req, socket, head, (conn: WebSocket) => {
-        // Setup Yjs connection immediately - no async gap, no message loss!
-        setupWSConnection(conn, req, {
+        // Setup Yjs connection with MongoDB persistence
+        const setupOptions = {
           docName: docName,
           persistence: yPersistence,
           gc: true,
-        });
+        };
+
+        setupWSConnection(conn, req, setupOptions);
 
         // Emit the 'connection' event for any other handlers
         wss.emit('connection', conn, req);
@@ -85,13 +89,15 @@ const startServer = async () => {
   await connectDB();
 
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
+  const instanceId = process.env.INSTANCE_ID || 'default';
+
   try {
     const listenPort = PORT;
     await new Promise<void>((resolve, reject) => {
       void server
         .listen(listenPort, '0.0.0.0')
         .once('listening', () => {
-          console.log(`Server running on port ${String(listenPort)}`);
+          console.log(`Server ${instanceId} running on port ${String(listenPort)}`);
           resolve();
         })
         .once('error', (err: unknown) => {
@@ -103,5 +109,21 @@ const startServer = async () => {
     process.exit(1);
   }
 };
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+
+  // Close WebSocket server
+  wss.close(() => {
+    console.log('WebSocket server closed');
+  });
+
+  // Close HTTP server
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
+});
 
 void startServer();
