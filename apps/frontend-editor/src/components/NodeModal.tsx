@@ -152,6 +152,9 @@ export function NodeModal() {
           'sm:max-w-lg md:max-w-xl lg:max-w-5xl p-17',
           'overflow-hidden',
         )}
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+        }}
       >
         {/* Fixed Header - Title only */}
         <DialogHeader className="flex-shrink-0 pb-4">
@@ -179,8 +182,10 @@ export function NodeModal() {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setEditLabel(e.target.value);
                 }}
-                className="text-5xl font-bold h-auto"
-                placeholder="Node label"
+                autoFocus={false}
+                tabIndex={-1}
+                className="text-5xl font-bold h-auto border-0 border-b-1 border-gray-300 rounded-none focus:border-black focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                placeholder="Topic Title"
               />
             )}
           </div>
@@ -191,7 +196,7 @@ export function NodeModal() {
           <div className="flex-1 overflow-y-auto min-h-0 -mx-1 px-1">
             {/* Description */}
             {modalData.data.description && (
-              <DialogDescription className="leading-relaxed text-left text-base pb-4 text-black">
+              <DialogDescription className="leading-relaxed rounded-none text-left text-base pb-4 text-black">
                 {modalData.data.description}
                 <br />
               </DialogDescription>
@@ -252,7 +257,7 @@ export function NodeModal() {
                   setEditDescription(e.target.value);
                 }}
                 className={cn(
-                  'leading-relaxed text-left text-base pb-4 text-black w-full p-2 border rounded-md resize-none',
+                  'pb-4 text-black w-full p-4 border rounded-none resize-none',
                   isResourcesExpanded
                     ? 'h-full min-h-[20vh]'
                     : 'h-full min-h-[300px]',
