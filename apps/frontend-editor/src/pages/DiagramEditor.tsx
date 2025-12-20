@@ -18,7 +18,6 @@ import AvatarDemo from '@/components/ui/AvatarDemo';
 import EditButton from '@/components/ui/editButton';
 import Cursors from '@/components/ui/Cursors';
 import TopicNode from '../components/nodes/topicNode';
-import { LoadingOverlay } from '../components/ui/loading-overlay';
 import { NodeModal } from '../components/NodeModal';
 import {
   ConnectionContext,
@@ -254,7 +253,11 @@ export default function DiagramEditor({
   }, []);
 
   if (isInitializing) {
-    return <LoadingOverlay message="Loading diagram" />;
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
   }
 
   const fitViewOptions = {

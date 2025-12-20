@@ -1,4 +1,3 @@
-
 #### Build stage
 # Use an official Node.js runtime as a parent image
 FROM node:20-alpine3.21 AS build
@@ -6,7 +5,17 @@ FROM node:20-alpine3.21 AS build
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json  ?? add tsconfig??
+# Build arguments for Vite environment variables
+ARG VITE_BE_API_URL
+ARG VITE_DEV_EDITOR_FE_URL
+ARG VITE_AUTH_URL
+
+# Set as environment variables (Vite reads these at build time)
+ENV VITE_BE_API_URL=$VITE_BE_API_URL
+ENV VITE_DEV_EDITOR_FE_URL=$VITE_DEV_EDITOR_FE_URL
+ENV VITE_AUTH_URL=$VITE_AUTH_URL
+
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
 # Install dependencies using npm
