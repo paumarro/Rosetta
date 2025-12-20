@@ -6,14 +6,17 @@ FROM node:20-alpine3.21 AS build
 # Set the working directory in the container
 WORKDIR /app
 
+# Copy shared folder from monorepo root
+COPY shared/ ./shared/
+
 # Copy package.json and package-lock.json
-COPY package*.json ./
+COPY apps/frontend-editor/package*.json ./
 
 # Install dependencies using npm
 RUN npm ci
 
 # Copy the rest of the application code
-COPY ./ ./
+COPY apps/frontend-editor/ ./
 
 # Build the React application for production
 RUN npm run build
@@ -23,7 +26,7 @@ RUN npm run build
 FROM nginx:stable-alpine AS production
 
 # Copy the nginx configuration inside conf.d folder
-COPY nginx/ /etc/nginx/conf.d/
+COPY apps/frontend-editor/nginx/ /etc/nginx/conf.d/
 
 # Copy the build output from the dist folder into the Nginx html directory
 COPY --from=build /app/dist /usr/share/nginx/html

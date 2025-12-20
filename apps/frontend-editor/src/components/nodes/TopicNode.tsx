@@ -1,7 +1,7 @@
 import { Handle, Position } from '@xyflow/react';
 import { TopicNodeProps } from '@/types/reactflow';
 import { useNodeState } from '@/hooks/useNodeState';
-import { useCollaborativeStore } from '@/stores/collaborativeStore';
+import { useCollaborativeStore } from '@/store/collaborativeStore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   useHandleVisibility,

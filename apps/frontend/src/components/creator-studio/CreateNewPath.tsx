@@ -1,6 +1,6 @@
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
-import { cn } from '@/utils/cn';
+import { cn, buildEditorUrl } from '@shared/utils';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -111,7 +111,7 @@ export default function CreateNewPath({
         created.learningPathId || created.ID || created.id || pathName;
 
       // Include community in editor URL using canonical ID when available
-      window.location.href = `${DEV_EDITOR_FE_URL}editor/${encodeURIComponent(communityname)}/${encodeURIComponent(resolvedId)}`;
+      window.location.href = buildEditorUrl(DEV_EDITOR_FE_URL, communityname, resolvedId);
     } catch (err) {
       if (err instanceof Error) {
         console.error('Error submitting form:', err.message);

@@ -15,14 +15,17 @@ ENV VITE_BE_API_URL=$VITE_BE_API_URL
 ENV VITE_DEV_EDITOR_FE_URL=$VITE_DEV_EDITOR_FE_URL
 ENV VITE_AUTH_URL=$VITE_AUTH_URL
 
+# Copy shared folder from monorepo root
+COPY shared/ ./shared/
+
 # Copy package.json and package-lock.json
-COPY package*.json ./
+COPY apps/frontend/package*.json ./
 
 # Install dependencies using npm
 RUN npm ci
 
 # Copy the rest of the application code
-COPY ./ ./
+COPY apps/frontend/ ./
 
 # Build the React application for production
 RUN npm run build
@@ -33,7 +36,7 @@ FROM nginx:stable-alpine AS production
 
 
 # Copy the nginx configuration inside conf.d folder
-COPY nginx/ /etc/nginx/conf.d/
+COPY apps/frontend/nginx/ /etc/nginx/conf.d/
 
 # Copy the build output from the dist folder into the Nginx html directory
 COPY --from=build /app/dist /usr/share/nginx/html

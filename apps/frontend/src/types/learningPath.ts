@@ -1,21 +1,5 @@
-export interface Skill {
-  ID: string;
-  Name: string;
-}
-
-export interface LearningPath {
-  ID: string;
-  Title: string;
-  Description: string;
-  IsPublic: boolean;
-  Thumbnail: string;
-  DiagramID: string;
-  Community?: string;
-  CreatedAt: string;
-  UpdatedAt: string;
-  DeletedAt?: string;
-  Skills?: Skill[];
-}
+// Re-export shared types
+export type { Skill, LearningPath } from '@shared/types';
 
 export interface LearningPathStore {
   learningPaths: LearningPath[];

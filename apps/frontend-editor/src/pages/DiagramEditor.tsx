@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useCollaborativeStore } from '@/stores/collaborativeStore';
-import { useUserStore } from '@/stores/userStore';
+import { useCollaborativeStore } from '@/store/collaborativeStore';
+import { useUserStore } from '@/store/userStore';
 import {
   ReactFlow,
   Background,
@@ -13,11 +13,11 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { ArrowUpLeft } from 'lucide-react';
-import AddNodeButton from '@/components/ui/addNodeButton';
+import AddNodeButton from '@/components/ui/AddNodeButton';
 import AvatarDemo from '@/components/ui/AvatarDemo';
-import EditButton from '@/components/ui/editButton';
+import EditButton from '@/components/ui/EditButton';
 import Cursors from '@/components/ui/Cursors';
-import TopicNode from '../components/nodes/topicNode';
+import TopicNode from '../components/nodes/TopicNode';
 import { NodeModal } from '../components/NodeModal';
 import {
   ConnectionContext,

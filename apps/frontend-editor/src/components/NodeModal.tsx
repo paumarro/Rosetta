@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
-import { useCollaborativeStore } from '@/stores/collaborativeStore';
+import { useCollaborativeStore } from '@/store/collaborativeStore';
 import { DiagramNode } from '@/types/reactflow';
 import {
   Dialog,
@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/utils/cn';
+import { cn } from '@shared/utils';
 import { Check } from 'lucide-react';
 
 type ModalData = Pick<DiagramNode, 'id' | 'data'>;

@@ -1,6 +1,6 @@
 import { Label } from '@/components/ui/label';
 import { SidebarInput } from '@/components/ui/sidebar';
-import { cn } from '@/utils/cn';
+import { cn } from '@shared/utils';
 
 interface SearchFormProps
   extends Omit<React.ComponentProps<'form'>, 'onSubmit'> {
