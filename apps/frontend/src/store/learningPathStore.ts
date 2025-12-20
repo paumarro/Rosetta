@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import type { LearningPath, LearningPathStore } from '@/types/learningPath';
+import type { LearningPath } from '@shared/types';
+import type { LearningPathStore } from '@/types/learningPath';
 import { apiFetch, getErrorMessage } from '@/services/api';
 
 // Re-export types for convenience

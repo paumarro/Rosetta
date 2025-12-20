@@ -1,4 +1,4 @@
-import { useCollaborativeStore } from '@/stores/collaborativeStore';
+import { useCollaborativeStore } from '@/store/collaborativeStore';
 import { useMemo } from 'react';
 
 export const useNodeState = (id: string) => {

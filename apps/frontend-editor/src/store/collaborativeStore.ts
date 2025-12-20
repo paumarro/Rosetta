@@ -13,10 +13,8 @@ import type { Awareness } from 'y-protocols/awareness';
 // - /auth/login     → auth-service (OAuth flow)
 // - /login          → FE login page
 
-// TODO: Move types to the types folder later
-// TODO: Move helper functions to different folder later
-
-interface User {
+// Collaborative session user (different from auth User)
+interface CollaborativeUser {
   userId: string;
   userName: string;
   cursor?: { x: number; y: number };
@@ -125,7 +123,7 @@ const createYjsNode = (
   id: string,
   type: string,
   position: { x: number; y: number },
-  currentUser: User | null,
+  currentUser: CollaborativeUser | null,
 ): void => {
   const yNodes = ydoc.getMap<Y.Map<unknown>>('nodes');
   const yNode = new Y.Map<unknown>();
@@ -152,8 +150,8 @@ interface CollaborativeState {
   isConnected: boolean;
 
   //Collaboration State
-  connectedUsers: User[];
-  currentUser: User | null;
+  connectedUsers: CollaborativeUser[];
+  currentUser: CollaborativeUser | null;
   learningPathId: string;
   ydoc: Y.Doc | null;
   yProvider: WebsocketProvider | null;
@@ -270,7 +268,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         // Function to update connected users from awareness
         const updateConnectedUsers = () => {
           const states = awareness.getStates();
-          const users: User[] = [];
+          const users: CollaborativeUser[] = [];
           states.forEach((state) => {
             // Check if state contains required user properties
             if ('userId' in state && 'userName' in state) {

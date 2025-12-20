@@ -1,4 +1,4 @@
-import { useCollaborativeStore } from '@/stores/collaborativeStore';
+import { useCollaborativeStore } from '@/store/collaborativeStore';
 
 export default function Cursors() {
   const { connectedUsers, currentUser, isViewMode, nodes } =

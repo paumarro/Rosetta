@@ -10,6 +10,7 @@ import { Response } from 'express';
 export interface ErrorResponse {
   error: string;
   message?: string;
+  code?: string;
 }
 
 /**
@@ -19,11 +20,15 @@ export function sendError(
   res: Response,
   status: number,
   error: string,
-  message?: string
+  message?: string,
+  code?: string
 ): Response {
   const body: ErrorResponse = { error };
   if (message) {
     body.message = message;
+  }
+  if (code) {
+    body.code = code;
   }
   return res.status(status).json(body);
 }

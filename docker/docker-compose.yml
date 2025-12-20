@@ -27,14 +27,22 @@ services:
     restart: unless-stopped
 
   frontend:
-    build: ../apps/frontend
+    build:
+      context: ..
+      dockerfile: apps/frontend/Dockerfile
+      args:
+        VITE_BE_API_URL: http://localhost
+        VITE_DEV_EDITOR_FE_URL: http://localhost/studio/
+        VITE_AUTH_URL: http://localhost
     expose:
       - "3000"
     networks:
       - rosetta
 
   fe-editor:
-    build: ../apps/frontend-editor
+    build:
+      context: ..
+      dockerfile: apps/frontend-editor/Dockerfile
     expose:
       - "80"
     networks:
@@ -193,22 +201,6 @@ services:
     networks:
       - rosetta
 
-  redis:
-    image: redis:7-alpine
-    container_name: rosetta-redis
-    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --appendonly yes
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - rosetta
-    restart: unless-stopped
 
   postgres:
     image: postgres:15-alpine
@@ -233,4 +225,3 @@ networks:
 volumes:
   mongodb_data:
   postgres_data:
-  redis_data:

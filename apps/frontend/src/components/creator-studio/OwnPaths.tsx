@@ -17,6 +17,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
+import { buildEditorUrl } from '@shared/utils';
 import { useLearningPathStore } from '@/store/learningPathStore';
 import { useUserStore } from '@/store/userStore';
 
@@ -167,7 +168,7 @@ export default function OwnPaths() {
     const path = learningPaths.find((lp) => lp.ID === id);
     if (path && user?.Community) {
       // Include user's community in editor URL
-      window.location.href = `${DEV_EDITOR_FE_URL}editor/${encodeURIComponent(user.Community)}/${encodeURIComponent(path.ID)}`;
+      window.location.href = buildEditorUrl(DEV_EDITOR_FE_URL, user.Community, path.ID);
     }
   };
 

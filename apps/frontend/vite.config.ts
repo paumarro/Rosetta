@@ -14,6 +14,10 @@ export default defineConfig(({ mode }) => {
           find: '@',
           replacement: fileURLToPath(new URL('./src', import.meta.url)),
         },
+        {
+          find: '@shared',
+          replacement: fileURLToPath(new URL('../../shared', import.meta.url)),
+        },
       ],
     },
     server: {

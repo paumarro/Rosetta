@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { useCollaborativeStore } from '@/stores/collaborativeStore';
+import { useCollaborativeStore } from '@/store/collaborativeStore';
 import { Plus, RectangleHorizontal } from 'lucide-react';
 import {
   DropdownMenu,

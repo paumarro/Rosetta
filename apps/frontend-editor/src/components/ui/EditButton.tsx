@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { useUserStore } from '@/stores/userStore';
+import { useUserStore } from '@/store/userStore';
 import { Pen } from 'lucide-react';
 
 interface EditButtonProps {

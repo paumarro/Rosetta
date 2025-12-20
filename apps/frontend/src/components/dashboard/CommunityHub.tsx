@@ -5,14 +5,13 @@ import { useUserStore } from '@/store/userStore';
 import { Button } from '@/components/ui/button';
 import { ChevronDown } from 'lucide-react';
 import type { LearningPath } from '@/types/learningPath';
+import { buildViewUrl, formatDate } from '@shared/utils';
 import DashboardLayout from './DashboardLayout';
 import { OrganizeDropdown } from './OrganizeDropdown';
 import { LearningPathCard } from './LearningPathCard';
 import { usePathOrganizer } from '@/hooks/usePathOrganizer';
 
-const DEV_EDITOR_FE_URL: string =
-  (import.meta.env.VITE_DEV_EDITOR_FE_URL as string) ||
-  'http://localhost:3001/';
+const DEV_EDITOR_FE_URL = import.meta.env.VITE_DEV_EDITOR_FE_URL as string;
 
 export default function CommunityHub() {
   const { communityname } = useParams<{ communityname?: string }>();
@@ -70,7 +69,7 @@ export default function CommunityHub() {
   }, [communityname, fetchCommunityPaths, fetchUserFavorites]);
 
   const handlePathClick = (path: LearningPath) => {
-    const url = `${DEV_EDITOR_FE_URL}view/${encodeURIComponent(communityname || '')}/${encodeURIComponent(path.ID)}`;
+    const url = buildViewUrl(DEV_EDITOR_FE_URL, communityname || '', path.ID);
     window.location.href = url;
   };
 
@@ -96,28 +95,6 @@ export default function CommunityHub() {
       console.error('Error deleting learning path:', error);
       throw error; // Re-throw to let the card component handle the error state
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const day = date.getDate();
-    const monthNames = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    const month = monthNames[date.getMonth()];
-    const year = date.getFullYear();
-    return `${String(day)} ${month} ${String(year)}`;
   };
 
   if (loading) {
