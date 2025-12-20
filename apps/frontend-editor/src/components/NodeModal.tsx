@@ -158,12 +158,13 @@ export function NodeModal() {
       >
         {/* Fixed Header - Title only */}
         <DialogHeader className="flex-shrink-0 pb-4">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-3">
             {isViewMode ? (
               <>
                 <DialogTitle className="text-5xl font-bold">
                   {modalData.data.label}
                 </DialogTitle>
+                <div className="h-px bg-gray-200 w-full mt-2"></div>
                 {isCompleted && (
                   <div className="w-15 h-15 flex items-center gap-1 px-2 py-1 bg-[#ECFDF3] rounded-full text-sm justify-center">
                     <div className="w-10 h-10 bg-[#D1FADF] rounded-full flex items-center justify-center">

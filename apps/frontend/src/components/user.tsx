@@ -8,13 +8,15 @@ import {
 import { Bookmark, LogOut, User as UserIcon } from 'lucide-react';
 import { useUserStore } from '@/store/userStore';
 
+const AUTH_URL = import.meta.env.VITE_AUTH_URL || '';
+
 export function User() {
   const { user, clearUser } = useUserStore();
 
   const handleLogout = () => {
     clearUser();
-    const redirectUrl = encodeURIComponent('/login');
-    window.location.href = `/auth/logout?redirect=${redirectUrl}`;
+    const redirectUrl = encodeURIComponent(window.location.origin + '/login');
+    window.location.href = `${AUTH_URL}/auth/logout?redirect=${redirectUrl}`;
   };
 
   const handleProfile = () => {

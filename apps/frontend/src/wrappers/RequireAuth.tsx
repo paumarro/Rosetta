@@ -1,6 +1,8 @@
 import { useAuth } from '../contexts/AuthContext';
 import { ReactNode, useEffect } from 'react';
 
+const AUTH_URL = import.meta.env.VITE_AUTH_URL || '';
+
 interface RequireAuthProps {
   children: ReactNode;
 }
@@ -10,8 +12,8 @@ const RequireAuth: React.FC<RequireAuthProps> = ({ children }) => {
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      // Redirect directly to EntraID login
-      window.location.href = '/auth/login';
+      // Redirect to auth service login
+      window.location.href = `${AUTH_URL}/auth/login`;
     }
   }, [loading, isAuthenticated]);
 
