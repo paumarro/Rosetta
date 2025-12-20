@@ -1,0 +1,26 @@
+# =============================================================================
+# Nginx Reverse Proxy for Azure Container Apps
+# =============================================================================
+# This Dockerfile creates an nginx container that routes traffic to internal
+# services within the Azure Container Apps environment.
+#
+# Build: docker build -f Dockerfile.azure -t nginx-proxy .
+# =============================================================================
+
+FROM nginx:stable-alpine
+
+# Remove default nginx config
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copy Azure-specific nginx configuration
+COPY nginx.azure.conf /etc/nginx/conf.d/default.conf
+
+# Expose port 80
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost/health || exit 1
+
+# Run nginx in foreground
+CMD ["nginx", "-g", "daemon off;"]
