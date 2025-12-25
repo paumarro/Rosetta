@@ -57,13 +57,7 @@ export default function DiagramEditor({
     updateCursor,
   } = useCollaborativeStore();
 
-  const { user, fetchCurrentUser, isLoading } = useUserStore();
-
-  // Fallback guest user when authentication is not available
-  const [guestUser] = useState({
-    userId: `guest-${Math.random().toString(36).substring(2, 9)}`,
-    userName: `Guest-${Math.random().toString(36).substring(2, 4).toUpperCase()}`,
-  });
+  const { user, isLoading } = useUserStore();
 
   // Track connection state for handle visibility
   const [connectionState, setConnectionState] = useState<ConnectionState>({
@@ -77,62 +71,41 @@ export default function DiagramEditor({
 
   const isViewMode = mode === 'view';
 
-  // Fetch user data on mount (try to get real user)
-  useEffect(() => {
-    void fetchCurrentUser();
-  }, [fetchCurrentUser]);
-
-  // Initialize collaboration with real user OR guest user
+  // Initialize collaboration with authenticated user
   // Wait for initial load attempt to complete before initializing
   useEffect(() => {
-    // Don't initialize until we've at least tried to fetch user (avoid double init)
-    if (isLoading) return;
+    if (isLoading) {
+      return;
+    }
+    if (!user) {
+      return;
+    }
 
-    // Use real user if available, otherwise use guest user
-    const currentUser = user
-      ? {
-          userId: user.EntraID,
-          userName: user.Name,
-        }
-      : guestUser;
+    const currentUser = {
+      userId: user.EntraID,
+      userName: user.Name,
+    };
 
     void initializeCollaboration(pathId, currentUser, isViewMode);
-  }, [pathId, user, guestUser, initializeCollaboration, isViewMode, isLoading]);
+  }, [pathId, user, initializeCollaboration, isViewMode, isLoading]);
 
   useEffect(() => {
-    console.log('[RecentlyViewed] Effect triggered', {
-      pathId,
-      hasAddedAlready: hasAddedToRecentRef.current,
-    });
-
     if (hasAddedToRecentRef.current) {
-      console.log('[RecentlyViewed] Skipping - already added this session');
       return;
     }
     if (!pathId) {
-      console.log('[RecentlyViewed] Skipping - no pathId');
       return;
     }
 
     hasAddedToRecentRef.current = true;
     // pathId from URL params may be URL-encoded
     const decodedPathID = decodeURIComponent(pathId);
-    console.log('[RecentlyViewed] Adding to localStorage:', {
-      raw: pathId,
-      decoded: decodedPathID,
-    });
-
     addToRecentlyViewed(decodedPathID);
-
-    // Verify it was added
-    const stored = localStorage.getItem('rosetta_recently_viewed');
-    console.log('[RecentlyViewed] localStorage after add:', stored);
   }, [pathId]);
 
   // Cleanup when component unmounts
   useEffect(() => {
     return () => {
-      console.log('🧹 Component unmounting - calling cleanup');
       cleanup();
     };
   }, [cleanup]);

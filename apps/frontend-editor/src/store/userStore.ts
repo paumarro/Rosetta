@@ -1,15 +1,12 @@
 import { createUserStore } from '@shared/stores';
 
 /**
- * Frontend-editor user store - configured with redirect on unauthorized
+ * Frontend-editor user store - RequireAuth wrapper handles authentication
  */
 export const useUserStore = createUserStore({
   apiBaseUrl: '',
-  onUnauthorized: () => {
-    window.location.href = '/login';
-  },
-  returnNullOn401: false,
 });
 
 // Re-export types for convenience
-export type { User, UpdateUserData, UserStore } from '@shared/types';
+export type { User, UpdateUserData } from '@shared/types';
+export type { UserStore } from '@shared/stores';

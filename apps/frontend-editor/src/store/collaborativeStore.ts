@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { DiagramNode, DiagramEdge } from '@/types/reactflow';
-import type { User } from '@shared/types';
 import { Connection, NodeChange, EdgeChange } from '@xyflow/react';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
@@ -167,7 +166,7 @@ interface CollaborativeState {
   //Actions - Setup
   initializeCollaboration: (
     learningPathId: string,
-    user: User,
+    user: CollaborativeUser,
     isViewMode?: boolean,
   ) => Promise<void>;
   cleanup: () => void;
@@ -209,7 +208,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     // eslint-disable-next-line @typescript-eslint/require-await
     initializeCollaboration: async (
       learningPathId: string,
-      user: User,
+      user: CollaborativeUser,
       isViewMode = false,
     ) => {
       const state = get();
@@ -602,6 +601,7 @@ export const useCollaborativeStore = create<CollaborativeState>()(
         connectedUsers: [],
         currentUser: null,
         learningPathId: 'default',
+        isInitializing: false,
       });
     },
 
