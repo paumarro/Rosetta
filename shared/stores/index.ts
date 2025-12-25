@@ -1,4 +1,5 @@
 /**
  * Shared stores barrel export
  */
-export * from './userStore';
+export { createUserStore } from './userStore';
+export type { UserStore } from './userStore';
