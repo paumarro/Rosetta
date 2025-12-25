@@ -2,22 +2,26 @@ import { Routes, Route, useParams } from 'react-router-dom';
 import DiagramEditor from './pages/DiagramEditor';
 import Index from './pages/Index';
 import NotFound from './pages/NotFound';
+import { AuthProvider, RequireAuth } from '@shared/auth';
+import { useUserStore } from './store/userStore';
 import './App.css';
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Index />} />
-      <Route
-        path="/editor/:community/:pathId"
-        element={<DiagramEditorWrapper mode="edit" />}
-      />
-      <Route
-        path="/view/:community/:pathId"
-        element={<DiagramEditorWrapper mode="view" />}
-      />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <AuthProvider userStore={useUserStore}>
+      <Routes>
+        <Route path="/" element={<RequireAuth><Index /></RequireAuth>} />
+        <Route
+          path="/editor/:community/:pathId"
+          element={<RequireAuth><DiagramEditorWrapper mode="edit" /></RequireAuth>}
+        />
+        <Route
+          path="/view/:community/:pathId"
+          element={<RequireAuth><DiagramEditorWrapper mode="view" /></RequireAuth>}
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </AuthProvider>
   );
 }
 
