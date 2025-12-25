@@ -15,8 +15,6 @@ export interface UserStore {
 
 interface CreateUserStoreOptions {
   apiBaseUrl?: string;
-  onUnauthorized?: () => void;
-  returnNullOn401?: boolean;
 }
 
 /**
@@ -25,8 +23,6 @@ interface CreateUserStoreOptions {
 export function createUserStore(options: CreateUserStoreOptions = {}) {
   const {
     apiBaseUrl = '',
-    onUnauthorized,
-    returnNullOn401 = true,
   } = options;
 
   return create<UserStore>((set) => ({
@@ -46,21 +42,14 @@ export function createUserStore(options: CreateUserStoreOptions = {}) {
         });
 
         if (!response.ok) {
-          if (response.status === 401) {
-            set({ user: null, isLoading: false, error: null });
-
-            if (onUnauthorized) {
-              onUnauthorized();
-            }
-
-            return null;
-          }
-
           const errorMessage =
             response.status === 404
               ? 'User not found'
-              : 'Failed to fetch user data';
-          set({ error: errorMessage, isLoading: false });
+              : response.status === 401
+                ? 'Not authenticated'
+                : 'Failed to fetch user data';
+
+          set({ user: null, isLoading: false, error: errorMessage });
           return null;
         }
 
@@ -70,11 +59,6 @@ export function createUserStore(options: CreateUserStoreOptions = {}) {
       } catch (error) {
         set({ error: getErrorMessage(error), isLoading: false });
         console.error('Error fetching user:', error);
-
-        if (onUnauthorized && !returnNullOn401) {
-          onUnauthorized();
-        }
-
         return null;
       }
     },
