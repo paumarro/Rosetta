@@ -32,7 +32,7 @@ services:
       dockerfile: apps/frontend/Dockerfile
       args:
         VITE_BE_API_URL: http://localhost
-        VITE_DEV_EDITOR_FE_URL: http://localhost/studio/
+        VITE_DEV_EDITOR_FE_URL: /studio/
         VITE_AUTH_URL: http://localhost
     expose:
       - "3000"
