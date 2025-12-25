@@ -60,7 +60,7 @@ func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, des
 
 	editorURL := os.Getenv("EDITOR_BASE_URL")
 	if editorURL == "" {
-		editorURL = "http://localhost:3001"
+		editorURL = "http://localhost:3001/api"
 	}
 
 	body, _ := json.Marshal(map[string]string{
@@ -68,7 +68,7 @@ func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, des
 		"name":           title,
 	})
 
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/api/diagrams/by-lp", editorURL), bytes.NewReader(body))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/diagrams/by-lp", editorURL), bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	if authToken != "" {
 		req.Header.Set("Authorization", "Bearer "+authToken)
@@ -165,7 +165,7 @@ func (s *LearningPathService) deleteDiagramByLP(_ context.Context, httpClient *h
 	cleanupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	req, _ := http.NewRequestWithContext(cleanupCtx, http.MethodDelete, fmt.Sprintf("%s/api/diagrams/by-lp/%s", baseURL, lpID), nil)
+	req, _ := http.NewRequestWithContext(cleanupCtx, http.MethodDelete, fmt.Sprintf("%s/diagrams/by-lp/%s", baseURL, lpID), nil)
 	if authToken != "" {
 		req.Header.Set("Authorization", "Bearer "+authToken)
 	}
@@ -193,7 +193,7 @@ func (s *LearningPathService) DeleteLearningPath(ctx context.Context, lpID strin
 
 	editorURL := os.Getenv("EDITOR_BASE_URL")
 	if editorURL == "" {
-		editorURL = "http://localhost:3001"
+		editorURL = "http://localhost:3001/api"
 	}
 
 	httpClient := &http.Client{Timeout: 10 * time.Second}
