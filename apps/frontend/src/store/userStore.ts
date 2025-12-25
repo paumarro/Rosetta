@@ -6,8 +6,8 @@ import { BE_API_URL } from '@/services/api';
  */
 export const useUserStore = createUserStore({
   apiBaseUrl: BE_API_URL,
-  returnNullOn401: true,
 });
 
 // Re-export types for convenience
-export type { User, UpdateUserData, UserStore } from '@shared/types';
+export type { User, UpdateUserData } from '@shared/types';
+export type { UserStore } from '@shared/stores';

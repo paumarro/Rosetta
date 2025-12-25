@@ -2,14 +2,14 @@ import './App.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import CommunityHub from '@/components/dashboard/CommunityHub';
 import CreateNewPath from '@/components/creator-studio/CreateNewPath';
-import { AuthProvider } from './contexts/AuthContext';
-import RequireAuth from './wrappers/RequireAuth';
+import { AuthProvider, RequireAuth } from '@shared/auth';
+import { useUserStore } from '@/store/userStore';
 import Dashboard from './components/dashboard/Dashboard';
 
 export default function App() {
   return (
     <div className="min-h-screen bg-background">
-      <AuthProvider>
+      <AuthProvider userStore={useUserStore}>
         <Routes>
           {/* Protected routes - only logged-in users */}
           <Route
