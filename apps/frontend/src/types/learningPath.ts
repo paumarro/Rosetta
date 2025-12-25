@@ -1,6 +1,9 @@
 // Re-export shared types
 export type { Skill, LearningPath } from '@shared/types';
 
+// Import for use in this file
+import type { LearningPath } from '@shared/types';
+
 export interface LearningPathStore {
   learningPaths: LearningPath[];
   favorites: LearningPath[];
