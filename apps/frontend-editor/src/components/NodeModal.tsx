@@ -277,11 +277,12 @@ export function NodeModal() {
               )}
             >
               {/* Clickable Header */}
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => {
                   setIsResourcesExpanded(!isResourcesExpanded);
                 }}
-                className="flex items-center justify-between w-full leading-relaxed text-left text-base mb-4 flex-shrink-0 font-bold hover:text-gray-700 transition-colors"
+                className="flex items-center justify-between w-full leading-relaxed text-left text-base mb-4 flex-shrink-0 font-bold hover:text-gray-700 transition-colors h-auto p-0"
               >
                 <span>Resources</span>
                 {isResourcesExpanded ? (
@@ -289,7 +290,7 @@ export function NodeModal() {
                 ) : (
                   <ChevronDown className="w-5 h-5" />
                 )}
-              </button>
+              </Button>
 
               {/* Resources Content - Scrollable when expanded */}
               {isResourcesExpanded && (
@@ -321,9 +322,9 @@ export function NodeModal() {
                             onClick={() => {
                               handleRemoveResource(index);
                             }}
-                            variant="ghost"
+                            variant="ghost-danger"
                             size="sm"
-                            className="ml-auto text-red-600 hover:text-red-700"
+                            className="ml-auto"
                           >
                             <X className="w-4 h-4" />
                           </Button>
@@ -390,8 +391,7 @@ export function NodeModal() {
             <div className="flex gap-2 w-full justify-end">
               <Button
                 onClick={handleDelete}
-                variant="outline"
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                variant="ghost-danger"
               >
                 Delete
               </Button>

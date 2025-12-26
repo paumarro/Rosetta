@@ -5,6 +5,7 @@ import {
   FILTER_LABELS,
   SORT_LABELS,
 } from '@/types/organize';
+import { Button } from '@/components/ui/button';
 
 interface OrganizeDropdownProps {
   isOpen: boolean;
@@ -53,19 +54,20 @@ export function OrganizeDropdown({
             <div className="text-gray-400 text-sm">Filter by</div>
             <div className="flex flex-col gap-3 items-end">
               {Object.values(FILTER_OPTIONS).map((filterOption) => (
-                <button
+                <Button
                   key={filterOption}
+                  variant="ghost"
                   onClick={() => {
                     handleFilterClick(filterOption);
                   }}
-                  className={`text-sm transition-colors duration-300 ${
+                  className={`text-sm transition-colors duration-300 h-auto py-0 px-0 ${
                     filter === filterOption
                       ? 'text-red-500'
                       : 'hover:text-red-500'
                   }`}
                 >
                   {FILTER_LABELS[filterOption]}
-                </button>
+                </Button>
               ))}
             </div>
           </>
@@ -75,13 +77,14 @@ export function OrganizeDropdown({
             <div className="ml-5 text-gray-400 text-sm">Sort by</div>
             <div className="flex flex-col gap-3 items-end">
               {Object.values(SORT_OPTIONS).map((sortOption) => (
-                <button
+                <Button
                   key={sortOption}
+                  variant="ghost"
                   onClick={() => {
                     handleSortClick(sortOption);
                   }}
                   disabled={isSortDisabled}
-                  className={`text-sm transition-colors duration-300 ${
+                  className={`text-sm transition-colors duration-300 h-auto py-0 px-0 ${
                     isSortDisabled
                       ? 'text-gray-400 cursor-not-allowed'
                       : order === sortOption
@@ -90,7 +93,7 @@ export function OrganizeDropdown({
                   }`}
                 >
                   {SORT_LABELS[sortOption]}
-                </button>
+                </Button>
               ))}
             </div>
           </>

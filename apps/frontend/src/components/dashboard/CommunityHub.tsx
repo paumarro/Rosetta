@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useLearningPathStore } from '@/store/learningPathStore';
 import { useUserStore } from '@/store/userStore';
 import { Button } from '@/components/ui/button';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ArrowLeft } from 'lucide-react';
 import type { LearningPath } from '@/types/learningPath';
 import { buildViewUrl, formatDate } from '@shared/utils';
 import DashboardLayout from './DashboardLayout';
@@ -113,7 +113,15 @@ export default function CommunityHub() {
     <DashboardLayout>
       <div className=" mx-25 mt-14 animate-in fade-in duration-700">
         <div className="flex ">
-          <div>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/')}
+              className="hover:bg-accent"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
             <h1 className="text-5xl font">{communityname}</h1>
           </div>
           <div className="ml-auto flex items-center align-center gap-5">

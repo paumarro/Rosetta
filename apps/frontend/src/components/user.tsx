@@ -5,6 +5,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 import { Bookmark, LogOut, User as UserIcon } from 'lucide-react';
 import { useUserStore } from '@/store/userStore';
 
@@ -41,12 +42,18 @@ export function User() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
-          <Avatar className="h-12 w-12 cursor-pointer">
-            <AvatarImage src={userImage} alt={user.Name} />
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
-        </button>
+        <Button
+          variant="ghost"
+          asChild
+          className="rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary p-0 h-auto"
+        >
+          <div>
+            <Avatar className="h-12 w-12 cursor-pointer">
+              <AvatarImage src={userImage} alt={user.Name} />
+              <AvatarFallback>{initials}</AvatarFallback>
+            </Avatar>
+          </div>
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuItem onClick={handleProfile} className="cursor-pointer">
