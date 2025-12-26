@@ -3,12 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useLearningPathStore } from '@/store/learningPathStore';
 import { useUserStore } from '@/store/userStore';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ArrowLeft } from 'lucide-react';
+import { ChevronDown, ChevronLeft } from 'lucide-react';
 import type { LearningPath } from '@/types/learningPath';
 import { buildViewUrl, formatDate } from '@shared/utils';
-import DashboardLayout from './DashboardLayout';
-import { OrganizeDropdown } from './OrganizeDropdown';
-import { LearningPathCard } from './LearningPathCard';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { OrganizeDropdown } from '@/components/dashboard/OrganizeDropdown';
+import { LearningPathCard } from '@/components/dashboard/LearningPathCard';
 import { usePathOrganizer } from '@/hooks/usePathOrganizer';
 
 const DEV_EDITOR_FE_URL = import.meta.env.VITE_DEV_EDITOR_FE_URL as string;
@@ -117,10 +117,10 @@ export default function CommunityHub() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate('/')}
+              onClick={() => void navigate('/')}
               className="hover:bg-accent"
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ChevronLeft className="h-5 w-5" />
             </Button>
             <h1 className="text-5xl font">{communityname}</h1>
           </div>
