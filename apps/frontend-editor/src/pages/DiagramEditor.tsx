@@ -17,8 +17,8 @@ import AddNodeButton from '@/components/ui/AddNodeButton';
 import AvatarDemo from '@/components/ui/AvatarDemo';
 import EditButton from '@/components/ui/EditButton';
 import Cursors from '@/components/ui/Cursors';
-import TopicNode from '../components/nodes/TopicNode';
-import { NodeModal } from '../components/NodeModal';
+import TopicNode from '../components/diagram/TopicNode';
+import { NodeModal } from '../components/diagram/NodeModal';
 import {
   ConnectionContext,
   ConnectionState,
