@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { useCollaborativeStore } from '@/store/collaborativeStore';
 import { Plus, RectangleHorizontal } from 'lucide-react';
 import {
@@ -6,7 +6,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/components/ui/DropdownMenu';
 import { useState } from 'react';
 
 export default function AddNodeButton() {

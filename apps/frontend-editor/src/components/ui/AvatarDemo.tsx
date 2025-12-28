@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
 import { useCollaborativeStore } from '@/store/collaborativeStore';
 
 export default function AvatarDemo() {
