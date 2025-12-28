@@ -1,11 +1,11 @@
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
+} from '@/components/ui/DropdownMenu';
+import { Button } from '@/components/ui/Button';
 import { Bookmark, LogOut, User as UserIcon } from 'lucide-react';
 import { useUserStore } from '@/store/userStore';
 

@@ -1,12 +1,12 @@
-import { SiteHeader } from '@/components/site-header';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { SiteHeader } from '@/layouts/SiteHeader';
+import { SidebarProvider } from '@/components/ui/Sidebar';
 import { ReactNode } from 'react';
 
-interface DashboardLayoutProps {
+interface AppLayoutProps {
   children: ReactNode;
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="[--header-height:calc(theme(spacing.14))]">
       <SidebarProvider className="flex flex-col">

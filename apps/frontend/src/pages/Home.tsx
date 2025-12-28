@@ -1,4 +1,4 @@
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import AppLayout from '@/layouts/AppLayout';
 import { useUserStore } from '@/store/userStore';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -7,7 +7,7 @@ interface communitiesResponse {
   communities: string[];
 }
 
-export default function Dashboard() {
+export default function Home() {
   const [communities, setCommunities] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
@@ -39,7 +39,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <DashboardLayout>
+    <AppLayout>
       <div className="flex flex-col mt-10 py-5 items-start text-left">
         {/* <p className="text-xl font tracking-tight mb-2">
           Welcome to Rosseta, {firstName}
@@ -63,6 +63,6 @@ export default function Dashboard() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

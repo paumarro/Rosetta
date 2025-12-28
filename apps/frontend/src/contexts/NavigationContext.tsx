@@ -1,5 +1,5 @@
 import { useContext, createContext } from 'react';
-import { NavigationState } from '@/components/nav-provider';
+import { NavigationState } from '@/layouts/NavProvider';
 
 export type NavigationContextType = {
   navigation: NavigationState;
