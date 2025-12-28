@@ -83,5 +83,7 @@ const diagramSchema = new mongoose.Schema<IDiagram>(
   },
 );
 
-// Create and export the model
-export const DiagramModel = mongoose.model<IDiagram>('Diagram', diagramSchema);
+// Create and export the model (check if already exists for test compatibility)
+export const DiagramModel =
+  mongoose.models.Diagram ||
+  mongoose.model<IDiagram>('Diagram', diagramSchema);
