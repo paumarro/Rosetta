@@ -15,12 +15,37 @@ import (
 	"gorm.io/gorm"
 )
 
-type LearningPathService struct {
-	DB *gorm.DB
+// HTTPClient interface for dependency injection (enables mocking in tests)
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
 }
 
+type LearningPathService struct {
+	DB         *gorm.DB
+	HTTPClient HTTPClient
+	EditorURL  string
+}
+
+// NewLearningPathService creates a service with default HTTP client
 func NewLearningPathService(db *gorm.DB) *LearningPathService {
-	return &LearningPathService{DB: db}
+	editorURL := os.Getenv("EDITOR_BASE_URL")
+	if editorURL == "" {
+		editorURL = "http://localhost:3001/api"
+	}
+	return &LearningPathService{
+		DB:         db,
+		HTTPClient: &http.Client{Timeout: 10 * time.Second},
+		EditorURL:  editorURL,
+	}
+}
+
+// NewLearningPathServiceWithClient creates a service with custom HTTP client (for testing)
+func NewLearningPathServiceWithClient(db *gorm.DB, client HTTPClient, editorURL string) *LearningPathService {
+	return &LearningPathService{
+		DB:         db,
+		HTTPClient: client,
+		EditorURL:  editorURL,
+	}
 }
 
 // populateSkillsList extracts skills from the join table into SkillsList for a single path
@@ -58,15 +83,8 @@ func (s *LearningPathService) GetLearningPaths() ([]model.LearningPath, error) {
 func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, description string, isPublic bool, thumbnail string, skillNames []string, authToken string, community string) (*model.LearningPath, error) {
 	lpID := uuid.New()
 
-	editorURL := os.Getenv("EDITOR_BASE_URL")
-	if editorURL == "" {
-		editorURL = "http://localhost:3001/api"
-	}
-
-	httpClient := &http.Client{Timeout: 10 * time.Second}
-
 	// SAGA STEP 1: Create diagram in MongoDB (idempotent - safe to retry)
-	dr, err := s.createDiagramInMongo(ctx, httpClient, editorURL, lpID.String(), title, authToken)
+	dr, err := s.createDiagramInMongo(ctx, s.HTTPClient, s.EditorURL, lpID.String(), title, authToken)
 	if err != nil {
 		return nil, fmt.Errorf("saga step 1 failed (create diagram): %w", err)
 	}
@@ -75,7 +93,7 @@ func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, des
 	lp, err := s.createLPWithSkillsInTransaction(ctx, lpID, title, description, isPublic, thumbnail, dr.ID, community, skillNames)
 	if err != nil {
 		// COMPENSATION: Delete the MongoDB diagram we just created
-		if compErr := s.deleteDiagramByLP(ctx, httpClient, editorURL, lpID.String(), authToken); compErr != nil {
+		if compErr := s.deleteDiagramByLP(ctx, s.HTTPClient, s.EditorURL, lpID.String(), authToken); compErr != nil {
 			// Log compensation failure for manual intervention
 			fmt.Printf("SAGA COMPENSATION FAILED: diagram %s may be orphaned in MongoDB: %v\n", lpID.String(), compErr)
 		}
@@ -87,7 +105,7 @@ func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, des
 }
 
 // createDiagramInMongo handles the MongoDB diagram creation with proper error handling
-func (s *LearningPathService) createDiagramInMongo(ctx context.Context, httpClient *http.Client, editorURL, lpID, title, authToken string) (*diagramResponse, error) {
+func (s *LearningPathService) createDiagramInMongo(ctx context.Context, httpClient HTTPClient, editorURL, lpID, title, authToken string) (*diagramResponse, error) {
 	body, _ := json.Marshal(map[string]string{
 		"learningPathId": lpID,
 		"name":           title,
@@ -187,7 +205,7 @@ func (s *LearningPathService) createLPWithSkillsInTransaction(ctx context.Contex
 	return lp, nil
 }
 
-func (s *LearningPathService) deleteDiagramByLP(_ context.Context, httpClient *http.Client, baseURL, lpID, authToken string) error {
+func (s *LearningPathService) deleteDiagramByLP(_ context.Context, httpClient HTTPClient, baseURL, lpID, authToken string) error {
 	// For compensation/cleanup operations, use a background context with a short timeout
 	// to ensure cleanup completes even if the original request context is canceled
 	cleanupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -227,13 +245,6 @@ func (s *LearningPathService) DeleteLearningPath(ctx context.Context, lpID strin
 		return fmt.Errorf("failed to find learning path: %w", err)
 	}
 
-	editorURL := os.Getenv("EDITOR_BASE_URL")
-	if editorURL == "" {
-		editorURL = "http://localhost:3001/api"
-	}
-
-	httpClient := &http.Client{Timeout: 10 * time.Second}
-
 	// SAGA STEP 1: Soft-delete LP in PostgreSQL (recoverable)
 	// This uses GORM's soft-delete which sets DeletedAt timestamp
 	if err := s.DB.WithContext(ctx).Delete(&lp).Error; err != nil {
@@ -241,7 +252,7 @@ func (s *LearningPathService) DeleteLearningPath(ctx context.Context, lpID strin
 	}
 
 	// SAGA STEP 2: Delete diagram from MongoDB
-	if err := s.deleteDiagramByLP(ctx, httpClient, editorURL, lp.ID.String(), authToken); err != nil {
+	if err := s.deleteDiagramByLP(ctx, s.HTTPClient, s.EditorURL, lp.ID.String(), authToken); err != nil {
 		// COMPENSATION: Restore the soft-deleted LP
 		if restoreErr := s.restoreSoftDeletedLP(ctx, lp.ID); restoreErr != nil {
 			// Critical: Both operations failed, LP is soft-deleted but diagram still exists
