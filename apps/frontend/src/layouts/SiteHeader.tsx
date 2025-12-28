@@ -15,7 +15,7 @@
 // import { Link } from 'react-router-dom';
 import RosettaLogo from '@/assets/rosetta-logo.png';
 import CarbyteLogo from '@/assets/carbyte-logo.png';
-import { User } from './user';
+import { User } from './User';
 
 export function SiteHeader() {
   const handleLogoClick = (e: React.MouseEvent<HTMLImageElement>) => {

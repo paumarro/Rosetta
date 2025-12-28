@@ -1,20 +1,20 @@
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import AppLayout from '@/layouts/AppLayout';
 
 import { cn, buildEditorUrl } from '@shared/utils';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+} from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Textarea } from '@/components/ui/Textarea';
 import { ChevronRight } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { SearchSkillForm } from '@/components/welcome/search-skill-form';
+import { Badge } from '@/components/ui/Badge';
+import { SearchSkillForm } from '@/components/learning-paths/SearchSkillForm';
 import { useState, FormEvent } from 'react';
 import { X } from 'lucide-react';
 import { useParams } from 'react-router-dom';
@@ -22,7 +22,7 @@ import { useParams } from 'react-router-dom';
 const BE_API_URL = import.meta.env.VITE_BE_API_URL as string;
 const DEV_EDITOR_FE_URL = import.meta.env.VITE_DEV_EDITOR_FE_URL as string;
 
-export default function CreateNewPath({
+export default function CreateLearningPath({
   className,
   ...props
 }: React.ComponentProps<'div'>) {
@@ -124,7 +124,7 @@ export default function CreateNewPath({
   };
 
   return (
-    <DashboardLayout>
+    <AppLayout>
       <div className="flex h-full flex-col items-center justify-center ">
         <div className="">
           <div className={cn('flex flex-col ', className)} {...props}>
@@ -262,6 +262,6 @@ export default function CreateNewPath({
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

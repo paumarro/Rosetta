@@ -1,5 +1,5 @@
-import { Label } from '@/components/ui/label';
-import { SidebarInput } from '@/components/ui/sidebar';
+import { Label } from '@/components/ui/Label';
+import { SidebarInput } from '@/components/ui/Sidebar';
 import { cn } from '@shared/utils';
 
 interface SearchFormProps

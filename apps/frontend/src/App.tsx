@@ -1,10 +1,10 @@
 import './App.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import CommunityHub from '@/components/dashboard/CommunityHub';
-import CreateNewPath from '@/components/creator-studio/CreateNewPath';
+import CommunityHub from '@/pages/CommunityHub';
+import CreateLearningPath from '@/pages/CreateLearningPath';
 import { AuthProvider, RequireAuth } from '@shared/auth';
 import { useUserStore } from '@/store/userStore';
-import Dashboard from './components/dashboard/Dashboard';
+import Home from '@/pages/Home';
 
 export default function App() {
   return (
@@ -16,7 +16,7 @@ export default function App() {
             path="/"
             element={
               <RequireAuth>
-                <Dashboard />
+                <Home />
               </RequireAuth>
             }
           />
@@ -35,7 +35,7 @@ export default function App() {
               path=":communityname/create-path"
               element={
                 <RequireAuth>
-                  <CreateNewPath />
+                  <CreateLearningPath />
                 </RequireAuth>
               }
             />

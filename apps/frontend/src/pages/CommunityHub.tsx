@@ -2,13 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLearningPathStore } from '@/store/learningPathStore';
 import { useUserStore } from '@/store/userStore';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { ChevronDown, ChevronLeft } from 'lucide-react';
 import type { LearningPath } from '@/types/learningPath';
 import { buildViewUrl, formatDate } from '@shared/utils';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { OrganizeDropdown } from '@/components/dashboard/OrganizeDropdown';
-import { LearningPathCard } from '@/components/dashboard/LearningPathCard';
+import AppLayout from '@/layouts/AppLayout';
+import { OrganizeDropdown } from '@/components/learning-paths/OrganizeDropdown';
+import { LearningPathCard } from '@/components/learning-paths/LearningPathCard';
 import { usePathOrganizer } from '@/hooks/usePathOrganizer';
 
 const DEV_EDITOR_FE_URL = import.meta.env.VITE_DEV_EDITOR_FE_URL as string;
@@ -110,7 +110,7 @@ export default function CommunityHub() {
   const canCreatePath = isUserCommunity || isAdmin;
 
   return (
-    <DashboardLayout>
+    <AppLayout>
       <div className=" mx-25 mt-14 animate-in fade-in duration-700">
         <div className="flex ">
           <div className="flex items-center gap-4">
@@ -189,6 +189,6 @@ export default function CommunityHub() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

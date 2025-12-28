@@ -5,7 +5,7 @@ import {
   FILTER_LABELS,
   SORT_LABELS,
 } from '@/types/organize';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 
 interface OrganizeDropdownProps {
   isOpen: boolean;
