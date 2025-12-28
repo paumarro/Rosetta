@@ -1,6 +1,3 @@
-import express from 'express';
-import diagramRoutes from './routes/diagramRoutes.js';
-import healthRoutes from './routes/healthRoutes.js';
 import { createServer, IncomingMessage } from 'http';
 import { connectDB } from './config/db.js';
 import { WebSocketServer } from 'ws';
@@ -11,18 +8,14 @@ import {
   authenticateUpgradeRequest,
   canAccessDocument,
 } from './middleware/wsAuth.js';
+import { createApp } from './app.js';
 
 const { MongodbPersistence } = yMongo as unknown as {
   MongodbPersistence: new (url: string) => unknown;
 };
 
-const app = express();
+const app = createApp();
 const server = createServer(app);
-
-app.use(express.json());
-
-app.use('/api', diagramRoutes);
-app.use('/', healthRoutes);
 
 // Yjs websocket server with MongoDB persistence
 // Use noServer: true to manually handle upgrade and authenticate BEFORE accepting connection
