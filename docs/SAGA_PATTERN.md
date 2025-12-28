@@ -1,6 +1,6 @@
 # Saga Pattern: Distributed Transactions for Learning Paths
 
-> **Last Updated**: December 2025  
+> **Last Updated**: December 2025
 > **Services Involved**: `backend` (Go/PostgreSQL) ↔ `backend-editor` (Node.js/MongoDB)
 
 ## Overview
@@ -12,7 +12,39 @@ The Rosetta platform uses a **Saga Pattern** to maintain data consistency when c
 | Learning Path (LP) metadata, skills, users | PostgreSQL | `backend` |
 | Diagram content (nodes, edges, Yjs state) | MongoDB | `backend-editor` |
 
-Since distributed transactions (2PC) are impractical across heterogeneous databases, we use **choreography-based sagas** with **compensating transactions** to achieve eventual consistency.
+Since distributed transactions (2PC) are impractical across heterogeneous databases, we use **sagas** with **compensating transactions** to achieve eventual consistency.
+
+---
+
+## Implementation Variant
+
+> ⚠️ **Note on Pattern Classification**
+>
+> This implementation is a **synchronous, orchestration-based saga** rather than the event-driven choreography pattern commonly associated with microservices. Key characteristics:
+
+| Aspect | Classic Event-Driven Saga | Our Implementation |
+|--------|--------------------------|-------------------|
+| **Communication** | Asynchronous message queues | Synchronous HTTP REST calls |
+| **Coordinator** | Choreography (no central) or Orchestrator | Orchestrator (`LearningPathService`) |
+| **Retry mechanism** | Message broker handles retries | Idempotent endpoints + manual retry |
+| **Failure detection** | Event timeouts | HTTP response codes |
+| **Compensation trigger** | Compensating events | Direct function calls |
+
+### Why This Approach?
+
+1. **Simplicity**: Two-service topology doesn't require event bus complexity
+2. **Debuggability**: Synchronous calls are easier to trace and debug
+3. **Latency**: No message queue overhead for simple operations
+4. **Idempotency**: Built-in via MongoDB unique indexes and HTTP status codes
+
+### Trade-offs
+
+| Advantage | Disadvantage |
+|-----------|--------------|
+| Simple to implement and debug | Tighter coupling between services |
+| No message infrastructure needed | Blocking calls during saga execution |
+| Immediate consistency feedback | Less resilient to network partitions |
+| Easy local development | Compensation must complete synchronously |
 
 ---
 
@@ -405,13 +437,6 @@ grep "SAGA COMPENSATION FAILED" backend.log
 - [ ] Delete LP → verify both databases cleaned up
 - [ ] Kill MongoDB mid-create → verify no orphaned LP
 - [ ] Kill MongoDB mid-delete → verify LP is restored
-
-### Chaos Testing
-
-- [ ] Network partition between backend and backend-editor
-- [ ] MongoDB crashes during saga execution
-- [ ] PostgreSQL deadlock during transaction
-- [ ] Request timeout during compensation
 
 ---
 
