@@ -4,11 +4,11 @@ import (
 	"log"
 	"os"
 
+	"dev.azure.com/carbyte/Carbyte-Academy/_git/rosetta-monorepo/services/auth-service/internal/controller"
+	"dev.azure.com/carbyte/Carbyte-Academy/_git/rosetta-monorepo/services/auth-service/internal/service"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"github.com/rosetta/auth-service/internal/controller"
-	"github.com/rosetta/auth-service/internal/service"
 )
 
 func main() {
