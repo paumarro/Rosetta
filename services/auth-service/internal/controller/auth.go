@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rosetta/auth-service/internal/service"
-	"github.com/rosetta/auth-service/internal/util"
+	"dev.azure.com/carbyte/Carbyte-Academy/_git/rosetta-monorepo/services/auth-service/internal/service"
+	"dev.azure.com/carbyte/Carbyte-Academy/_git/rosetta-monorepo/services/auth-service/internal/util"
 )
 
 type AuthController struct {
