@@ -9,7 +9,7 @@ import {
   getNodeHeightClass,
   NODE_DIMENSIONS,
 } from '@/utils/nodeConnection';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
 // Handle configuration type
 type HandleConfig = {
@@ -64,6 +64,33 @@ const TopicNode = ({
   const { connectedUsers, isViewMode, nodes, edges } = useCollaborativeStore();
   const { isBeingEdited, editedBy } = useNodeState(id);
 
+  // Track completion state from localStorage
+  const [isCompleted, setIsCompleted] = useState(() => {
+    return localStorage.getItem(`node-${id}-completed`) === 'true';
+  });
+
+  // Listen for completion changes from NodeModal
+  useEffect(() => {
+    const handleCompletionChange = (
+      event: CustomEvent<{ nodeId: string; isCompleted: boolean }>,
+    ) => {
+      if (event.detail.nodeId === id) {
+        setIsCompleted(event.detail.isCompleted);
+      }
+    };
+
+    window.addEventListener(
+      'nodeCompletionChanged',
+      handleCompletionChange as EventListener,
+    );
+    return () => {
+      window.removeEventListener(
+        'nodeCompletionChanged',
+        handleCompletionChange as EventListener,
+      );
+    };
+  }, [id]);
+
   // Find the user who is editing this node
   const editingUser = connectedUsers.find((user) => user.userName === editedBy);
 
@@ -86,7 +113,7 @@ const TopicNode = ({
 
     //Check if node is being edited - override all other styles
     // In view mode, don't show the white editing effect
-    if (isBeingEdited && !isViewMode) {
+    if ((isBeingEdited && !isViewMode) || (isCompleted && isViewMode)) {
       return {
         base: 'bg-white',
         border: 'border-black border-[2.5px] rounded-[5px]',

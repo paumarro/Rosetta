@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@shared/utils';
-import { Check } from 'lucide-react';
 
 type ModalData = Pick<DiagramNode, 'id' | 'data'>;
 
@@ -86,6 +85,13 @@ export function NodeModal() {
         String(newCompletedState),
       );
       setIsCompleted(newCompletedState);
+
+      // Dispatch event so TopicNode can update its display
+      window.dispatchEvent(
+        new CustomEvent('nodeCompletionChanged', {
+          detail: { nodeId: modalData.id, isCompleted: newCompletedState },
+        }),
+      );
     }
   };
 
@@ -165,17 +171,6 @@ export function NodeModal() {
                   {modalData.data.label}
                 </DialogTitle>
                 <div className="h-px bg-gray-200 w-full mt-2"></div>
-                {isCompleted && (
-                  <div className="w-15 h-15 flex items-center gap-1 px-2 py-1 bg-[#ECFDF3] rounded-full text-sm justify-center">
-                    <div className="w-10 h-10 bg-[#D1FADF] rounded-full flex items-center justify-center">
-                      <Check
-                        className="text-[#039855]"
-                        width={20}
-                        height={20}
-                      />
-                    </div>
-                  </div>
-                )}
               </>
             ) : (
               <Input
@@ -231,7 +226,6 @@ export function NodeModal() {
                             href={resource.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="hover:underline hover:font-bold flex-1"
                           >
                             {resource.title}
                           </a>
@@ -389,10 +383,7 @@ export function NodeModal() {
           ) : (
             // Edit mode: Always show editing controls
             <div className="flex gap-2 w-full justify-end">
-              <Button
-                onClick={handleDelete}
-                variant="ghost-danger"
-              >
+              <Button onClick={handleDelete} variant="ghost-danger">
                 Delete
               </Button>
               <Button onClick={handleCancelEdit} variant="outline">
