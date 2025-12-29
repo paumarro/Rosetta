@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/model"
+	"dev.azure.com/carbyte/Carbyte-Academy/_git/rosetta-monorepo/services/backend/internal/model"
 	"github.com/gin-gonic/gin"
 )
 

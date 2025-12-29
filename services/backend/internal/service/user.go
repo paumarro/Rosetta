@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/model"
+	"dev.azure.com/carbyte/Carbyte-Academy/_git/rosetta-monorepo/services/backend/internal/model"
 	"gorm.io/gorm"
 )
 
