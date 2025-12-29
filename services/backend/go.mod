@@ -1,4 +1,4 @@
-module dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend
+module dev.azure.com/carbyte/Carbyte-Academy/_git/rosetta-monorepo/services/backend
 
 go 1.24.2
 

@@ -3,7 +3,7 @@ package controller
 import (
 	"net/http"
 
-	"dev.azure.com/carbyte/Carbyte-Academy/_git/Carbyte-Academy-Backend/internal/service"
+	"dev.azure.com/carbyte/Carbyte-Academy/_git/rosetta-monorepo/services/backend/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
