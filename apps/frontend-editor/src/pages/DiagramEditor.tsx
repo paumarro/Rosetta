@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useCollaborativeStore } from '@/store/collaborativeStore';
+import { useCollaborativeStore } from '@/store/collaborationStore';
 import { useUserStore } from '@/store/userStore';
 import {
   ReactFlow,
@@ -17,7 +17,7 @@ import AddNodeButton from '@/components/ui/AddNodeButton';
 import AvatarDemo from '@/components/ui/AvatarDemo';
 import EditButton from '@/components/ui/EditButton';
 import Cursors from '@/components/ui/Cursors';
-import TopicNode from '../components/diagram/TopicNode';
+import TopicNode from '../components/diagram/CustomNode';
 import { NodeModal } from '../components/diagram/NodeModal';
 import {
   ConnectionContext,

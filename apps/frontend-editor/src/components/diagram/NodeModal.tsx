@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
-import { useCollaborativeStore } from '@/store/collaborativeStore';
-import { DiagramNode } from '@/types/reactflow';
+import { useCollaborativeStore } from '@/store/collaborationStore';
 import {
   Dialog,
   DialogContent,
@@ -13,8 +12,7 @@ import {
 } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@shared/utils';
-
-type ModalData = Pick<DiagramNode, 'id' | 'data'>;
+import { getNodeCompletion, setNodeCompletion } from '@/utils/storage';
 
 interface Resource {
   type: 'article' | 'video';
@@ -23,106 +21,87 @@ interface Resource {
 }
 
 export function NodeModal() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [modalData, setModalData] = useState<ModalData | null>(null);
+  // Get modal state from store
+  const {
+    modalNodeId,
+    closeNodeModal,
+    nodes,
+    deleteNode,
+    updateNodeData,
+    isViewMode,
+    learningPathId,
+  } = useCollaborativeStore();
+
+  // Local UI state
   const [isCompleted, setIsCompleted] = useState(false);
   const [isResourcesExpanded, setIsResourcesExpanded] = useState(false);
 
-  // Form state for editing
+  // Form state for editing (local, not synced until save)
   const [editLabel, setEditLabel] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editResources, setEditResources] = useState<Resource[]>([]);
 
-  const { deleteNode, setNodeBeingEdited, updateNodeData, isViewMode } =
-    useCollaborativeStore();
+  // Derive modal data from store
+  const modalNode = useMemo(() => {
+    if (!modalNodeId) return null;
+    return nodes.find((n) => n.id === modalNodeId) || null;
+  }, [modalNodeId, nodes]);
 
+  const isOpen = modalNodeId !== null && modalNode !== null;
+
+  // Initialize form state when modal opens
   useEffect(() => {
-    const handleOpenModal = (event: CustomEvent<ModalData>) => {
-      // console.log('📨 Modal received event:', event.detail);
-      setModalData({
-        id: event.detail.id,
-        data: event.detail.data,
-      });
+    if (modalNode) {
+      setEditLabel(modalNode.data.label || '');
+      setEditDescription(modalNode.data.description || '');
+      setEditResources(modalNode.data.resources || []);
+      setIsResourcesExpanded(false);
 
-      // Initialize edit form with current data
-      setEditLabel(event.detail.data.label || '');
-      setEditDescription(event.detail.data.description || '');
-      setEditResources(event.detail.data.resources || []);
-
-      setIsOpen(true);
-      setNodeBeingEdited(event.detail.id, true);
-
-      const completed =
-        localStorage.getItem(`node-${event.detail.id}-completed`) === 'true';
-      setIsCompleted(completed);
-    };
-
-    window.addEventListener('openNodeModal', handleOpenModal as EventListener);
-    return () => {
-      window.removeEventListener(
-        'openNodeModal',
-        handleOpenModal as EventListener,
-      );
-    };
-  }, [setNodeBeingEdited]);
+      // Load completion state
+      setIsCompleted(getNodeCompletion(learningPathId, modalNode.id));
+    }
+  }, [modalNode, learningPathId]);
 
   const handleOpenChange = (open: boolean) => {
-    if (!open && modalData) {
-      // Clear editing state when modal closes
-      setNodeBeingEdited(modalData.id, false);
-    }
-    setIsOpen(open);
     if (!open) {
-      setModalData(null);
+      closeNodeModal();
     }
   };
 
   const handleToggleComplete = () => {
-    if (modalData) {
+    if (modalNode) {
       const newCompletedState = !isCompleted;
-      localStorage.setItem(
-        `node-${modalData.id}-completed`,
-        String(newCompletedState),
-      );
+      setNodeCompletion(learningPathId, modalNode.id, newCompletedState);
       setIsCompleted(newCompletedState);
-
-      // Dispatch event so TopicNode can update its display
-      window.dispatchEvent(
-        new CustomEvent('nodeCompletionChanged', {
-          detail: { nodeId: modalData.id, isCompleted: newCompletedState },
-        }),
-      );
     }
   };
 
   const handleDelete = () => {
-    if (!modalData) return;
+    if (!modalNode) return;
     const label =
-      typeof modalData.data.label === 'string'
-        ? modalData.data.label
+      typeof modalNode.data.label === 'string'
+        ? modalNode.data.label
         : 'this node';
     if (window.confirm(`Are you sure you want to delete "${label}"?`)) {
-      deleteNode(modalData.id);
-      handleOpenChange(false);
+      deleteNode(modalNode.id);
+      closeNodeModal();
     }
   };
 
   const handleCancelEdit = () => {
-    // Close modal without saving
-    handleOpenChange(false);
+    closeNodeModal();
   };
 
   const handleSaveEdit = () => {
-    if (modalData) {
+    if (modalNode) {
       const updatedData = {
-        ...modalData.data,
+        ...modalNode.data,
         label: editLabel,
         description: editDescription,
         resources: editResources,
       };
-      updateNodeData(modalData.id, updatedData);
-      setModalData({ ...modalData, data: updatedData });
-      handleOpenChange(false);
+      updateNodeData(modalNode.id, updatedData);
+      closeNodeModal();
     }
   };
 
@@ -147,7 +126,7 @@ export function NodeModal() {
     setEditResources(updated);
   };
 
-  if (!isOpen || !modalData) return null;
+  if (!isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -168,7 +147,7 @@ export function NodeModal() {
             {isViewMode ? (
               <>
                 <DialogTitle className="text-5xl font-bold">
-                  {modalData.data.label}
+                  {modalNode.data.label}
                 </DialogTitle>
                 <div className="h-px bg-gray-200 w-full mt-2"></div>
               </>
@@ -191,29 +170,29 @@ export function NodeModal() {
           // View Mode: Sequential content with scrolling
           <div className="flex-1 overflow-y-auto min-h-0 -mx-1 px-1">
             {/* Description */}
-            {modalData.data.description && (
+            {modalNode.data.description && (
               <DialogDescription className="leading-relaxed rounded-none text-left text-base pb-4 text-black">
-                {modalData.data.description}
+                {modalNode.data.description}
                 <br />
               </DialogDescription>
             )}
 
             {/* Resources */}
-            {Array.isArray(modalData.data.resources) &&
-              modalData.data.resources.length > 0 && (
+            {Array.isArray(modalNode.data.resources) &&
+              modalNode.data.resources.length > 0 && (
                 <>
                   <h3 className="leading-relaxed text-left text-base mb-4 mt-4 font-bold">
                     Resources
                   </h3>
                   <div className="space-y-1">
-                    {modalData.data.resources.map(
+                    {modalNode.data.resources.map(
                       (resource: Resource, index: number) => (
                         <div
                           key={index}
                           className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50"
                         >
                           <span
-                            className={`px-2 py-1 rounded text-xs font-medium 
+                            className={`px-2 py-1 rounded text-xs font-medium
                         ${
                           resource.type === 'article'
                             ? 'bg-[oklch(0.55_0.32_295_/_0.16)]  text-[#8830B7]'

@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/Button';
-import { useCollaborativeStore } from '@/store/collaborativeStore';
+import { useCollaborativeStore } from '@/store/collaborationStore';
 import { Plus, RectangleHorizontal } from 'lucide-react';
 import {
   DropdownMenu,
@@ -43,7 +43,7 @@ export default function AddNodeButton() {
           className="flex items-center gap-2 cursor-pointer text-[12px] text-white hover:!text-black [&>svg]:!text-white hover:[&>svg]:!text-black pl-[10px]"
         >
           <RectangleHorizontal className="size-5" fill="currentColor" />
-          <span>Subject</span>
+          <span>Topic</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => {
@@ -52,7 +52,7 @@ export default function AddNodeButton() {
           className="flex items-center gap-2 cursor-pointer text-[12px] text-white hover:!text-black [&>svg]:!text-white hover:[&>svg]:!text-black pl-[10px]"
         >
           <RectangleHorizontal className="size-5" />
-          <span>Section</span>
+          <span>Subtopic</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

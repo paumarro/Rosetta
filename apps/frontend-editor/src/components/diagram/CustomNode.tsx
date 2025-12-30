@@ -1,14 +1,18 @@
 import { Handle, Position } from '@xyflow/react';
 import { TopicNodeProps } from '@/types/reactflow';
-import { useNodeState } from '@/hooks/useNodeState';
-import { useCollaborativeStore } from '@/store/collaborativeStore';
+import {
+  useCollaborativeStore,
+  useNodeState,
+} from '@/store/collaborationStore';
 import { Avatar, AvatarFallback } from '@/components/ui/Avatar';
 import {
   useHandleVisibility,
   getNodeWidthClass,
   getNodeHeightClass,
+  getNodeCenter,
   NODE_DIMENSIONS,
 } from '@/utils/nodeConnection';
+import { getNodeCompletion } from '@/utils/storage';
 import { useMemo, useState, useEffect } from 'react';
 
 // Handle configuration type
@@ -61,35 +65,26 @@ const TopicNode = ({
   type,
   ...nodeProps
 }: TopicNodeProps) => {
-  const { connectedUsers, isViewMode, nodes, edges } = useCollaborativeStore();
+  const {
+    connectedUsers,
+    isViewMode,
+    nodes,
+    edges,
+    openNodeModal,
+    modalNodeId,
+    learningPathId,
+  } = useCollaborativeStore();
   const { isBeingEdited, editedBy } = useNodeState(id);
 
-  // Track completion state from localStorage
+  // Track completion state (scoped to diagram + node)
   const [isCompleted, setIsCompleted] = useState(() => {
-    return localStorage.getItem(`node-${id}-completed`) === 'true';
+    return getNodeCompletion(learningPathId, id);
   });
 
-  // Listen for completion changes from NodeModal
+  // Re-read completion state when modal closes (user may have toggled completion)
   useEffect(() => {
-    const handleCompletionChange = (
-      event: CustomEvent<{ nodeId: string; isCompleted: boolean }>,
-    ) => {
-      if (event.detail.nodeId === id) {
-        setIsCompleted(event.detail.isCompleted);
-      }
-    };
-
-    window.addEventListener(
-      'nodeCompletionChanged',
-      handleCompletionChange as EventListener,
-    );
-    return () => {
-      window.removeEventListener(
-        'nodeCompletionChanged',
-        handleCompletionChange as EventListener,
-      );
-    };
-  }, [id]);
+    setIsCompleted(getNodeCompletion(learningPathId, id));
+  }, [modalNodeId, learningPathId, id]);
 
   // Find the user who is editing this node
   const editingUser = connectedUsers.find((user) => user.userName === editedBy);
@@ -116,11 +111,11 @@ const TopicNode = ({
     if ((isBeingEdited && !isViewMode) || (isCompleted && isViewMode)) {
       return {
         base: 'bg-white',
-        border: 'border-black border-[2.5px] rounded-[5px]',
+        border: 'border-gray border-[1px] rounded-[5px]',
         hover: 'hover:bg-white',
         height: heightClass,
         text: {
-          color: 'text-black',
+          color: '!text-gray-300',
           size: 'text-sm',
         },
       };
@@ -156,17 +151,13 @@ const TopicNode = ({
   const widthClass = getNodeWidthClass(data.label);
 
   const handleNodeClick = () => {
-    const event = new CustomEvent('openNodeModal', {
-      detail: { id, data },
-    });
-    // console.log('📡 Dispatching event:', event.detail);
-    window.dispatchEvent(event);
+    openNodeModal(id);
   };
 
   // Split label into two lines if length > LABEL_THRESHOLD
   const splitLabelForDisplay = () => {
     const label = data.label;
-    const maxLength = 30;
+    const maxLength = NODE_DIMENSIONS.LABEL_MAX_LENGTH;
     const threshold = NODE_DIMENSIONS.LABEL_THRESHOLD;
 
     if (label.length <= threshold) {
@@ -214,44 +205,6 @@ const TopicNode = ({
 
   // Determine which handles to render based on node type and nearest topic node
   const activeHandles = useMemo(() => {
-    // Helper to calculate node dimensions using centralized constants
-    const getLocalNodeDimensions = (label: string, nodeType: string) => {
-      const labelLength = label.length || 0;
-
-      // Use 75px height for labels > LABEL_THRESHOLD, otherwise type-specific base height
-      const baseHeight =
-        nodeType === 'subtopic'
-          ? NODE_DIMENSIONS.BASE_HEIGHT.SUBTOPIC
-          : NODE_DIMENSIONS.BASE_HEIGHT.TOPIC;
-      const height =
-        labelLength > NODE_DIMENSIONS.LABEL_THRESHOLD
-          ? NODE_DIMENSIONS.TWO_LINE_HEIGHT
-          : baseHeight;
-
-      let width: number;
-      if (labelLength <= NODE_DIMENSIONS.WIDTH_BREAKPOINTS.SMALL) {
-        width = NODE_DIMENSIONS.WIDTH_VALUES.SMALL;
-      } else if (labelLength <= NODE_DIMENSIONS.WIDTH_BREAKPOINTS.MEDIUM) {
-        width = NODE_DIMENSIONS.WIDTH_VALUES.MEDIUM;
-      } else {
-        width = NODE_DIMENSIONS.WIDTH_VALUES.LARGE;
-      }
-      return { width, height };
-    };
-
-    // Helper to calculate node center position
-    const getLocalNodeCenter = (
-      position: { x: number; y: number },
-      label: string,
-      nodeType: string,
-    ) => {
-      const { width, height } = getLocalNodeDimensions(label, nodeType);
-      return {
-        x: position.x + width / 2,
-        y: position.y + height / 2,
-      };
-    };
-
     // Topic nodes always have all 4 handles
     if (type === 'topic') {
       return ALL_HANDLES;
@@ -262,7 +215,7 @@ const TopicNode = ({
       x: nodeProps.positionAbsoluteX || 0,
       y: nodeProps.positionAbsoluteY || 0,
     };
-    const currentCenter = getLocalNodeCenter(currentPosition, data.label, type);
+    const currentCenter = getNodeCenter(currentPosition, data.label, type);
 
     // Find all topic nodes
     const topicNodes = nodes.filter((n) => n.type === 'topic');
@@ -280,7 +233,7 @@ const TopicNode = ({
     let minDistance = Infinity;
 
     topicNodes.forEach((topicNode) => {
-      const topicCenter = getLocalNodeCenter(
+      const topicCenter = getNodeCenter(
         topicNode.position,
         topicNode.data.label,
         topicNode.type || 'topic',
@@ -296,7 +249,7 @@ const TopicNode = ({
     });
 
     // Calculate direction to nearest topic node
-    const nearestCenter = getLocalNodeCenter(
+    const nearestCenter = getNodeCenter(
       nearestTopic.position,
       nearestTopic.data.label,
       nearestTopic.type || 'topic',

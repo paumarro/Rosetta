@@ -1,5 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
-import { useCollaborativeStore } from '@/store/collaborativeStore';
+import { useCollaborativeStore } from '@/store/collaborationStore';
 
 export default function AvatarDemo() {
   const { connectedUsers, currentUser } = useCollaborativeStore();
