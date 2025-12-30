@@ -16,6 +16,7 @@ export const ConnectionContext = createContext<ConnectionState>({
  */
 export const NODE_DIMENSIONS = {
   LABEL_THRESHOLD: 16,
+  LABEL_MAX_LENGTH: 30,
   TWO_LINE_HEIGHT: 75,
   BASE_HEIGHT: {
     TOPIC: 52,
@@ -36,6 +37,23 @@ export const NODE_DIMENSIONS = {
     SUBTOPIC_SHORT: 'h-[38px]',
     SUBTOPIC_TALL: 'h-[75px]',
   },
+} as const;
+
+/**
+ * Centralized constants for ReactFlow editor configuration
+ */
+export const EDITOR_CONFIG = {
+  CURSOR_THROTTLE_MS: 50,
+  SNAP_GRID: [15, 15] as [number, number],
+  MIN_ZOOM: 0.8,
+  MAX_ZOOM: 1.8,
+  CONNECTION_RADIUS: 50,
+  FIT_VIEW: {
+    PADDING: 0.2,
+    DURATION: 800,
+  },
+  TITLE_CHAR_WIDTH: 18.6,
+  TITLE_OFFSET_Y: 100,
 } as const;
 
 /**
@@ -94,16 +112,26 @@ function dotProduct(
 /**
  * Gets node dimensions based on type and label length.
  * Uses centralized NODE_DIMENSIONS constants.
+ * Can accept either a Node object or raw label/type values.
  */
-export function getNodeDimensions(node: Node): {
-  width: number;
-  height: number;
-} {
-  const labelLength = (node.data.label as string).length || 0;
+export function getNodeDimensions(
+  nodeOrLabel: Node | string,
+  nodeType?: string,
+): { width: number; height: number } {
+  const label =
+    typeof nodeOrLabel === 'string'
+      ? nodeOrLabel
+      : (nodeOrLabel.data.label as string) || '';
+  const type =
+    typeof nodeOrLabel === 'string'
+      ? nodeType || 'topic'
+      : nodeOrLabel.type || 'topic';
+
+  const labelLength = label.length;
 
   // Use 75px height for labels > 16 chars, otherwise type-specific base height
   const baseHeight =
-    node.type === 'subtopic'
+    type === 'subtopic'
       ? NODE_DIMENSIONS.BASE_HEIGHT.SUBTOPIC
       : NODE_DIMENSIONS.BASE_HEIGHT.TOPIC;
   const height =
@@ -124,13 +152,27 @@ export function getNodeDimensions(node: Node): {
 }
 
 /**
- * Gets the center point of a node
+ * Gets the center point of a node.
+ * Can accept a Node object or position + label + type.
  */
-export function getNodeCenter(node: Node): { x: number; y: number } {
-  const { width, height } = getNodeDimensions(node);
+export function getNodeCenter(
+  nodeOrPosition: Node | { x: number; y: number },
+  label?: string,
+  nodeType?: string,
+): { x: number; y: number } {
+  if ('id' in nodeOrPosition) {
+    // It's a Node object
+    const { width, height } = getNodeDimensions(nodeOrPosition);
+    return {
+      x: nodeOrPosition.position.x + width / 2,
+      y: nodeOrPosition.position.y + height / 2,
+    };
+  }
+  // It's a position with label and type
+  const { width, height } = getNodeDimensions(label || '', nodeType);
   return {
-    x: node.position.x + width / 2,
-    y: node.position.y + height / 2,
+    x: nodeOrPosition.x + width / 2,
+    y: nodeOrPosition.y + height / 2,
   };
 }
 
