@@ -261,25 +261,56 @@ describe('Diagram Controller - SAGA Endpoints', () => {
       expect(response.body.name).toBe(longName);
     });
 
-    it('should handle special characters in name', async () => {
-      const specialName = 'Test <script>alert("xss")</script> & "quotes"';
-      const response = await request(app)
-        .post('/api/diagrams/by-lp')
-        .send({ learningPathId: 'uuid-special-chars', name: specialName });
+    it('should handle international characters and special symbols in name', async () => {
+      const testCases = [
+        {
+          name: 'Test <script>alert("xss")</script> & "quotes"',
+          label: 'xss-prevention',
+        },
+        { name: 'テスト名前 🚀 émoji', label: 'unicode-emoji' },
+        { name: "Ñoño & José's Learning Path", label: 'accented-chars' },
+      ];
 
-      expect(response.status).toBe(201);
-      // Name should be stored as-is (sanitization is frontend responsibility)
-      expect(response.body.name).toBe(specialName);
+      for (const { name, label } of testCases) {
+        const lpId = `uuid-${label}`;
+        const response = await request(app)
+          .post('/api/diagrams/by-lp')
+          .send({ learningPathId: lpId, name });
+
+        expect(response.status).toBe(201);
+        expect(response.body.name).toBe(name);
+        expect(response.body.learningPathId).toBe(lpId);
+      }
     });
+  });
 
-    it('should handle unicode characters in name', async () => {
-      const unicodeName = 'テスト名前 🚀 émoji';
-      const response = await request(app)
-        .post('/api/diagrams/by-lp')
-        .send({ learningPathId: 'uuid-unicode', name: unicodeName });
+  // ============================================================================
+  // EDGE CASES (Performance and Large Data)
+  // ============================================================================
 
-      expect(response.status).toBe(201);
-      expect(response.body.name).toBe(unicodeName);
+  describe('Edge Cases', () => {
+    it('should handle diagram with large nodes array', async () => {
+      const largeNodes = Array.from({ length: 1000 }, (_, i) => ({
+        id: `node-${i}`,
+        type: 'default',
+        position: { x: i * 100, y: i * 100 },
+        data: { label: `Node ${i}` },
+      }));
+
+      await DiagramModel.create({
+        learningPathId: 'uuid-large-diagram',
+        name: 'Large Diagram',
+        nodes: largeNodes,
+        edges: [],
+      });
+
+      const diagram = await DiagramModel.findOne({
+        learningPathId: 'uuid-large-diagram',
+      });
+
+      expect(diagram).not.toBeNull();
+      expect(diagram?.nodes).toHaveLength(1000);
+      expect(diagram?.name).toBe('Large Diagram');
     });
   });
 });

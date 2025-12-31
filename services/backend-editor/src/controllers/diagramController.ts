@@ -32,6 +32,7 @@ export const createDiagramByLP = async (
 ) => {
   const { learningPathId, name } = req.body;
   const finalName = name && name.trim() !== '' ? name : learningPathId;
+
   try {
     const nodes = defaultDiagramTemplate.nodes;
 
