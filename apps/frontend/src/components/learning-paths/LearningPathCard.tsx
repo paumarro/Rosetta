@@ -145,26 +145,26 @@ export function LearningPathCard({
               placeholder="Description"
               className="text-sm min-h-[80px] border-radius-sm"
             />
-            <div className="mt-4 flex justify-end items-center">
-              <div className="flex gap-2 justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCancelEdit}
-                  disabled={isSaving}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={(e) => {
-                    void handleSaveEdit(e);
-                  }}
-                  disabled={isSaving || !editTitle.trim()}
-                >
-                  {isSaving ? 'Saving...' : 'Save'}
-                </Button>
-              </div>
+            <div className="mt-8 flex justify-end items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCancelEdit}
+                disabled={isSaving}
+                className="py-4 rounded-full"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                className="px-6 py-4 rounded-full"
+                onClick={(e) => {
+                  void handleSaveEdit(e);
+                }}
+                disabled={isSaving || !editTitle.trim()}
+              >
+                {isSaving ? 'Saving...' : 'Save'}
+              </Button>
             </div>
           </div>
         ) : (
