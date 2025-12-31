@@ -62,6 +62,7 @@ func main() {
 		// Learning Paths API
 		protected.GET("/api/learning-paths", lpController.Index)
 		protected.POST("/api/learning-paths", lpController.Create) // Backward compatibility
+		protected.PUT("/api/learning-paths/:id", lpController.Update)
 		protected.DELETE("/api/learning-paths/:id", lpController.Delete)
 		// LPs Favorites
 		protected.GET("/api/learning-paths/favorites", lpController.GetUserFavorites)

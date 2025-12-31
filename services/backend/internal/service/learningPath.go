@@ -84,7 +84,7 @@ func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, des
 	lpID := uuid.New()
 
 	// SAGA STEP 1: Create diagram in MongoDB (idempotent - safe to retry)
-	dr, err := s.createDiagramInMongo(ctx, s.HTTPClient, s.EditorURL, lpID.String(), title, authToken)
+	dr, err := s.createDiagramInMongo(ctx, lpID.String(), title, authToken)
 	if err != nil {
 		return nil, fmt.Errorf("saga step 1 failed (create diagram): %w", err)
 	}
@@ -93,34 +93,35 @@ func (s *LearningPathService) CreateLearningPath(ctx context.Context, title, des
 	lp, err := s.createLPWithSkillsInTransaction(ctx, lpID, title, description, isPublic, thumbnail, dr.ID, community, skillNames)
 	if err != nil {
 		// COMPENSATION: Delete the MongoDB diagram we just created
-		if compErr := s.deleteDiagramByLP(ctx, s.HTTPClient, s.EditorURL, lpID.String(), authToken); compErr != nil {
-			// Log compensation failure for manual intervention
-			fmt.Printf("SAGA COMPENSATION FAILED: diagram %s may be orphaned in MongoDB: %v\n", lpID.String(), compErr)
+		if compErr := s.deleteDiagramByLP(ctx, lpID.String(), authToken); compErr != nil {
+			// Both operations failed - diagram orphaned in MongoDB, requires manual cleanup
+			return nil, fmt.Errorf("saga step 2 failed (create LP): %w, compensation failed (orphaned diagram %s): %v", err, lpID.String(), compErr)
 		}
 		return nil, fmt.Errorf("saga step 2 failed (create LP): %w", err)
 	}
 
-	fmt.Printf("SAGA COMPLETED: LP %s created successfully\n", lpID.String())
 	return lp, nil
 }
 
 // createDiagramInMongo handles the MongoDB diagram creation with proper error handling
-func (s *LearningPathService) createDiagramInMongo(ctx context.Context, httpClient HTTPClient, editorURL, lpID, title, authToken string) (*diagramResponse, error) {
+func (s *LearningPathService) createDiagramInMongo(ctx context.Context, lpID, title, authToken string) (*diagramResponse, error) {
 	body, _ := json.Marshal(map[string]string{
 		"learningPathId": lpID,
 		"name":           title,
 	})
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/diagrams/by-lp", editorURL), bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/diagrams/by-lp", s.EditorURL), bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+
+	// Zero Trust: Authenticate with user token for audit trail
 	if authToken != "" {
 		req.Header.Set("Authorization", "Bearer "+authToken)
 	}
 
-	resp, err := httpClient.Do(req)
+	resp, err := s.HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
@@ -198,24 +199,26 @@ func (s *LearningPathService) createLPWithSkillsInTransaction(ctx context.Contex
 
 	// Reload with skills outside transaction
 	if err := s.DB.WithContext(ctx).Preload("Skills.Skill").First(lp, "id = ?", lpID).Error; err != nil {
-		fmt.Printf("Warning: failed to reload LP with skills: %v\n", err)
+		// If reload fails, return the LP without skills rather than failing entirely
+		return lp, nil
 	}
 	populateSkillsList(lp)
 
 	return lp, nil
 }
 
-func (s *LearningPathService) deleteDiagramByLP(_ context.Context, httpClient HTTPClient, baseURL, lpID, authToken string) error {
+func (s *LearningPathService) deleteDiagramByLP(ctx context.Context, lpID, authToken string) error {
 	// For compensation/cleanup operations, use a background context with a short timeout
 	// to ensure cleanup completes even if the original request context is canceled
 	cleanupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	req, _ := http.NewRequestWithContext(cleanupCtx, http.MethodDelete, fmt.Sprintf("%s/diagrams/by-lp/%s", baseURL, lpID), nil)
+	req, _ := http.NewRequestWithContext(cleanupCtx, http.MethodDelete, fmt.Sprintf("%s/diagrams/by-lp/%s", s.EditorURL, lpID), nil)
+	// Zero Trust: Authenticate with user token for audit trail
 	if authToken != "" {
 		req.Header.Set("Authorization", "Bearer "+authToken)
 	}
-	resp, err := httpClient.Do(req)
+	resp, err := s.HTTPClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -224,6 +227,35 @@ func (s *LearningPathService) deleteDiagramByLP(_ context.Context, httpClient HT
 	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusNotFound {
 		return fmt.Errorf("unexpected status deleting diagram: %d", resp.StatusCode)
 	}
+	return nil
+}
+
+// updateDiagramName syncs the diagram name in MongoDB with the learning path title
+func (s *LearningPathService) updateDiagramName(ctx context.Context, lpID, name, authToken string) error {
+	body, _ := json.Marshal(map[string]string{"name": name})
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, fmt.Sprintf("%s/diagrams/by-lp/%s", s.EditorURL, lpID), bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	// Zero Trust: Authenticate with user token for audit trail
+	if authToken != "" {
+		req.Header.Set("Authorization", "Bearer "+authToken)
+	}
+
+	resp, err := s.HTTPClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Check for non-OK responses
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
+		return fmt.Errorf("backend-editor returned status %d", resp.StatusCode)
+	}
+
 	return nil
 }
 
@@ -252,11 +284,10 @@ func (s *LearningPathService) DeleteLearningPath(ctx context.Context, lpID strin
 	}
 
 	// SAGA STEP 2: Delete diagram from MongoDB
-	if err := s.deleteDiagramByLP(ctx, s.HTTPClient, s.EditorURL, lp.ID.String(), authToken); err != nil {
+	if err := s.deleteDiagramByLP(ctx, lp.ID.String(), authToken); err != nil {
 		// COMPENSATION: Restore the soft-deleted LP
 		if restoreErr := s.restoreSoftDeletedLP(ctx, lp.ID); restoreErr != nil {
 			// Critical: Both operations failed, LP is soft-deleted but diagram still exists
-			fmt.Printf("SAGA COMPENSATION FAILED: LP %s is soft-deleted but diagram still exists in MongoDB. Error: %v\n", lpID, restoreErr)
 			return fmt.Errorf("saga failed and compensation failed: delete diagram: %w, restore LP: %v", err, restoreErr)
 		}
 		return fmt.Errorf("saga step 2 failed (delete diagram), LP restored: %w", err)
@@ -264,12 +295,9 @@ func (s *LearningPathService) DeleteLearningPath(ctx context.Context, lpID strin
 
 	// SAGA STEP 3: Hard-delete the LP now that MongoDB diagram is gone
 	// This permanently removes the record (Unscoped bypasses soft-delete)
-	if err := s.DB.WithContext(ctx).Unscoped().Delete(&lp).Error; err != nil {
-		// Non-critical: LP is soft-deleted and diagram is gone, cleanup job can handle this
-		fmt.Printf("Warning: hard-delete failed for LP %s, soft-delete remains: %v\n", lpID, err)
-	}
+	// Non-critical if this fails: LP is soft-deleted and diagram is gone, cleanup job can handle this
+	_ = s.DB.WithContext(ctx).Unscoped().Delete(&lp).Error
 
-	fmt.Printf("SAGA COMPLETED: LP %s deleted successfully\n", lpID)
 	return nil
 }
 
@@ -361,4 +389,60 @@ func (s *LearningPathService) GetLearningPathsByCommunity(ctx context.Context, c
 	populateSkillsListForPaths(paths)
 
 	return paths, nil
+}
+
+// UpdateLearningPath updates the title and description of a learning path
+func (s *LearningPathService) UpdateLearningPath(ctx context.Context, lpID, title, description, authToken string) (*model.LearningPath, error) {
+	// SAGA UPDATE: Atomic distributed update with rollback
+	//
+	// Order of operations:
+	// 1. Find LP and save old values (for compensation)
+	// 2. Update LP in PostgreSQL
+	// 3. Update diagram in MongoDB
+	// 4. If MongoDB fails, rollback PostgreSQL to old values
+
+	lpUUID, err := uuid.Parse(lpID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid learning path ID format: %w", err)
+	}
+
+	// SAGA STEP 0: Get current values for compensation
+	var lp model.LearningPath
+	if err := s.DB.WithContext(ctx).Where("id = ?", lpUUID).First(&lp).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("learning path not found")
+		}
+		return nil, fmt.Errorf("failed to find learning path: %w", err)
+	}
+
+	oldTitle := lp.Title
+	oldDescription := lp.Description
+
+	// SAGA STEP 1: Update PostgreSQL
+	lp.Title = title
+	lp.Description = description
+	if err := s.DB.WithContext(ctx).Save(&lp).Error; err != nil {
+		return nil, fmt.Errorf("saga step 1 failed (update LP): %w", err)
+	}
+
+	// SAGA STEP 2: Update MongoDB diagram
+	if err := s.updateDiagramName(ctx, lpID, title, authToken); err != nil {
+		// COMPENSATION: Rollback PostgreSQL to old values
+		lp.Title = oldTitle
+		lp.Description = oldDescription
+		if compErr := s.DB.WithContext(ctx).Save(&lp).Error; compErr != nil {
+			// Critical: Both operations failed, data may be inconsistent
+			return nil, fmt.Errorf("saga failed and compensation failed: update diagram: %w, restore LP: %v", err, compErr)
+		}
+		return nil, fmt.Errorf("saga step 2 failed (update diagram), LP restored: %w", err)
+	}
+
+	// Reload with skills
+	if err := s.DB.WithContext(ctx).Preload("Skills.Skill").First(&lp, "id = ?", lpUUID).Error; err != nil {
+		// If reload fails, return the LP without skills rather than failing entirely
+		return &lp, nil
+	}
+	populateSkillsList(&lp)
+
+	return &lp, nil
 }
