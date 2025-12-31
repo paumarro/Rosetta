@@ -152,6 +152,91 @@ describe('Diagram Controller - SAGA Endpoints', () => {
   });
 
   // ============================================================================
+  // UPDATE DIAGRAM BY LP (PATCH /api/diagrams/by-lp/:lpId)
+  // ============================================================================
+
+  describe('PATCH /api/diagrams/by-lp/:lpId', () => {
+    it('should update diagram name successfully', async () => {
+      await DiagramModel.create({
+        learningPathId: 'uuid-to-update',
+        name: 'Original Name',
+        nodes: [],
+        edges: [],
+      });
+
+      const response = await request(app)
+        .patch('/api/diagrams/by-lp/uuid-to-update')
+        .send({ name: 'Updated Name' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.learningPathId).toBe('uuid-to-update');
+      expect(response.body.name).toBe('Updated Name');
+
+      const diagram = await DiagramModel.findOne({
+        learningPathId: 'uuid-to-update',
+      });
+      expect(diagram?.name).toBe('Updated Name');
+    });
+
+    it('should return 404 when diagram does not exist', async () => {
+      const response = await request(app)
+        .patch('/api/diagrams/by-lp/non-existent-uuid')
+        .send({ name: 'New Name' });
+
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBeDefined();
+    });
+
+    it('should reject invalid name input', async () => {
+      await DiagramModel.create({
+        learningPathId: 'uuid-validation',
+        name: 'Original',
+        nodes: [],
+        edges: [],
+      });
+
+      // Missing name
+      const missingName = await request(app)
+        .patch('/api/diagrams/by-lp/uuid-validation')
+        .send({});
+      expect(missingName.status).toBe(400);
+
+      // Empty string
+      const emptyName = await request(app)
+        .patch('/api/diagrams/by-lp/uuid-validation')
+        .send({ name: '   ' });
+      expect(emptyName.status).toBe(400);
+
+      // Verify original name unchanged
+      const diagram = await DiagramModel.findOne({
+        learningPathId: 'uuid-validation',
+      });
+      expect(diagram?.name).toBe('Original');
+    });
+
+    it('should preserve nodes and edges when updating name', async () => {
+      const nodes = [{ id: '1', data: { label: 'Node 1' } }];
+      const edges = [{ id: 'e1', source: '1', target: '2' }];
+
+      await DiagramModel.create({
+        learningPathId: 'uuid-preserve-data',
+        name: 'Original',
+        nodes,
+        edges,
+      });
+
+      const response = await request(app)
+        .patch('/api/diagrams/by-lp/uuid-preserve-data')
+        .send({ name: 'New Name' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.name).toBe('New Name');
+      expect(response.body.nodes).toEqual(nodes);
+      expect(response.body.edges).toEqual(edges);
+    });
+  });
+
+  // ============================================================================
   // INPUT VALIDATION (Unit tests for edge cases - integration tests cover workflows)
   // ============================================================================
 

@@ -4,6 +4,7 @@ import { catchAsync } from '../../src/utils/asyncErrorHandler.js';
 import {
   createDiagramByLP,
   deleteDiagramByLP,
+  updateDiagramByLP,
 } from '../../src/controllers/diagramController.js';
 
 /**
@@ -20,6 +21,10 @@ export const createTestApp = () => {
   router.post<object, unknown, { learningPathId: string; name?: string }>(
     '/diagrams/by-lp',
     catchAsync(createDiagramByLP),
+  );
+  router.patch<{ lpId: string }, unknown, { name: string }>(
+    '/diagrams/by-lp/:lpId',
+    catchAsync(updateDiagramByLP),
   );
   router.delete<{ lpId: string }>(
     '/diagrams/by-lp/:lpId',
