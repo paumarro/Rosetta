@@ -34,6 +34,11 @@ type CreateLearningPathRequest struct {
 	Skills      []string `json:"skills"`
 }
 
+type UpdateLearningPathRequest struct {
+	Title       string `json:"title" binding:"required"`
+	Description string `json:"description"`
+}
+
 func (res *LearningPathController) Create(c *gin.Context) {
 	var req CreateLearningPathRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -111,6 +116,47 @@ func (res *LearningPathController) Delete(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+func (res *LearningPathController) Update(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		respondWithError(c, http.StatusBadRequest, "Learning path ID is required", nil)
+		return
+	}
+
+	var req UpdateLearningPathRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondWithError(c, http.StatusBadRequest, "Invalid request format", err)
+		return
+	}
+
+	// Extract token for service-to-service calls
+	authToken, err := c.Cookie("id_token")
+	if err != nil || authToken == "" {
+		respondWithError(c, http.StatusUnauthorized, "Missing authentication token for service calls", err)
+		return
+	}
+
+	lp, updateErr := res.LearningPathService.UpdateLearningPath(c, id, req.Title, req.Description, authToken)
+	if updateErr != nil {
+		if strings.Contains(updateErr.Error(), "not found") {
+			respondWithError(c, http.StatusNotFound, "Learning path not found", updateErr)
+			return
+		}
+		if strings.Contains(updateErr.Error(), "authentication") || strings.Contains(updateErr.Error(), "403") {
+			respondWithError(c, http.StatusForbidden, "Service authentication failed - token may be invalid", updateErr)
+			return
+		}
+		if strings.Contains(updateErr.Error(), "saga step 2") {
+			respondWithError(c, http.StatusFailedDependency, "Failed to sync diagram - changes rolled back", updateErr)
+			return
+		}
+		respondWithError(c, http.StatusInternalServerError, "Failed to update learning path", updateErr)
+		return
+	}
+
+	c.JSON(http.StatusOK, lp)
 }
 
 func (res *LearningPathController) AddToFavorites(c *gin.Context) {
