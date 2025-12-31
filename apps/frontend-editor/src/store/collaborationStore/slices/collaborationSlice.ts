@@ -225,9 +225,8 @@ export const createCollaborationSlice: StateCreator<
 
                 doc.transact(() => {
                   const yMetadata = doc.getMap<string>('metadata');
-                  if (!yMetadata.get('name')) {
-                    yMetadata.set('name', diagram.name);
-                  }
+                  // Always sync name from MongoDB (allows updates from backend)
+                  yMetadata.set('name', diagram.name);
 
                   diagram.nodes.forEach((node) => {
                     const yNode = new Y.Map<unknown>();
