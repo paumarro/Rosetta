@@ -104,6 +104,38 @@ export const useLearningPathStore = create<LearningPathStore>((set, get) => ({
     }
   },
 
+  updateLearningPath: async (id: string, title: string, description: string) => {
+    try {
+      const response = await apiFetch(`/api/learning-paths/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Learning path not found');
+        }
+        throw new Error('Failed to update learning path');
+      }
+
+      const updatedPath = (await response.json()) as LearningPath;
+
+      set((state) => ({
+        learningPaths: state.learningPaths.map((lp) =>
+          lp.ID === id ? updatedPath : lp,
+        ),
+        error: null,
+      }));
+
+      return updatedPath;
+    } catch (error) {
+      set({ error: getErrorMessage(error) });
+      console.error('Error updating learning path:', error);
+      throw error;
+    }
+  },
+
   fetchUserFavorites: async () => {
     try {
       const response = await apiFetch('/api/learning-paths/favorites');

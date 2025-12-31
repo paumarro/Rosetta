@@ -21,5 +21,6 @@ export interface LearningPathStore {
   removeFromFavorites: (id: string) => Promise<void>;
   isFavorited: (id: string) => boolean;
   deleteLearningPath: (id: string) => Promise<void>;
+  updateLearningPath: (id: string, title: string, description: string) => Promise<LearningPath>;
   setError: (error: string | null) => void;
 }
