@@ -3,11 +3,9 @@ import { catchAsync } from '../utils/asyncErrorHandler.js';
 import {
   getDiagrams,
   getDiagramByName,
-  createDiagram,
-  updateDiagram,
-  deleteDiagramByName,
   createDiagramByLP,
   deleteDiagramByLP,
+  updateDiagramByLP,
 } from '../controllers/diagramController.js';
 import { DiagramBody, DiagramParams } from '../types/diagramTypes.js';
 import {
@@ -17,41 +15,32 @@ import {
 
 const router = Router();
 
-// Apply authentication middleware to all routes
-router.use(authenticateRequest);
+// Apply authentication middleware to ALL routes (Zero Trust)
+// Service-to-service calls must include valid user token for audit trail
+router.use(catchAsync(authenticateRequest));
 
-// Public routes (auth required, no CBAC - returns filtered list)
-router.get('/diagrams', catchAsync(getDiagrams));
-
-// Routes with CBAC - require community membership
-router.get<DiagramParams>(
-  '/diagrams/:name',
-  requireDiagramAccess('name'),
-  catchAsync(getDiagramByName),
-);
-router.post<object, unknown, DiagramBody>(
-  '/diagrams',
-  catchAsync(createDiagram),
-); // CBAC checked in controller based on name
-router.put<DiagramParams, unknown, DiagramBody>(
-  '/diagrams/:name',
-  requireDiagramAccess('name'),
-  catchAsync(updateDiagram),
-);
-router.delete<DiagramParams>(
-  '/diagrams/:name',
-  requireDiagramAccess('name'),
-  catchAsync(deleteDiagramByName),
-);
-
-// Service-to-service routes (protected by nginx blocking external access)
+// Service-to-service routes (Zero Trust: authenticated via user token)
+// These enforce SAGA patterns - diagrams can only be created/updated/deleted through backend
+// User token provides audit trail of who initiated the operation
 router.post<object, unknown, { learningPathId: string; name?: string }>(
   '/diagrams/by-lp',
   catchAsync(createDiagramByLP),
 );
+router.patch<{ lpId: string }, unknown, { name: string }>(
+  '/diagrams/by-lp/:lpId',
+  catchAsync(updateDiagramByLP),
+);
 router.delete<{ lpId: string }>(
   '/diagrams/by-lp/:lpId',
   catchAsync(deleteDiagramByLP),
+);
+
+// Public READ routes (safe, used by frontend-editor for initial load)
+router.get('/diagrams', catchAsync(getDiagrams));
+router.get<DiagramParams>(
+  '/diagrams/:name',
+  requireDiagramAccess('name'),
+  catchAsync(getDiagramByName),
 );
 
 export default router;

@@ -24,56 +24,6 @@ export const getDiagramByName = async (
   res.json(diagram);
 };
 
-export const createDiagram = async (
-  req: Request<object, object, DiagramBody>,
-  res: Response,
-) => {
-  try {
-    const { name, nodes, edges, learningPathId } = req.body;
-    if (!name || String(name).trim() === '') {
-      return errors.badRequest(res, 'Name is required');
-    }
-    const diagram = new DiagramModel({
-      name,
-      nodes,
-      edges,
-      learningPathId,
-    });
-    await diagram.save();
-    res.status(201).json(diagram);
-  } catch (err) {
-    const code = (err as Error & { code?: number }).code;
-    if (code === 11000) {
-      return sendError(res, 409, 'Conflict', 'A diagram with this name already exists');
-    }
-    res.status(500);
-    throw new Error(`Error: ${(err as Error).message}`);
-  }
-};
-
-export const updateDiagram = async (
-  req: Request<DiagramParams, object, DiagramBody>,
-  res: Response,
-) => {
-  const { nodes, edges } = req.body;
-  const key = req.params.name;
-  let diagram = await DiagramModel.findOneAndUpdate(
-    { learningPathId: key },
-    { $set: { nodes, edges } },
-    { new: true },
-  );
-  if (!diagram) {
-    diagram = await DiagramModel.findOneAndUpdate(
-      { name: key },
-      { $set: { nodes, edges } },
-      { new: true },
-    );
-  }
-  if (!diagram) {
-    return errors.notFound(res, 'Diagram');
-  }
-  res.json(diagram);
-};
 
 // New: create diagram by LP UUID with idempotency on E11000
 export const createDiagramByLP = async (
@@ -115,38 +65,6 @@ export const createDiagramByLP = async (
   }
 };
 
-// Delete diagram by name
-export const deleteDiagramByName = async (
-  req: Request<DiagramParams>,
-  res: Response,
-) => {
-  const { name } = req.params;
-
-  // First, check if the diagram exists and has an associated learning path
-  let diagram = await DiagramModel.findOne({ learningPathId: name });
-  if (!diagram) {
-    diagram = await DiagramModel.findOne({ name });
-  }
-  if (!diagram) {
-    return errors.notFound(res, 'Diagram');
-  }
-
-  // Prevent deletion if it has an associated learning path
-  if (diagram.learningPathId && diagram.learningPathId !== diagram.name) {
-    return sendError(
-      res,
-      409,
-      'Conflict',
-      'Please delete the learning path first, which will cascade delete the diagram'
-    );
-  }
-
-  // If no learning path is associated, allow deletion
-  await DiagramModel.findOneAndDelete(
-    diagram.learningPathId ? { learningPathId: name } : { name },
-  );
-  return res.status(204).send();
-};
 
 // New: delete diagram by LP UUID (compensation)
 export const deleteDiagramByLP = async (
@@ -157,4 +75,29 @@ export const deleteDiagramByLP = async (
   const result = await DiagramModel.findOneAndDelete({ learningPathId: lpId });
   if (!result) return errors.notFound(res, 'Diagram');
   return res.status(204).send();
+};
+
+// Update diagram name by LP UUID (service-to-service)
+export const updateDiagramByLP = async (
+  req: Request<{ lpId: string }, object, { name: string }>,
+  res: Response,
+) => {
+  const { lpId } = req.params;
+  const { name } = req.body;
+
+  if (!name || String(name).trim() === '') {
+    return errors.badRequest(res, 'Name is required');
+  }
+
+  const diagram = await DiagramModel.findOneAndUpdate(
+    { learningPathId: lpId },
+    { $set: { name: name.trim() } },
+    { new: true },
+  );
+
+  if (!diagram) {
+    return errors.notFound(res, 'Diagram');
+  }
+
+  return res.json(diagram);
 };
