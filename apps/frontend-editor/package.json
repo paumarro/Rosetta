@@ -7,7 +7,8 @@
     "node": ">=20.19.0 <21.0.0"
   },
   "scripts": {
-    "test": "echo 'Test to be implemented..🧪'",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint ./src/**/*.{ts,tsx} --fix",
@@ -45,6 +46,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
     "@types/node": "^24.0.4",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
@@ -57,11 +60,13 @@
     "eslint-plugin-react-refresh": "^0.4.16",
     "globals": "^16.2.0",
     "husky": "^9.1.7",
+    "jsdom": "^27.4.0",
     "lint-staged": "^15.4.0",
     "prettier": "^3.4.2",
     "tw-animate-css": "^1.3.4",
     "typescript": "~5.6.2",
     "typescript-eslint": "^8.18.2",
-    "vite": "^7.0.0"
+    "vite": "^7.0.0",
+    "vitest": "^4.0.16"
   }
 }
