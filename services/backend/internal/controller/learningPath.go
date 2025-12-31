@@ -82,17 +82,21 @@ func (res *LearningPathController) Create(c *gin.Context) {
 	}
 
 	// Extract token for service-to-service calls
-	authToken, _ := c.Cookie("id_token")
+	authToken, err := c.Cookie("id_token")
+	if err != nil || authToken == "" {
+		respondWithError(c, http.StatusUnauthorized, "Missing authentication token for service calls", err)
+		return
+	}
 
-	learningPath, err := res.LearningPathService.CreateLearningPath(c, req.PathName, req.Description, true, "", req.Skills, authToken, communityName)
-	if err != nil {
+	learningPath, createErr := res.LearningPathService.CreateLearningPath(c, req.PathName, req.Description, true, "", req.Skills, authToken, communityName)
+	if createErr != nil {
 		// Check if error is about duplicate name
-		errMsg := err.Error()
+		errMsg := createErr.Error()
 		if strings.Contains(errMsg, "already exists") || strings.Contains(errMsg, "duplicate") {
-			respondWithError(c, http.StatusConflict, errMsg, err)
+			respondWithError(c, http.StatusConflict, errMsg, createErr)
 			return
 		}
-		respondWithError(c, http.StatusInternalServerError, "Failed to create learning path", err)
+		respondWithError(c, http.StatusInternalServerError, "Failed to create learning path", createErr)
 		return
 	}
 
@@ -107,9 +111,13 @@ func (res *LearningPathController) Delete(c *gin.Context) {
 	}
 
 	// Extract token for service-to-service calls
-	authToken, _ := c.Cookie("id_token")
+	authToken, err := c.Cookie("id_token")
+	if err != nil || authToken == "" {
+		respondWithError(c, http.StatusUnauthorized, "Missing authentication token for service calls", err)
+		return
+	}
 
-	err := res.LearningPathService.DeleteLearningPath(c, id, authToken)
+	err = res.LearningPathService.DeleteLearningPath(c, id, authToken)
 	if err != nil {
 		respondWithError(c, http.StatusInternalServerError, "Failed to delete learning path", err)
 		return
