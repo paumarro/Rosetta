@@ -28,10 +28,13 @@ type mockMongoServer struct {
 	mu            sync.RWMutex
 	createCount   int32 // atomic counter for create requests
 	deleteCount   int32 // atomic counter for delete requests
+	updateCount   int32 // atomic counter for update requests
 	failOnCreate  bool
 	failOnDelete  bool
+	failOnUpdate  bool
 	delayCreate   time.Duration
 	delayDelete   time.Duration
+	delayUpdate   time.Duration
 }
 
 func newMockMongoServer() *mockMongoServer {
@@ -41,13 +44,16 @@ func newMockMongoServer() *mockMongoServer {
 }
 
 func (m *mockMongoServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Extract the lpId from URL for DELETE requests
+	// Extract the lpId from URL for DELETE and PATCH requests
 	// URL format: /api/diagrams/by-lp or /api/diagrams/by-lp/{lpId}
 	path := r.URL.Path
 
 	switch {
 	case r.Method == http.MethodPost && path == "/api/diagrams/by-lp":
 		m.handleCreate(w, r)
+	case r.Method == http.MethodPatch && len(path) > len("/api/diagrams/by-lp/"):
+		lpId := path[len("/api/diagrams/by-lp/"):]
+		m.handleUpdate(w, r, lpId)
 	case r.Method == http.MethodDelete && len(path) > len("/api/diagrams/by-lp/"):
 		lpId := path[len("/api/diagrams/by-lp/"):]
 		m.handleDelete(w, lpId)
@@ -137,6 +143,45 @@ func (m *mockMongoServer) handleDelete(w http.ResponseWriter, lpId string) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (m *mockMongoServer) handleUpdate(w http.ResponseWriter, r *http.Request, lpId string) {
+	atomic.AddInt32(&m.updateCount, 1)
+
+	if m.delayUpdate > 0 {
+		time.Sleep(m.delayUpdate)
+	}
+
+	if m.failOnUpdate {
+		http.Error(w, `{"error":"service unavailable"}`, http.StatusServiceUnavailable)
+		return
+	}
+
+	var body struct {
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, `{"error":"invalid json"}`, http.StatusBadRequest)
+		return
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	diagram, ok := m.diagrams[lpId]
+	if !ok {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{"error": "not found"})
+		return
+	}
+
+	// Update the diagram name
+	diagram["name"] = body.Name
+	m.diagrams[lpId] = diagram
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(diagram)
+}
+
 func (m *mockMongoServer) getDiagramCount() int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -156,6 +201,21 @@ func (m *mockMongoServer) getCreateCount() int32 {
 
 func (m *mockMongoServer) getDeleteCount() int32 {
 	return atomic.LoadInt32(&m.deleteCount)
+}
+
+func (m *mockMongoServer) getUpdateCount() int32 {
+	return atomic.LoadInt32(&m.updateCount)
+}
+
+func (m *mockMongoServer) getDiagramName(lpId string) string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	if diagram, ok := m.diagrams[lpId]; ok {
+		if name, ok := diagram["name"].(string); ok {
+			return name
+		}
+	}
+	return ""
 }
 
 // ============================================================================
@@ -801,4 +861,175 @@ func TestIntegration_CreateLP_ContextCancellation(t *testing.T) {
 	var count int64
 	db.Model(&model.LearningPath{}).Count(&count)
 	assert.Equal(t, int64(0), count)
+}
+// ============================================================================
+// UPDATE LEARNING PATH INTEGRATION TESTS
+// ============================================================================
+
+func TestIntegration_UpdateLP_FullSagaFlow(t *testing.T) {
+	// Setup real database and mock HTTP server
+	db := testutil.SetupTestDB(t)
+	mongoServer := newMockMongoServer()
+	ts := httptest.NewServer(mongoServer)
+	defer ts.Close()
+
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+
+	// Pre-create a learning path with diagram
+	lp, err := svc.CreateLearningPath(
+		context.Background(),
+		"Original Title",
+		"Original Description",
+		true,
+		"",
+		[]string{},
+		"token",
+		"test-community",
+	)
+	require.NoError(t, err)
+	require.NotNil(t, lp)
+
+	lpID := lp.ID.String()
+
+	// Verify initial state
+	assert.Equal(t, "Original Title", lp.Title)
+	assert.Equal(t, "Original Description", lp.Description)
+	assert.Equal(t, "Original Title", mongoServer.getDiagramName(lpID))
+
+	// Execute UPDATE SAGA
+	updatedLP, err := svc.UpdateLearningPath(
+		context.Background(),
+		lpID,
+		"New Title",
+		"New Description",
+		"token",
+	)
+
+	// Assert success
+	require.NoError(t, err)
+	require.NotNil(t, updatedLP)
+	assert.Equal(t, "New Title", updatedLP.Title)
+	assert.Equal(t, "New Description", updatedLP.Description)
+
+	// Verify MongoDB diagram was updated
+	assert.Equal(t, "New Title", mongoServer.getDiagramName(lpID))
+	assert.Equal(t, int32(1), mongoServer.getUpdateCount())
+
+	// Verify PostgreSQL LP was updated
+	var dbLP model.LearningPath
+	err = db.First(&dbLP, "id = ?", lp.ID).Error
+	require.NoError(t, err)
+	assert.Equal(t, "New Title", dbLP.Title)
+	assert.Equal(t, "New Description", dbLP.Description)
+}
+
+func TestIntegration_UpdateLP_MongoDBFails_RollbackPostgreSQL(t *testing.T) {
+	// Setup real database and mock HTTP server
+	db := testutil.SetupTestDB(t)
+	mongoServer := newMockMongoServer()
+	ts := httptest.NewServer(mongoServer)
+	defer ts.Close()
+
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+
+	// Pre-create a learning path
+	lp, err := svc.CreateLearningPath(
+		context.Background(),
+		"Original Title",
+		"Original Description",
+		true,
+		"",
+		[]string{},
+		"token",
+		"test-community",
+	)
+	require.NoError(t, err)
+
+	lpID := lp.ID.String()
+
+	// Configure mock to fail on update
+	mongoServer.failOnUpdate = true
+
+	// Execute UPDATE SAGA (MongoDB will fail)
+	updatedLP, err := svc.UpdateLearningPath(
+		context.Background(),
+		lpID,
+		"New Title",
+		"New Description",
+		"token",
+	)
+
+	// Assert failure
+	require.Error(t, err)
+	assert.Nil(t, updatedLP)
+	assert.Contains(t, err.Error(), "saga step 2 failed")
+	assert.Contains(t, err.Error(), "LP restored")
+
+	// Verify compensation: PostgreSQL should be rolled back
+	var dbLP model.LearningPath
+	err = db.First(&dbLP, "id = ?", lp.ID).Error
+	require.NoError(t, err)
+	assert.Equal(t, "Original Title", dbLP.Title, "Title should be rolled back")
+	assert.Equal(t, "Original Description", dbLP.Description, "Description should be rolled back")
+
+	// Verify MongoDB diagram still has original name
+	assert.Equal(t, "Original Title", mongoServer.getDiagramName(lpID))
+
+	// Verify update was attempted
+	assert.Equal(t, int32(1), mongoServer.getUpdateCount())
+}
+
+func TestIntegration_UpdateLP_NotFound(t *testing.T) {
+	// Setup real database and mock HTTP server
+	db := testutil.SetupTestDB(t)
+	mongoServer := newMockMongoServer()
+	ts := httptest.NewServer(mongoServer)
+	defer ts.Close()
+
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+
+	// Try to update non-existent LP
+	randomID := uuid.New().String()
+	updatedLP, err := svc.UpdateLearningPath(
+		context.Background(),
+		randomID,
+		"New Title",
+		"New Description",
+		"token",
+	)
+
+	// Assert failure
+	require.Error(t, err)
+	assert.Nil(t, updatedLP)
+	assert.Contains(t, err.Error(), "not found")
+
+	// Verify no MongoDB update was attempted
+	assert.Equal(t, int32(0), mongoServer.getUpdateCount())
+}
+
+func TestIntegration_UpdateLP_InvalidUUID(t *testing.T) {
+	// Setup real database and mock HTTP server
+	db := testutil.SetupTestDB(t)
+	mongoServer := newMockMongoServer()
+	ts := httptest.NewServer(mongoServer)
+	defer ts.Close()
+
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+
+	// Try to update with invalid UUID
+	updatedLP, err := svc.UpdateLearningPath(
+		context.Background(),
+		"not-a-valid-uuid",
+		"New Title",
+		"New Description",
+		"token",
+	)
+
+	// Assert failure
+	require.Error(t, err)
+	assert.Nil(t, updatedLP)
+	assert.Contains(t, err.Error(), "invalid")
+
+	// Verify no MongoDB update was attempted
+	assert.Equal(t, int32(0), mongoServer.getUpdateCount())
 }
