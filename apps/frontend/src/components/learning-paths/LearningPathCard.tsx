@@ -96,7 +96,7 @@ export function LearningPathCard({
     >
       {/* Action buttons - appear on hover in top-right */}
       {canEdit && !isEditing && (
-        <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="absolute top-3 right-3 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <Button
             variant="ghost"
             size="icon"

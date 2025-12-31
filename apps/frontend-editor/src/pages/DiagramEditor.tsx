@@ -55,6 +55,7 @@ export default function DiagramEditor({
     onEdgeChange,
     onConnect,
     updateCursor,
+    modalNodeId,
   } = useCollaborativeStore();
 
   const { user, isLoading } = useUserStore();
@@ -140,8 +141,8 @@ export default function DiagramEditor({
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
-      // Disable deletion in view mode
-      if (isViewMode) return;
+      // Disable deletion in view mode or when modal is open
+      if (isViewMode || modalNodeId) return;
 
       if (event.key === 'Delete' || event.key === 'Backspace') {
         const selectedNodes = storeNodes.filter((node) => node.selected);
@@ -172,7 +173,14 @@ export default function DiagramEditor({
         }
       }
     },
-    [isViewMode, storeNodes, storeEdges, onNodeChange, onEdgeChange],
+    [
+      isViewMode,
+      modalNodeId,
+      storeNodes,
+      storeEdges,
+      onNodeChange,
+      onEdgeChange,
+    ],
   );
 
   // Track mouse movement for collaborative cursors (throttled to 50ms)
@@ -289,6 +297,7 @@ export default function DiagramEditor({
             nodesDraggable={!isViewMode}
             nodesConnectable={!isViewMode}
             nodesFocusable={!isViewMode}
+            deleteKeyCode={null}
             isValidConnection={(connection) => {
               // Prevent self-connections
               if (connection.source === connection.target) return false;
