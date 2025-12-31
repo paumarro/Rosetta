@@ -1,7 +1,10 @@
 declare module 'y-mongodb' {
-  export class MongoDBPersistence {
-    constructor(url: string);
-    bindState(docName: string, ydoc: unknown): Promise<unknown>;
-    writeState(docName: string, ydoc: unknown): Promise<unknown>;
+  import type * as Y from 'yjs';
+
+  export class MongodbPersistence {
+    constructor(url: string, collection: string);
+    getYDoc(docName: string): Promise<Y.Doc>;
+    storeUpdate(docName: string, update: Uint8Array): Promise<void>;
+    clearDocument(docName: string): Promise<void>;
   }
 }

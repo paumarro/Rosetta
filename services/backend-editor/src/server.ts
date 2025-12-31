@@ -2,7 +2,8 @@ import { createServer, IncomingMessage } from 'http';
 import { connectDB } from './config/db.js';
 import { WebSocketServer } from 'ws';
 import type { WebSocket } from 'ws';
-import { setupWSConnection } from 'y-websocket/bin/utils';
+import { setupWSConnection, setPersistence } from 'y-websocket/bin/utils';
+import * as Y from 'yjs';
 import yMongo from 'y-mongodb';
 import {
   authenticateUpgradeRequest,
@@ -10,8 +11,14 @@ import {
 } from './middleware/wsAuth.js';
 import { createApp } from './app.js';
 
+interface MongodbPersistenceType {
+  getYDoc: (docName: string) => Promise<Y.Doc>;
+  storeUpdate: (docName: string, update: Uint8Array) => Promise<void>;
+  clearDocument: (docName: string) => Promise<void>;
+}
+
 const { MongodbPersistence } = yMongo as unknown as {
-  MongodbPersistence: new (url: string) => unknown;
+  MongodbPersistence: new (url: string, collection: string) => MongodbPersistenceType;
 };
 
 const app = createApp();
@@ -24,8 +31,30 @@ const wss = new WebSocketServer({ noServer: true });
 const mongoUrl =
   process.env.MONGO_URL ||
   process.env.MONGODB_URI ||
-  'mongodb://localhost:27017/yjs';
-const yPersistence = new MongodbPersistence(mongoUrl);
+  'mongodb://localhost:27017/rosetta-editor';
+const mdb = new MongodbPersistence(mongoUrl, 'yjs-documents');
+
+// Register MongoDB persistence with y-websocket
+// See: https://github.com/fadiquader/y-mongodb#readme
+setPersistence({
+  bindState: async (docName: string, ydoc: Y.Doc) => {
+    // 1. Load persisted document from MongoDB
+    const persistedYdoc = await mdb.getYDoc(docName);
+
+    // 2. Apply persisted state to restore the document
+    const persistedState = Y.encodeStateAsUpdate(persistedYdoc);
+    Y.applyUpdate(ydoc, persistedState);
+
+    // 3. Subscribe to future updates and persist them
+    ydoc.on('update', (update: Uint8Array) => {
+      mdb.storeUpdate(docName, update);
+    });
+  },
+  writeState: async () => {
+    // Called when all connections close - data already persisted via update handler
+  },
+  provider: mdb,
+});
 
 // Handle WebSocket upgrade - authenticate and check CBAC BEFORE accepting connection
 server.on('upgrade', (req: IncomingMessage, socket, head) => {
@@ -58,14 +87,8 @@ server.on('upgrade', (req: IncomingMessage, socket, head) => {
 
       // Authentication and authorization succeeded - complete the WebSocket upgrade
       wss.handleUpgrade(req, socket, head, (conn: WebSocket) => {
-        // Setup Yjs connection with MongoDB persistence
-        const setupOptions = {
-          docName: docName,
-          persistence: yPersistence,
-          gc: true,
-        };
-
-        setupWSConnection(conn, req, setupOptions);
+        // Setup Yjs connection (persistence is already configured via setPersistence)
+        setupWSConnection(conn, req, { docName, gc: true });
 
         // Emit the 'connection' event for any other handlers
         wss.emit('connection', conn, req);
