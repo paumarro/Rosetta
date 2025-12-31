@@ -29,6 +29,7 @@ export default function CommunityHub() {
     isFavorited,
     favorites,
     deleteLearningPath,
+    updateLearningPath,
   } = useLearningPathStore();
 
   const { user } = useUserStore();
@@ -94,6 +95,19 @@ export default function CommunityHub() {
     } catch (error) {
       console.error('Error deleting learning path:', error);
       throw error; // Re-throw to let the card component handle the error state
+    }
+  };
+
+  const handleUpdatePath = async (pathId: string, title: string, description: string) => {
+    try {
+      const updatedPath = await updateLearningPath(pathId, title, description);
+      // Update local state with the updated path
+      setAllPaths((prev) =>
+        prev.map((p) => (p.ID === pathId ? updatedPath : p)),
+      );
+    } catch (error) {
+      console.error('Error updating learning path:', error);
+      throw error;
     }
   };
 
@@ -172,12 +186,13 @@ export default function CommunityHub() {
               key={path.ID}
               path={path}
               isFavorited={isFavorited(path.ID)}
-              canDelete={canCreatePath}
+              canEdit={canCreatePath}
               onPathClick={handlePathClick}
               onToggleFavorite={(e) => {
                 void handleToggleFavorite(e, path.ID);
               }}
               onDelete={handleDeletePath}
+              onUpdate={handleUpdatePath}
               formatDate={formatDate}
             />
           ))}
