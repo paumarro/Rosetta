@@ -30,6 +30,13 @@ export default defineConfig(({ mode }) => {
           target: env.VITE_FE_URL,
           changeOrigin: false,
         },
+        // Proxy /editor/* to backend-editor for WebSocket and API calls
+        // Required for test mode when accessing dev server directly
+        '/editor': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+          ws: true, // Enable WebSocket proxying
+        },
       },
     },
   };
