@@ -38,14 +38,22 @@ const mdb = new MongodbPersistence(mongoUrl, 'yjs-documents');
 // See: https://github.com/fadiquader/y-mongodb#readme
 setPersistence({
   bindState: async (docName: string, ydoc: Y.Doc) => {
-    // 1. Load persisted document from MongoDB
+    // Load persisted document from MongoDB
     const persistedYdoc = await mdb.getYDoc(docName);
 
-    // 2. Apply persisted state to restore the document
-    const persistedState = Y.encodeStateAsUpdate(persistedYdoc);
-    Y.applyUpdate(ydoc, persistedState);
+    // Check if persisted doc has actual content (nodes, edges, or metadata)
+    // Only apply if there's data to prevent overwriting with empty state
+    const yNodes = persistedYdoc.getMap('nodes');
+    const yEdges = persistedYdoc.getMap('edges');
+    const yMetadata = persistedYdoc.getMap('metadata');
+    const hasContent = yNodes.size > 0 || yEdges.size > 0 || yMetadata.size > 0;
 
-    // 3. Subscribe to future updates and persist them
+    if (hasContent) {
+      const persistedState = Y.encodeStateAsUpdate(persistedYdoc);
+      Y.applyUpdate(ydoc, persistedState);
+    }
+
+    // Subscribe to future updates and persist them
     ydoc.on('update', (update: Uint8Array) => {
       mdb.storeUpdate(docName, update);
     });
