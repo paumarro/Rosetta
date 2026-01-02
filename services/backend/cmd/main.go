@@ -53,6 +53,7 @@ func main() {
 		protected.GET("/api/user/me", userController.GetCurrentUser)
 		protected.PATCH("/api/user/me", userController.UpdateCurrentUser)
 		protected.POST("/api/user/me/community", userController.SetUserCommunity)
+		protected.GET("/api/user/photo", userController.GetUserPhoto)
 
 		// Community API
 		protected.GET("/api/communities", communityController.GetCommunities)

@@ -48,13 +48,13 @@ func (ctrl *UserController) GetCurrentUser(c *gin.Context) {
 // GetUserPhoto returns the user's photo from Microsoft Graph
 // GET /api/user/photo
 func (ctrl *UserController) GetUserPhoto(c *gin.Context) {
-	accessToken, err := c.Cookie("access_token")
+	graphAccessToken, err := c.Cookie("graph_access_token")
 	if err != nil {
-		respondWithError(c, http.StatusUnauthorized, "Not authenticated", nil)
+		respondWithError(c, http.StatusUnauthorized, "Graph API token not available", nil)
 		return
 	}
 
-	photo, err := ctrl.GraphService.GetUserPhoto(c.Request.Context(), accessToken)
+	photo, err := ctrl.GraphService.GetUserPhoto(c.Request.Context(), graphAccessToken)
 	if err != nil {
 		respondWithError(c, http.StatusInternalServerError, err.Error(), nil)
 		return

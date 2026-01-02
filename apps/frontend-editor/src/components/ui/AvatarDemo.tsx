@@ -15,7 +15,7 @@ export default function AvatarDemo() {
       ? [
           {
             userId: currentUser.userId,
-            src: '',
+            src: currentUser.photoURL || '',
             alt: `@${currentUser.userName}`,
             fallback: currentUser.userName
               .split(' ')
@@ -28,7 +28,7 @@ export default function AvatarDemo() {
       : []),
     ...otherUsers.map((user) => ({
       userId: user.userId,
-      src: '',
+      src: user.photoURL || '',
       alt: `@${user.userName}`,
       fallback: user.userName
         .split(' ')
