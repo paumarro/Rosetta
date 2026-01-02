@@ -1,488 +1,512 @@
 {
   "nodes": [
     {
-      "id": "topic-internet",
+      "id": "topic-welcome",
       "type": "topic",
       "position": {
-        "x": 100,
+        "x": 0,
+        "y": 0
+      },
+      "isBeingEdited": false,
+      "editedBy": null,
+      "data": {
+        "label": "Click Me First!",
+        "side": 1,
+        "parentId": null,
+        "description": "Welcome to Rosetta Editor — a collaborative knowledge-sharing platform designed to accelerate learning and expertise development.\n\nIn the consulting world, rapid onboarding and specialized knowledge are crucial for success. This platform helps bridge knowledge gaps by providing structured learning paths that experts can create and share with their teams.\n\nThis tutorial diagram will guide you through all the features of the editor. Each main topic represents a category of features, and the connected subtopics explain specific capabilities in detail.\n\n🎯 How to use this tutorial:\n1. Click on each node to read its content\n2. Start with the main topics (dark nodes) to understand feature categories\n3. Then explore the subtopics (light nodes) for detailed instructions\n4. Feel free to experiment — you can always create a new learning path!",
+        "resources": []
+      }
+    },
+    {
+      "id": "topic-canvas",
+      "type": "topic",
+      "position": {
+        "x": 0,
         "y": 200
       },
       "isBeingEdited": false,
       "editedBy": null,
       "data": {
-        "label": "Internet",
+        "label": "Canvas Navigation",
         "side": 1,
         "parentId": null,
-        "description": "The Internet is a global network of interconnected computers that communicate using standardized protocols.",
-        "resources": [
-          {
-            "title": "How does the Internet work?",
-            "type": "article",
-            "url": "https://developer.mozilla.org/en-US/docs/Learn/Common_questions/How_does_the_Internet_work"
-          },
-          {
-            "title": "Internet Fundamentals",
-            "type": "video",
-            "url": "https://www.youtube.com/watch?v=7_LPdttKXPc"
-          }
-        ]
+        "description": "The canvas is your workspace for building learning paths. Understanding how to navigate it efficiently will make your editing experience smooth and intuitive.\n\nThe canvas uses a grid system that helps you align nodes precisely. All your changes are automatically saved and synced with your team in real-time.",
+        "resources": []
       }
     },
     {
-      "id": "topic-language",
-      "type": "topic",
-      "position": {
-        "x": -100,
-        "y": 400
-      },
-      "isBeingEdited": false,
-      "editedBy": null,
-      "data": {
-        "label": "Pick a Language",
-        "side": 2,
-        "parentId": null,
-        "description": "Choose a programming language to start your backend development journey. Each language has its strengths and use cases.",
-        "resources": [
-          {
-            "title": "Programming Language Comparison",
-            "type": "article",
-            "url": "https://www.freecodecamp.org/news/programming-languages-guide/"
-          }
-        ]
-      }
-    },
-    {
-      "id": "topic-databases",
-      "type": "topic",
-      "position": {
-        "x": 100,
-        "y": 600
-      },
-      "isBeingEdited": false,
-      "editedBy": null,
-      "data": {
-        "label": "Databases",
-        "side": 1,
-        "parentId": null,
-        "description": "Databases are organized collections of data that can be easily accessed, managed, and updated. Understanding databases is crucial for backend development.",
-        "resources": [
-          {
-            "title": "Database Fundamentals",
-            "type": "article",
-            "url": "https://www.oracle.com/database/what-is-database/"
-          },
-          {
-            "title": "SQL vs NoSQL",
-            "type": "video",
-            "url": "https://www.youtube.com/watch?v=Q5aTUc7c4jg"
-          }
-        ]
-      }
-    },
-    {
-      "id": "subtopic-http",
+      "id": "subtopic-pan",
       "type": "subtopic",
       "position": {
-        "x": 300,
-        "y": 100
+        "x": 250,
+        "y": 130
       },
       "isBeingEdited": false,
       "editedBy": null,
       "data": {
-        "label": "HTTP",
+        "label": "Pan & Zoom",
         "side": 1,
-        "parentId": "topic-internet",
-        "description": "HTTP (Hypertext Transfer Protocol) is the main way information is sent and received on the internet. It's like the language web browsers and servers use to talk to each other.",
-        "resources": [
-          {
-            "title": "Everything you need to know about HTTP",
-            "type": "article",
-            "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP"
-          },
-          {
-            "title": "What is HTTP?",
-            "type": "article",
-            "url": "https://www.cloudflare.com/learning/ddos/glossary/hypertext-transfer-protocol-http/"
-          },
-          {
-            "title": "How HTTP works",
-            "type": "article",
-            "url": "https://howhttps.works/"
-          },
-          {
-            "title": "HTTP Headers",
-            "type": "video",
-            "url": "https://www.youtube.com/watch?v=iYM2zFP3Zn0"
-          }
-        ]
+        "parentId": "topic-canvas",
+        "description": "Navigate around the canvas using these simple controls:\n\n🖱️ Pan (Move around):\n• Click and drag on empty canvas space\n• Hold the middle mouse button and drag\n\n🔍 Zoom:\n• Use your mouse scroll wheel to zoom in/out\n• Pinch gesture on trackpad\n",
+        "resources": []
       }
     },
     {
-      "id": "subtopic-domain",
+      "id": "subtopic-select",
       "type": "subtopic",
       "position": {
-        "x": 300,
-        "y": 150
-      },
-      "isBeingEdited": false,
-      "editedBy": null,
-      "data": {
-        "label": "Domain name",
-        "side": 1,
-        "parentId": "topic-internet",
-        "description": "A domain name is a human-readable address that corresponds to an IP address on the Internet.",
-        "resources": [
-          {
-            "title": "What is a Domain Name?",
-            "type": "article",
-            "url": "https://developer.mozilla.org/en-US/docs/Learn/Common_questions/What_is_a_domain_name"
-          }
-        ]
-      }
-    },
-    {
-      "id": "subtopic-hosting",
-      "type": "subtopic",
-      "position": {
-        "x": 300,
+        "x": 250,
         "y": 200
       },
       "isBeingEdited": false,
       "editedBy": null,
       "data": {
-        "label": "Hosting",
+        "label": "Selecting Elements",
         "side": 1,
-        "parentId": "topic-internet",
-        "description": "Web hosting is a service that allows organizations and individuals to post a website or web page onto the Internet.",
-        "resources": [
-          {
-            "title": "What is Web Hosting?",
-            "type": "article",
-            "url": "https://www.hostinger.com/tutorials/what-is-web-hosting"
-          }
-        ]
+        "parentId": "topic-canvas",
+        "description": "Select nodes and edges to perform operations on them:\n\n👆 Single Selection:\n• Click on any node or edge to select it\n• Selected nodes show a highlighted background\n• Selected edges become more prominent\n\n🔲 Multi-Selection:\n• Hold Shift and click to add to selection\n• Click on empty canvas to deselect all\n\n💡 Tip: Selected elements can be deleted using the Delete or Backspace key!",
+        "resources": []
       }
     },
     {
-      "id": "subtopic-dns",
-      "type": "subtopic",
+      "id": "topic-nodes",
+      "type": "topic",
       "position": {
-        "x": 300,
-        "y": 250
-      },
-      "isBeingEdited": false,
-      "editedBy": null,
-      "data": {
-        "label": "DNS",
-        "side": 1,
-        "parentId": "topic-internet",
-        "description": "The Domain Name System (DNS) translates human-readable domain names to machine-readable IP addresses.",
-        "resources": [
-          {
-            "title": "What is DNS?",
-            "type": "article",
-            "url": "https://www.cloudflare.com/learning/dns/what-is-dns/"
-          }
-        ]
-      }
-    },
-    {
-      "id": "subtopic-js",
-      "type": "subtopic",
-      "position": {
-        "x": -300,
-        "y": 300
-      },
-      "isBeingEdited": false,
-      "editedBy": null,
-      "data": {
-        "label": "JS",
-        "side": 2,
-        "parentId": "topic-language",
-        "description": "JavaScript is a versatile programming language that can be used for both frontend and backend development with Node.js.",
-        "resources": [
-          {
-            "title": "JavaScript Guide",
-            "type": "article",
-            "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide"
-          }
-        ]
-      }
-    },
-    {
-      "id": "subtopic-python",
-      "type": "subtopic",
-      "position": {
-        "x": -300,
-        "y": 350
-      },
-      "isBeingEdited": false,
-      "editedBy": null,
-      "data": {
-        "label": "Python",
-        "side": 2,
-        "parentId": "topic-language",
-        "description": "Python is a high-level programming language known for its simplicity and readability, popular for web development, data science, and automation.",
-        "resources": [
-          {
-            "title": "Python Official Tutorial",
-            "type": "article",
-            "url": "https://docs.python.org/3/tutorial/"
-          }
-        ]
-      }
-    },
-    {
-      "id": "subtopic-java",
-      "type": "subtopic",
-      "position": {
-        "x": -300,
+        "x": -250,
         "y": 400
       },
       "isBeingEdited": false,
       "editedBy": null,
       "data": {
-        "label": "Java",
+        "label": "Working with Nodes",
         "side": 2,
-        "parentId": "topic-language",
-        "description": "Java is a robust, object-oriented programming language widely used for enterprise applications and Android development.",
-        "resources": [
-          {
-            "title": "Java Documentation",
-            "type": "article",
-            "url": "https://docs.oracle.com/javase/tutorial/"
-          }
-        ]
+        "parentId": null,
+        "description": "Nodes are the building blocks of your learning path. Each node represents a topic or concept that learners need to understand.\n\nThere are two types of nodes:\n\n⬛ Topics (Dark): Main categories or core concepts. These serve as anchors for your learning path structure.\n\n⬜ Subtopics (Light): Detailed concepts that branch off from topics. Use these to break down complex subjects into manageable pieces.\n\nClick on any node to view or edit its content!",
+        "resources": []
       }
     },
     {
-      "id": "subtopic-go",
+      "id": "subtopic-add-node",
       "type": "subtopic",
       "position": {
-        "x": -300,
-        "y": 450
+        "x": -500,
+        "y": 330
       },
       "isBeingEdited": false,
       "editedBy": null,
       "data": {
-        "label": "GO",
+        "label": "Adding Nodes",
         "side": 2,
-        "parentId": "topic-language",
-        "description": "Go (Golang) is a fast, statically typed programming language designed for building scalable and efficient backend systems.",
-        "resources": [
-          {
-            "title": "Go Documentation",
-            "type": "article",
-            "url": "https://golang.org/doc/"
-          }
-        ]
+        "parentId": "topic-nodes",
+        "description": "Create new nodes using the floating action button:\n\n➕ The Add Button:\n• Located at the bottom of the screen\n• Hover over it to reveal the menu\n• Choose between 'Topic' or 'Subtopic' \n\n📍 Automatic Positioning:\n• New nodes are placed automatically based on existing content\n• Topics appear near the center\n• Subtopics position themselves relative to nearby topics\n\n💡 Tip: Create topics first to define your main structure, then add subtopics to elaborate on each area!",
+        "resources": []
       }
     },
     {
-      "id": "subtopic-postgresql",
+      "id": "subtopic-edit-node",
       "type": "subtopic",
       "position": {
-        "x": 300,
-        "y": 500
+        "x": -500,
+        "y": 400
       },
       "isBeingEdited": false,
       "editedBy": null,
       "data": {
-        "label": "PostgreSQL",
-        "side": 1,
-        "parentId": "topic-databases",
-        "description": "PostgreSQL is a powerful, open-source relational database system with strong support for SQL standards and advanced features.",
+        "label": "Editing Content",
+        "side": 2,
+        "parentId": "topic-nodes",
+        "description": "Click on any node to open the edit modal:\n\n✏️ What you can edit:\n• Title: The label shown on the node (keep it short!)\n• Description: Detailed explanation of the concept\n• Resources: Links to articles and videos\n\n💾 Saving Changes:\n• Click 'Save Changes' to apply your edits\n• Click 'Cancel' or outside the modal to discard\n• All saved changes sync instantly to other collaborators!",
+        "resources": []
+      }
+    },
+    {
+      "id": "subtopic-resources",
+      "type": "subtopic",
+      "position": {
+        "x": -500,
+        "y": 470
+      },
+      "isBeingEdited": false,
+      "editedBy": null,
+      "data": {
+        "label": "Adding Resources",
+        "side": 2,
+        "parentId": "topic-nodes",
+        "description": "Enrich your nodes with learning materials:\n\n📚 Resource Types:\n• Article: For documentation, blog posts, guides (purple badge)\n• Video: For tutorials, presentations, courses (yellow badge)\n\n➕ How to Add:\n1. Open a node for editing\n2. Click on 'Resources' to expand the section\n3. Click 'Add Resource'\n4. Select the type (Article/Video)\n5. Enter a descriptive title\n6. Paste the URL\n\n🗑️ Removing Resources:\n• Click the X button next to any resource to remove it\n\n💡 Tip: Good resources accelerate learning — include a mix of quick reads and in-depth materials!",
         "resources": [
           {
-            "title": "PostgreSQL Tutorial",
+            "title": "Example Article Resource",
             "type": "article",
-            "url": "https://www.postgresql.org/docs/current/tutorial.html"
+            "url": "https://example.com/article"
           },
           {
-            "title": "PostgreSQL in 100 Seconds",
+            "title": "Example Video Resource",
             "type": "video",
-            "url": "https://www.youtube.com/watch?v=n2Fluyr3lbc"
+            "url": "https://example.com/video"
           }
         ]
       }
     },
     {
-      "id": "subtopic-mongodb",
+      "id": "subtopic-move-node",
       "type": "subtopic",
       "position": {
-        "x": 300,
-        "y": 550
+        "x": -500,
+        "y": 540
       },
       "isBeingEdited": false,
       "editedBy": null,
       "data": {
-        "label": "MongoDB",
-        "side": 1,
-        "parentId": "topic-databases",
-        "description": "MongoDB is a popular NoSQL database that stores data in flexible, JSON-like documents, making it ideal for handling unstructured data.",
-        "resources": [
-          {
-            "title": "MongoDB University",
-            "type": "article",
-            "url": "https://learn.mongodb.com/"
-          },
-          {
-            "title": "MongoDB Crash Course",
-            "type": "video",
-            "url": "https://www.youtube.com/watch?v=-56x56UppqQ"
-          }
-        ]
+        "label": "Moving Nodes",
+        "side": 2,
+        "parentId": "topic-nodes",
+        "description": "Organize your diagram by repositioning nodes:\n\n🖱️ Drag to Move:\n• Click and hold on any node\n• Drag it to the desired position\n• Release to place it\n\n📐 Snap to Grid:\n• Nodes automatically align to a 15x15 pixel grid\n• This keeps your diagram clean and organized\n\n🔗 Connected Edges:\n• When you move a node, its connected edges follow\n• Edges automatically adjust their paths\n\n💡 Tip: You can move nodes even when someone else is editing their content — collaboration doesn't block positioning!",
+        "resources": []
       }
     },
     {
-      "id": "subtopic-redis",
+      "id": "subtopic-delete-node",
       "type": "subtopic",
       "position": {
-        "x": 300,
+        "x": -500,
+        "y": 610
+      },
+      "isBeingEdited": false,
+      "editedBy": null,
+      "data": {
+        "label": "Deleting Nodes",
+        "side": 2,
+        "parentId": "topic-nodes",
+        "description": "Remove nodes you no longer need:\n\n🗑️ Two Ways to Delete:\n\n1. From the Edit Modal:\n   • Click on the node to open it\n   • Click the 'Delete' button (red text)\n   • Confirm the deletion in the popup\n\n2. Using Keyboard:\n   • Select the node by clicking it\n   • Press Delete or Backspace key\n   • Node is removed immediately\n\n⚠️ Important:\n• Deleting a node also removes all its connected edges\n• Deletion is synced to all collaborators immediately\n• There's no undo — delete carefully!",
+        "resources": []
+      }
+    },
+    {
+      "id": "topic-edges",
+      "type": "topic",
+      "position": {
+        "x": 0,
         "y": 600
       },
       "isBeingEdited": false,
       "editedBy": null,
       "data": {
-        "label": "Redis",
+        "label": "Connecting Nodes",
         "side": 1,
-        "parentId": "topic-databases",
-        "description": "Redis is an in-memory data structure store used as a database, cache, and message broker, known for its exceptional speed.",
-        "resources": [
-          {
-            "title": "Redis Documentation",
-            "type": "article",
-            "url": "https://redis.io/docs/"
-          },
-          {
-            "title": "Redis Crash Course",
-            "type": "video",
-            "url": "https://www.youtube.com/watch?v=jgpVdJB2sKQ"
-          }
-        ]
+        "parentId": null,
+        "description": "Edges are the lines that connect nodes together, showing the relationships and learning sequence between concepts.\n\nConnections help learners understand:\n• Prerequisites: What they need to know first\n• Progression: How topics build on each other\n• Relationships: How concepts are related\n\nA well-connected diagram creates a clear learning journey!",
+        "resources": []
       }
     },
     {
-      "id": "subtopic-mysql",
+      "id": "subtopic-create-edge",
       "type": "subtopic",
       "position": {
-        "x": 300,
-        "y": 650
+        "x": 250,
+        "y": 530
       },
       "isBeingEdited": false,
       "editedBy": null,
       "data": {
-        "label": "MySQL",
+        "label": "Creating Connections",
         "side": 1,
-        "parentId": "topic-databases",
-        "description": "MySQL is one of the most popular open-source relational database management systems, widely used in web applications.",
-        "resources": [
-          {
-            "title": "MySQL Tutorial",
-            "type": "article",
-            "url": "https://dev.mysql.com/doc/"
-          }
-        ]
+        "parentId": "topic-edges",
+        "description": "Connect nodes by dragging from connection points:\n\n🔌 Connection Points (Handles):\n• Small circles appear on node edges when hovering\n• Topics have handles on all 4 sides\n• Subtopics have handles on left/right sides\n\n🔗 How to Connect:\n1. Hover over a node to reveal handles\n2. Click and drag from any handle\n3. Drag the line to another node's handle\n4. Release when the handle highlights\n\n📏 Connection Rules:\n• Nodes cannot connect to themselves\n• Duplicate connections are prevented\n• The connection radius is forgiving (50px)\n\n💡 Tip: Topic-to-topic connections show progression. Topic-to-subtopic connections show detail breakdown!",
+        "resources": []
+      }
+    },
+    {
+      "id": "subtopic-delete-edge",
+      "type": "subtopic",
+      "position": {
+        "x": 250,
+        "y": 600
+      },
+      "isBeingEdited": false,
+      "editedBy": null,
+      "data": {
+        "label": "Removing Connections",
+        "side": 1,
+        "parentId": "topic-edges",
+        "description": "Delete edges you no longer need:\n\n🖱️ Select and Delete:\n1. Click on an edge to select it (it will highlight)\n2. Press Delete or Backspace key\n3. The edge is removed instantly\n\n🔄 Automatic Cleanup:\n• When you delete a node, all its connected edges are automatically removed\n• You don't need to manually remove edges before deleting a node\n\n💡 Tip: You can select multiple edges and delete them all at once!",
+        "resources": []
+      }
+    },
+    {
+      "id": "topic-collaboration",
+      "type": "topic",
+      "position": {
+        "x": -250,
+        "y": 800
+      },
+      "isBeingEdited": false,
+      "editedBy": null,
+      "data": {
+        "label": "Real-Time Collaboration",
+        "side": 2,
+        "parentId": null,
+        "description": "Work together with your team in real-time! The editor supports multiple users editing the same learning path simultaneously.\n\nCollaboration features:\n• See who's online with avatar indicators\n• Watch cursors move in real-time\n• Changes sync instantly across all sessions\n• Smart locking prevents editing conflicts\n\nPerfect for senior experts and juniors to work together on knowledge transfer!",
+        "resources": []
+      }
+    },
+    {
+      "id": "subtopic-cursors",
+      "type": "subtopic",
+      "position": {
+        "x": -500,
+        "y": 730
+      },
+      "isBeingEdited": false,
+      "editedBy": null,
+      "data": {
+        "label": "Live Cursors",
+        "side": 2,
+        "parentId": "topic-collaboration",
+        "description": "See your collaborators' activity in real-time:\n\n🖱️ Cursor Tracking:\n• Each collaborator has a colored cursor\n• Cursors move in real-time as teammates navigate\n• Names appear next to cursors for identification\n\n👥 User Avatars:\n• The top-right shows avatars of connected users\n• Each user has a unique color for easy identification\n• Hover over avatars to see who's online\n\n🎨 Color Coding:\n• Your color is consistent throughout the session\n• Colors help distinguish different collaborators\n• The same color appears on cursors and node indicators",
+        "resources": []
+      }
+    },
+    {
+      "id": "subtopic-locking",
+      "type": "subtopic",
+      "position": {
+        "x": -500,
+        "y": 800
+      },
+      "isBeingEdited": false,
+      "editedBy": null,
+      "data": {
+        "label": "Node Locking",
+        "side": 2,
+        "parentId": "topic-collaboration",
+        "description": "When a coworker is editing a specific node, you won't be able to open it until they're finished. This prevents conflicting edits.\n\n🔒 How Locking Works:\n• Click a node to start editing → node becomes locked to you\n• Other users see a colored avatar badge on locked nodes\n• Attempting to open a locked node shows a shake animation\n\n✅ What You CAN Do:\n• Move locked nodes around the canvas\n• Connect or disconnect edges to/from locked nodes\n• Edit any other unlocked node\n\n🔓 Lock Release:\n• Close the edit modal to release the lock\n• Locks automatically release if you disconnect\n• Stale locks (>5 minutes) can be overridden",
+        "resources": []
+      }
+    },
+    {
+      "id": "subtopic-sync",
+      "type": "subtopic",
+      "position": {
+        "x": -500,
+        "y": 870
+      },
+      "isBeingEdited": false,
+      "editedBy": null,
+      "data": {
+        "label": "Instant Sync",
+        "side": 2,
+        "parentId": "topic-collaboration",
+        "description": "All changes sync automatically and instantly:\n\n⚡ What Syncs Immediately:\n• Node positions (when you drag)\n• Node content (when you save edits)\n• New nodes and edges\n• Deletions\n\n💾 Persistence:\n• Your work is saved to the cloud automatically\n• No manual save button needed\n• Data persists even if everyone disconnects\n\n🔄 Conflict Resolution:\n• The system handles conflicts automatically\n• Last edit wins for simultaneous changes\n• Locking prevents most conflicts on content",
+        "resources": []
+      }
+    },
+    {
+      "id": "topic-modes",
+      "type": "topic",
+      "position": {
+        "x": 0,
+        "y": 1000
+      },
+      "isBeingEdited": false,
+      "editedBy": null,
+      "data": {
+        "label": "View & Edit Modes",
+        "side": 1,
+        "parentId": null,
+        "description": "The editor supports two modes for different use cases:\n\n✏️ Edit Mode: Full editing capabilities for content creators\n👁️ View Mode: Read-only mode for learners following the path\n\nMode switching is available via the toggle button in the top-right corner. The current mode affects what actions are available.",
+        "resources": []
+      }
+    },
+    {
+      "id": "subtopic-edit-mode",
+      "type": "subtopic",
+      "position": {
+        "x": 250,
+        "y": 930
+      },
+      "isBeingEdited": false,
+      "editedBy": null,
+      "data": {
+        "label": "Edit Mode",
+        "side": 1,
+        "parentId": "topic-modes",
+        "description": "Full editing capabilities for content creators:\n\n✅ Available Actions:\n• Add new nodes (topics and subtopics)\n• Edit node titles, descriptions, and resources\n• Drag nodes to reposition them\n• Create and delete connections\n• Delete nodes and edges\n\n👥 Collaboration:\n• See other editors' cursors\n• Node locking applies\n• Changes sync in real-time\n\n🎯 Best For:\n• Subject matter experts building learning paths\n• Team collaboration on content creation\n• Iterating on diagram structure",
+        "resources": []
+      }
+    },
+    {
+      "id": "subtopic-view-mode",
+      "type": "subtopic",
+      "position": {
+        "x": 250,
+        "y": 1000
+      },
+      "isBeingEdited": false,
+      "editedBy": null,
+      "data": {
+        "label": "View Mode",
+        "side": 1,
+        "parentId": "topic-modes",
+        "description": "Read-only mode for learners following the path:\n\n👁️ What You Can Do:\n• Pan and zoom around the canvas\n• Click nodes to read their content\n• Access all attached resources\n• Track your completion progress\n\n🚫 What's Disabled:\n• Adding or deleting nodes\n• Editing any content\n• Moving nodes\n• Creating or removing connections\n\n✅ Completion Tracking:\n• Mark nodes as 'Complete' when you've learned the material\n• Progress is saved locally\n• Completed nodes show a visual indicator",
+        "resources": []
+      }
+    },
+    {
+      "id": "subtopic-completion",
+      "type": "subtopic",
+      "position": {
+        "x": 250,
+        "y": 1070
+      },
+      "isBeingEdited": false,
+      "editedBy": null,
+      "data": {
+        "label": "Progress Tracking",
+        "side": 1,
+        "parentId": "topic-modes",
+        "description": "Track your learning journey in View Mode:\n\n✅ Marking Complete:\n• Open any node in View Mode\n• Click 'Mark Complete' button at the bottom\n• Button changes to '✓ Completed' (green)\n\n👀 Visual Feedback:\n• Completed nodes appear lighter/faded\n• Easy to see what you've covered\n• Identify remaining topics at a glance\n\n💾 Progress Persistence:\n• Your completion status saves locally\n• Progress persists across browser sessions\n• Each learning path tracks progress separately",
+        "resources": []
       }
     }
   ],
   "edges": [
-
     {
-      "id": "e-internet-language",
-      "source": "topic-internet",
-      "target": "topic-language",
+      "id": "e-welcome-canvas",
+      "source": "topic-welcome",
+      "target": "topic-canvas",
       "sourceHandle": "b",
       "targetHandle": "t"
     },
     {
-      "id": "e-internet-http",
-      "source": "topic-internet",
-      "target": "subtopic-http",
+      "id": "e-canvas-pan",
+      "source": "topic-canvas",
+      "target": "subtopic-pan",
       "sourceHandle": "r",
       "targetHandle": "l"
     },
     {
-      "id": "e-internet-domain",
-      "source": "topic-internet",
-      "target": "subtopic-domain",
+      "id": "e-canvas-select",
+      "source": "topic-canvas",
+      "target": "subtopic-select",
       "sourceHandle": "r",
       "targetHandle": "l"
     },
     {
-      "id": "e-internet-hosting",
-      "source": "topic-internet",
-      "target": "subtopic-hosting",
-      "sourceHandle": "r",
-      "targetHandle": "l"
-    },
-    {
-      "id": "e-internet-dns",
-      "source": "topic-internet",
-      "target": "subtopic-dns",
-      "sourceHandle": "r",
-      "targetHandle": "l"
-    },
-    {
-      "id": "e-language-js",
-      "source": "topic-language",
-      "target": "subtopic-js",
-      "sourceHandle": "l",
-      "targetHandle": "r"
-    },
-    {
-      "id": "e-language-python",
-      "source": "topic-language",
-      "target": "subtopic-python",
-      "sourceHandle": "l",
-      "targetHandle": "r"
-    },
-    {
-      "id": "e-language-java",
-      "source": "topic-language",
-      "target": "subtopic-java",
-      "sourceHandle": "l",
-      "targetHandle": "r"
-    },
-    {
-      "id": "e-language-go",
-      "source": "topic-language",
-      "target": "subtopic-go",
-      "sourceHandle": "l",
-      "targetHandle": "r"
-    },
-    {
-      "id": "e-language-databases",
-      "source": "topic-language",
-      "target": "topic-databases",
+      "id": "e-canvas-nodes",
+      "source": "topic-canvas",
+      "target": "topic-nodes",
       "sourceHandle": "b",
       "targetHandle": "t"
     },
     {
-      "id": "e-databases-postgresql",
-      "source": "topic-databases",
-      "target": "subtopic-postgresql",
+      "id": "e-nodes-add",
+      "source": "topic-nodes",
+      "target": "subtopic-add-node",
+      "sourceHandle": "l",
+      "targetHandle": "r"
+    },
+    {
+      "id": "e-nodes-edit",
+      "source": "topic-nodes",
+      "target": "subtopic-edit-node",
+      "sourceHandle": "l",
+      "targetHandle": "r"
+    },
+    {
+      "id": "e-nodes-resources",
+      "source": "topic-nodes",
+      "target": "subtopic-resources",
+      "sourceHandle": "l",
+      "targetHandle": "r"
+    },
+    {
+      "id": "e-nodes-move",
+      "source": "topic-nodes",
+      "target": "subtopic-move-node",
+      "sourceHandle": "l",
+      "targetHandle": "r"
+    },
+    {
+      "id": "e-nodes-delete",
+      "source": "topic-nodes",
+      "target": "subtopic-delete-node",
+      "sourceHandle": "l",
+      "targetHandle": "r"
+    },
+    {
+      "id": "e-nodes-edges",
+      "source": "topic-nodes",
+      "target": "topic-edges",
+      "sourceHandle": "b",
+      "targetHandle": "t"
+    },
+    {
+      "id": "e-edges-create",
+      "source": "topic-edges",
+      "target": "subtopic-create-edge",
       "sourceHandle": "r",
       "targetHandle": "l"
     },
     {
-      "id": "e-databases-mongodb",
-      "source": "topic-databases",
-      "target": "subtopic-mongodb",
+      "id": "e-edges-delete",
+      "source": "topic-edges",
+      "target": "subtopic-delete-edge",
       "sourceHandle": "r",
       "targetHandle": "l"
     },
     {
-      "id": "e-databases-redis",
-      "source": "topic-databases",
-      "target": "subtopic-redis",
+      "id": "e-edges-collaboration",
+      "source": "topic-edges",
+      "target": "topic-collaboration",
+      "sourceHandle": "b",
+      "targetHandle": "t"
+    },
+    {
+      "id": "e-collab-cursors",
+      "source": "topic-collaboration",
+      "target": "subtopic-cursors",
+      "sourceHandle": "l",
+      "targetHandle": "r"
+    },
+    {
+      "id": "e-collab-locking",
+      "source": "topic-collaboration",
+      "target": "subtopic-locking",
+      "sourceHandle": "l",
+      "targetHandle": "r"
+    },
+    {
+      "id": "e-collab-sync",
+      "source": "topic-collaboration",
+      "target": "subtopic-sync",
+      "sourceHandle": "l",
+      "targetHandle": "r"
+    },
+    {
+      "id": "e-collaboration-modes",
+      "source": "topic-collaboration",
+      "target": "topic-modes",
+      "sourceHandle": "b",
+      "targetHandle": "t"
+    },
+    {
+      "id": "e-modes-edit",
+      "source": "topic-modes",
+      "target": "subtopic-edit-mode",
       "sourceHandle": "r",
       "targetHandle": "l"
     },
     {
-      "id": "e-databases-mysql",
-      "source": "topic-databases",
-      "target": "subtopic-mysql",
+      "id": "e-modes-view",
+      "source": "topic-modes",
+      "target": "subtopic-view-mode",
+      "sourceHandle": "r",
+      "targetHandle": "l"
+    },
+    {
+      "id": "e-modes-completion",
+      "source": "topic-modes",
+      "target": "subtopic-completion",
       "sourceHandle": "r",
       "targetHandle": "l"
     }
