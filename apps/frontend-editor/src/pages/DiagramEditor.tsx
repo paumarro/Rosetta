@@ -85,9 +85,10 @@ export default function DiagramEditor({
     const currentUser = {
       userId: user.EntraID,
       userName: user.Name,
+      photoURL: user.PhotoURL || '/api/user/photo',
     };
 
-    void initializeCollaboration(pathId, currentUser, isViewMode);
+    initializeCollaboration(pathId, currentUser, isViewMode);
   }, [pathId, user, initializeCollaboration, isViewMode, isLoading]);
 
   useEffect(() => {
