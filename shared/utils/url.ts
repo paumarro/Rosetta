@@ -1,10 +1,4 @@
-/**
- * Centralized URL construction utilities
- */
-
-/**
- * Build editor URL for a learning path
- */
+/** Builds encoded editor URL for a learning path */
 export function buildEditorUrl(
   baseUrl: string,
   community: string,
@@ -13,9 +7,7 @@ export function buildEditorUrl(
   return `${baseUrl}editor/${encodeURIComponent(community)}/${encodeURIComponent(pathId)}`;
 }
 
-/**
- * Build view URL for a learning path
- */
+/** Builds encoded view URL for a learning path */
 export function buildViewUrl(
   baseUrl: string,
   community: string,
@@ -24,9 +16,7 @@ export function buildViewUrl(
   return `${baseUrl}view/${encodeURIComponent(community)}/${encodeURIComponent(pathId)}`;
 }
 
-/**
- * Build view URL with optional community (for backwards compatibility)
- */
+/** Builds view URL with optional community (backwards compatibility) */
 export function buildViewUrlLegacy(
   baseUrl: string,
   pathId: string,

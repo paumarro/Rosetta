@@ -32,7 +32,7 @@ export function User() {
     return null;
   }
 
-  const userImage = user.PhotoURL || '/avatars/default.jpg';
+  const userImage = user.PhotoURL || '/api/user/photo';
   const initials = user.Name.split(' ')
     .map((n) => n[0])
     .join('')

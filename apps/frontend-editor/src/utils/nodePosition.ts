@@ -1,8 +1,6 @@
 import type { DiagramNode } from '@/types/reactflow';
 
-/**
- * Constants for node positioning calculations
- */
+/** Node positioning constants */
 export const NODE_SPACING = {
   TOPIC_Y: 200,
   TOPIC_X: 200,
@@ -10,17 +8,11 @@ export const NODE_SPACING = {
   SUBTOPIC_X: 200,
 } as const;
 
-/**
- * Calculate node side based on x position
- * 1 = right side, 2 = left side
- */
+/** Returns 1 for right side (x >= 0), 2 for left side */
 export const calculateNodeSide = (x: number): 1 | 2 => {
   return x >= 0 ? 1 : 2;
 };
 
-/**
- * Get the last node of a specific type
- */
 const getLastNodeType = (
   nodes: DiagramNode[],
   type: string,
@@ -31,9 +23,7 @@ const getLastNodeType = (
     : undefined;
 };
 
-/**
- * Calculate position for a new topic node
- */
+/** Calculates topic position, alternating left/right sides */
 const calculateTopicPosition = (
   nodes: DiagramNode[],
 ): { x: number; y: number } => {
@@ -52,9 +42,7 @@ const calculateTopicPosition = (
   };
 };
 
-/**
- * Calculate position for a new subtopic node
- */
+/** Calculates subtopic position relative to parent topic */
 const calculateSubtopicPosition = (
   nodes: DiagramNode[],
 ): { x: number; y: number } => {
@@ -80,9 +68,7 @@ const calculateSubtopicPosition = (
   };
 };
 
-/**
- * Calculate automatic position for a new node based on type
- */
+/** Auto-calculates position for new node based on type */
 export const calculateAutoPosition = (
   type: string,
   nodes: DiagramNode[],

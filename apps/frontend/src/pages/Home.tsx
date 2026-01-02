@@ -40,15 +40,12 @@ export default function Home() {
 
   return (
     <AppLayout>
-      <div className="flex flex-col mt-10 py-5 items-start text-left">
-        {/* <p className="text-xl font tracking-tight mb-2">
-          Welcome to Rosseta, {firstName}
-        </p> */}
+      <div className="flex flex-col mt-8 items-start text-left">
 
         {loading ? (
-          <p className="text-muted-foreground mt-2">Loading communities...</p>
+          <p className="text-muted-foreground">Loading communities...</p>
         ) : (
-          <div className="mt-2 flex flex-col w-full divide-y divide-gray-300 overflow-hidden animate-in fade-in duration-700">
+          <div className=" flex flex-col w-full divide-y divide-gray-300 overflow-hidden animate-in fade-in duration-700">
             {communities.map((community) => (
               <button
                 key={community}

@@ -5,6 +5,11 @@ import { createYjsNode } from '../helpers';
 import { nanoid } from 'nanoid';
 import * as Y from 'yjs';
 
+/**
+ * Creates the diagram slice of the collaborative store.
+ * Manages nodes, edges, and all diagram manipulation operations
+ * synchronized through Yjs for real-time collaboration.
+ */
 export const createDiagramSlice: StateCreator<
   CollaborativeState,
   [],

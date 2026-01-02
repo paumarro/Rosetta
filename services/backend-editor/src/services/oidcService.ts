@@ -45,8 +45,9 @@ class OIDCService {
   }
 
   /**
-   * Initialize JWKS (JSON Web Key Set) for token verification
-   * Lazily initialized on first validation request
+   * Initializes JWKS (JSON Web Key Set) for token verification.
+   * Lazily initialized on first validation request.
+   * @returns Promise resolving to JWKS verification function
    */
   private async getJWKS(): Promise<jose.JWTVerifyGetKey> {
     if (!this.jwks) {
@@ -57,7 +58,10 @@ class OIDCService {
   }
 
   /**
-   * Validates an OIDC token from Microsoft Entra ID
+   * Validates an OIDC token from Microsoft Entra ID.
+   * Verifies signature, issuer, audience, and expiration.
+   * @param token - JWT access token to validate
+   * @returns Validation result with claims or error message
    */
   async validateToken(token: string): Promise<ValidationResult> {
     if (!token) {

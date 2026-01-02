@@ -15,7 +15,10 @@ export const NavigationContext = createContext<NavigationContextType>({
   setNavigation: () => { },
 });
 
-// Custom hook to use the NavigationContext
-export function useNavigation() {
+/**
+ * Hook to access navigation context including current route and breadcrumbs.
+ * @returns Navigation state and setter function
+ */
+export function useNavigation(): NavigationContextType {
   return useContext(NavigationContext);
 }

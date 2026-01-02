@@ -6,8 +6,13 @@ import { apiFetch, getErrorMessage } from '@/services/api';
 // Re-export types for convenience
 export type { LearningPath };
 
+/** LocalStorage key for recently viewed learning paths */
 const RECENTLY_VIEWED_KEY = 'rosetta_recently_viewed';
 
+/**
+ * Zustand store for managing learning path state.
+ * Handles fetching, CRUD operations, favorites, and recently viewed paths.
+ */
 export const useLearningPathStore = create<LearningPathStore>((set, get) => ({
   learningPaths: [],
   favorites: [],

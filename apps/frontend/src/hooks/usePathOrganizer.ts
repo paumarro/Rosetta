@@ -9,6 +9,16 @@ interface UsePathOrganizerProps {
   favorites: LearningPath[];
 }
 
+/**
+ * Hook for filtering and sorting learning paths based on user preferences.
+ * Supports filtering by all, recently viewed, or bookmarked paths,
+ * and sorting by last update or alphabetically.
+ * @param props - Configuration object
+ * @param props.allPaths - All available learning paths
+ * @param props.isFavorited - Function to check if a path is favorited
+ * @param props.favorites - Array of favorited learning paths
+ * @returns Object containing filter/sort state and organized paths
+ */
 export function usePathOrganizer({
   allPaths,
   isFavorited,

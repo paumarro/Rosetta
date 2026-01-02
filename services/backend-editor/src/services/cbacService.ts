@@ -20,8 +20,9 @@ class CBACService {
   private adminEmails: Set<string> | null = null;
 
   /**
-   * Parse group mappings from environment variable
+   * Parses group mappings from environment variable.
    * Format: GROUP_ID_1:CommunityName1,GROUP_ID_2:CommunityName2
+   * @returns Cached or newly parsed group to community mappings
    */
   private getGroupMappings(): GroupToCommunityMapping {
     if (this.groupMappings) {
@@ -48,7 +49,8 @@ class CBACService {
   }
 
   /**
-   * Parse admin emails from environment variable
+   * Parses admin emails from environment variable.
+   * @returns Cached or newly parsed set of admin emails (lowercase)
    */
   private getAdminEmails(): Set<string> {
     if (this.adminEmails) {
@@ -74,8 +76,10 @@ class CBACService {
   }
 
   /**
-   * Determine user's community from their group memberships
-   * Returns the first matching community or null if no match
+   * Determines user's community from their group memberships.
+   * Returns the first matching community or null if no match.
+   * @param groupIds - Array of group IDs from token claims
+   * @returns Community name or null if no matching group found
    */
   getCommunityFromGroups(groupIds: string[]): string | null {
     if (groupIds.length === 0) {
@@ -94,7 +98,9 @@ class CBACService {
   }
 
   /**
-   * Check if email belongs to an admin
+   * Checks if an email belongs to an admin.
+   * @param email - Email address to check
+   * @returns True if email is in the admin list
    */
   isAdmin(email: string): boolean {
     if (!email) {
@@ -106,10 +112,12 @@ class CBACService {
   }
 
   /**
-   * Check if user can access a specific community's resources
-   * User can access if:
-   * - They are an admin, OR
-   * - They belong to that community
+   * Checks if user can access a specific community's resources.
+   * User can access if they are an admin OR belong to that community.
+   * @param userCommunity - User's community membership (nullable)
+   * @param targetCommunity - Community to check access for
+   * @param isAdmin - Whether user has admin privileges
+   * @returns True if user can access the target community
    */
   canAccessCommunity(
     userCommunity: string | null,
@@ -128,7 +136,8 @@ class CBACService {
   }
 
   /**
-   * Refresh cached mappings (useful for testing or config updates)
+   * Refreshes cached mappings (useful for testing or config updates).
+   * Clears group mappings and admin emails caches.
    */
   refreshCache(): void {
     this.groupMappings = null;

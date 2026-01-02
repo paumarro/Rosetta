@@ -17,9 +17,7 @@ interface CreateUserStoreOptions {
   apiBaseUrl?: string;
 }
 
-/**
- * Factory function to create a user store with configurable behavior
- */
+/** Creates a Zustand store for user authentication state */
 export function createUserStore(options: CreateUserStoreOptions = {}) {
   const {
     apiBaseUrl = '',

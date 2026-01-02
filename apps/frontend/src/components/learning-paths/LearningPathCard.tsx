@@ -22,6 +22,20 @@ interface LearningPathCardProps {
   formatDate: (dateString: string) => string;
 }
 
+/**
+ * Card component for displaying a learning path with edit/delete capabilities.
+ * Supports inline editing, favoriting, and deletion with confirmation.
+ * @param props - Component props
+ * @param props.path - The learning path data to display
+ * @param props.isFavorited - Whether the path is currently favorited
+ * @param props.canEdit - Whether edit/delete actions are available
+ * @param props.onPathClick - Callback when card is clicked
+ * @param props.onToggleFavorite - Callback to toggle favorite status
+ * @param props.onDelete - Optional callback for deleting the path
+ * @param props.onUpdate - Optional callback for updating path title/description
+ * @param props.formatDate - Function to format the date display
+ * @returns Card component displaying learning path information
+ */
 export function LearningPathCard({
   path,
   isFavorited,
@@ -31,7 +45,7 @@ export function LearningPathCard({
   onDelete,
   onUpdate,
   formatDate,
-}: LearningPathCardProps) {
+}: LearningPathCardProps): React.ReactElement {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(path.Title);
   const [editDescription, setEditDescription] = useState(

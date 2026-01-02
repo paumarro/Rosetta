@@ -72,7 +72,11 @@ export const routes: RouteItem[] = [
   },
 ];
 
-//Helper funcitons
+/**
+ * Finds a route item by its exact path, searching recursively through children.
+ * @param path - The URL path to search for
+ * @returns The matching RouteItem or null if not found
+ */
 export function findRouteByPath(path: string): RouteItem | null {
   //exact match
   const findRoute = (items: RouteItem[]): RouteItem | null => {
@@ -88,6 +92,12 @@ export function findRouteByPath(path: string): RouteItem | null {
   return findRoute(routes);
 }
 
+/**
+ * Generates breadcrumb trail for a given path.
+ * Includes home at the beginning and traverses parent routes.
+ * @param path - The URL path to generate breadcrumbs for
+ * @returns Array of RouteItems representing the breadcrumb trail
+ */
 export function getBreadcrumbsForPath(path: string): RouteItem[] {
   const breadcrumbs: RouteItem[] = [];
   const route = findRouteByPath(path);

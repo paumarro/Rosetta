@@ -1,10 +1,4 @@
-/**
- * Centralized date formatting utilities
- */
-
-/**
- * Format date as "1 Jan 2025"
- */
+/** Formats ISO date string to "D Mon YYYY" format (e.g., "1 Jan 2025") */
 export function formatDate(dateString: string): string {
   const date = new Date(dateString);
   const day = date.getDate();
@@ -27,25 +21,19 @@ export function formatDate(dateString: string): string {
   return `${String(day)} ${month} ${String(year)}`;
 }
 
-/**
- * Check if a date is within the last N days
- */
+/** Checks if a date falls within the last N days from now */
 export function isWithinDays(dateString: string, days: number): boolean {
   const date = new Date(dateString);
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
   return date.getTime() > cutoff;
 }
 
-/**
- * Check if a learning path is new (created within last 7 days)
- */
+/** Checks if item is "new" (created within last 7 days) */
 export function isNew(createdAt: string): boolean {
   return isWithinDays(createdAt, 7);
 }
 
-/**
- * Sort items by date field (newest first)
- */
+/** Sorts items by updatedAt in descending order (newest first) */
 export function sortByDate<T extends { updatedAt: string }>(
   items: T[],
 ): T[] {

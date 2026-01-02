@@ -1,7 +1,4 @@
-/**
- * Parses a cookie header string into a key-value object.
- * Handles cookies with multiple = signs in their value.
- */
+/** Parses cookie header string into key-value object */
 export function parseCookies(
   cookieHeader: string | undefined
 ): Record<string, string> {

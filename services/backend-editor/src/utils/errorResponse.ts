@@ -1,21 +1,13 @@
 import { Response } from 'express';
 
-/**
- * Standard error response format:
- * { error: string, message?: string }
- *
- * - error: Short error type (e.g., "Unauthorized", "Not Found")
- * - message: Optional detailed message
- */
+/** Standard error response format */
 export interface ErrorResponse {
   error: string;
   message?: string;
   code?: string;
 }
 
-/**
- * Sends a standardized error response
- */
+/** Sends a standardized JSON error response */
 export function sendError(
   res: Response,
   status: number,
@@ -33,9 +25,7 @@ export function sendError(
   return res.status(status).json(body);
 }
 
-/**
- * Common error helpers
- */
+/** Common error response helpers */
 export const errors = {
   unauthorized: (res: Response, message?: string) =>
     sendError(res, 401, 'Unauthorized', message || 'Authentication required'),

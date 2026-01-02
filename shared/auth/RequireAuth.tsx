@@ -7,6 +7,7 @@ interface RequireAuthProps {
   children: ReactNode;
 }
 
+/** Route guard that redirects to login if not authenticated */
 const RequireAuth: React.FC<RequireAuthProps> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 

@@ -1,12 +1,3 @@
-/**
- * Auth Service - Local OIDC validation with CBAC
- *
- * Validates tokens locally using Microsoft Entra ID JWKS.
- * Determines community membership and admin status from token claims.
- *
- * No external auth-service dependency required.
- */
-
 import oidcService, { type ValidationResult } from './oidcService.js';
 import cbacService from './cbacService.js';
 
@@ -25,9 +16,7 @@ export interface AuthResult {
 }
 
 class AuthService {
-  /**
-   * Validates a token and returns authenticated user with CBAC info
-   */
+  /** Validates token and returns user with CBAC info */
   async authenticateToken(token: string): Promise<AuthResult> {
     // Validate token using local OIDC
     const validationResult: ValidationResult =
@@ -64,9 +53,7 @@ class AuthService {
     };
   }
 
-  /**
-   * Check if user can access a specific community
-   */
+  /** Checks if user can access target community (admins have full access) */
   canAccessCommunity(user: AuthenticatedUser, targetCommunity: string): boolean {
     return cbacService.canAccessCommunity(
       user.community,

@@ -7,6 +7,8 @@ import { DiagramNode } from '@/types/reactflow';
  * Hook to manage connection drag state for ReactFlow.
  * Tracks the source node and handle when a user starts dragging a connection.
  * Used to determine which target handles should be visible during connection.
+ * @param nodes - Array of diagram nodes to search for source node
+ * @returns Connection state and event handlers for connect start/end
  */
 export function useConnectionState(nodes: DiagramNode[]) {
   const [connectionState, setConnectionState] = useState<ConnectionState>({
