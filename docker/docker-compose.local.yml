@@ -44,6 +44,22 @@ services:
     profiles: ["disabled"]
 
   # ─────────────────────────────────────────────────────────────────────────────
+  # Backend-Editor - Enable test mode for collaborative editing tests
+  # NODE_ENV=development enables the TestUserProvider bypass in wsAuth
+  # ─────────────────────────────────────────────────────────────────────────────
+  be-editor-1:
+    environment:
+      - NODE_ENV=development
+
+  be-editor-2:
+    environment:
+      - NODE_ENV=development
+
+  be-editor-3:
+    environment:
+      - NODE_ENV=development
+
+  # ─────────────────────────────────────────────────────────────────────────────
   # DATABASES - Keep in Docker for easy setup/teardown
   # Expose ports so local services can connect
   # ─────────────────────────────────────────────────────────────────────────────

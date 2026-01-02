@@ -6,8 +6,48 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import authService, { type AuthenticatedUser } from '../services/authService.js';
+import authService, {
+  type AuthenticatedUser,
+} from '../services/authService.js';
 import { parseCookies } from '../utils/cookieParser.js';
+
+/**
+ * Checks if test mode is enabled (development only).
+ * @returns True if NODE_ENV is 'development'
+ */
+const isTestModeEnabled = (): boolean => {
+  return process.env.NODE_ENV === 'development';
+};
+
+/**
+ * Parses test user info from request headers or query params.
+ * Headers: X-Test-User, X-Test-Name, X-Test-Community
+ * Query: testUser, testName, testCommunity
+ * @param req - Express request object
+ * @returns AuthenticatedUser if test params present, null otherwise
+ */
+function parseTestUser(req: Request): AuthenticatedUser | null {
+  // Check headers first
+  const testUserId =
+    (req.headers['x-test-user'] as string) || (req.query.testUser as string);
+  const testUserName =
+    (req.headers['x-test-name'] as string) || (req.query.testName as string);
+  const testCommunity =
+    (req.headers['x-test-community'] as string) ||
+    (req.query.testCommunity as string);
+
+  if (!testUserId || !testUserName) {
+    return null;
+  }
+
+  return {
+    entraId: `test-${testUserId}`,
+    email: `${testUserId}@test.local`,
+    name: testUserName,
+    community: testCommunity || 'TestCommunity',
+    isAdmin: false,
+  };
+}
 
 /**
  * Extends Express Request with authenticated user information
@@ -17,7 +57,10 @@ export interface AuthenticatedRequest extends Request {
 }
 
 /**
- * Extracts id_token from request (cookies or Authorization header)
+ * Extracts id_token from request (cookies or Authorization header).
+ * Checks Authorization header first, then falls back to cookie.
+ * @param req - Express request object
+ * @returns Token string or null if not found
  */
 function extractToken(req: Request): string | null {
   // Try Authorization header first
@@ -32,14 +75,29 @@ function extractToken(req: Request): string | null {
 }
 
 /**
- * Authentication middleware for Express routes
- * Validates token locally and attaches user with CBAC info to request
+ * Authentication middleware for Express routes.
+ * Validates token locally and attaches user with CBAC info to request.
+ * In development mode, also checks for test user headers/params.
+ * @param req - Express request object
+ * @param res - Express response object
+ * @param next - Express next function
  */
 export async function authenticateRequest(
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
+  // Development-only: Check for test mode via headers or query params
+  if (isTestModeEnabled()) {
+    const testUser = parseTestUser(req);
+    if (testUser) {
+      console.log('[Test Mode] API authenticated as test user:', testUser.name);
+      (req as AuthenticatedRequest).user = testUser;
+      next();
+      return;
+    }
+  }
+
   const token = extractToken(req);
 
   if (!token) {
@@ -68,10 +126,11 @@ export async function authenticateRequest(
 }
 
 /**
- * CBAC Middleware - Requires user to have access to a specific community
- * Must be used AFTER authenticateRequest middleware
- *
- * Extracts community from URL parameter (e.g., /editor/:community/:diagramName)
+ * CBAC Middleware - Requires user to have access to a specific community.
+ * Must be used AFTER authenticateRequest middleware.
+ * Extracts community from URL parameter (e.g., /editor/:community/:diagramName).
+ * @param communityParam - URL parameter name containing community (default: 'community')
+ * @returns Express middleware function
  */
 export function requireCommunityAccess(communityParam: string = 'community') {
   return (req: Request, res: Response, next: NextFunction): void => {
@@ -110,7 +169,9 @@ export function requireCommunityAccess(communityParam: string = 'community') {
 }
 
 /**
- * Extracts community from diagram name (format: "community/diagramName")
+ * Extracts community from diagram name (format: "community/diagramName").
+ * @param name - Diagram name string
+ * @returns Community name or null if not in expected format
  */
 function extractCommunityFromName(name: string): string | null {
   if (!name || !name.includes('/')) {
@@ -121,9 +182,11 @@ function extractCommunityFromName(name: string): string | null {
 }
 
 /**
- * CBAC Middleware for diagram routes
- * Extracts community from diagram name parameter and validates access
- * Must be used AFTER authenticateRequest middleware
+ * CBAC Middleware for diagram routes.
+ * Extracts community from diagram name parameter and validates access.
+ * Must be used AFTER authenticateRequest middleware.
+ * @param nameParam - URL parameter name containing diagram name (default: 'name')
+ * @returns Express middleware function
  */
 export function requireDiagramAccess(nameParam: string = 'name') {
   return (req: Request, res: Response, next: NextFunction): void => {
@@ -163,4 +226,3 @@ export function requireDiagramAccess(nameParam: string = 'name') {
     next();
   };
 }
-

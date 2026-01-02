@@ -11,6 +11,14 @@ import authService, { type AuthenticatedUser } from '../services/authService.js'
 import { parseCookies } from '../utils/cookieParser.js';
 
 /**
+ * Checks if test mode is enabled (development only).
+ * @returns True if NODE_ENV is 'development'
+ */
+const isTestModeEnabled = (): boolean => {
+  return process.env.NODE_ENV === 'development';
+};
+
+/**
  * Custom WebSocket type with user context
  */
 export interface AuthenticatedWebSocket extends WebSocket {
@@ -18,8 +26,10 @@ export interface AuthenticatedWebSocket extends WebSocket {
 }
 
 /**
- * Extracts community from document name
- * Document name format: "community/diagramName" or just "diagramName"
+ * Extracts community from document name.
+ * Document name format: "community/diagramName" or just "diagramName".
+ * @param docName - Document name string
+ * @returns Community name or null if not in expected format
  */
 export function extractCommunityFromDocName(docName: string): string | null {
   if (!docName) return null;
@@ -34,8 +44,46 @@ export function extractCommunityFromDocName(docName: string): string | null {
 }
 
 /**
+ * Parses test user info from URL query parameters
+ * Format: ?testUser=userId&testName=userName&testCommunity=community
+ *
+ * @param url Request URL with query parameters
+ * @returns AuthenticatedUser if test params present, null otherwise
+ */
+function parseTestUserFromUrl(url: string | undefined): AuthenticatedUser | null {
+  if (!url) return null;
+
+  try {
+    // Parse query string from URL (format: /docName?testUser=xxx&testName=yyy)
+    const queryStart = url.indexOf('?');
+    if (queryStart === -1) return null;
+
+    const queryString = url.slice(queryStart + 1);
+    const params = new URLSearchParams(queryString);
+
+    const testUserId = params.get('testUser');
+    const testUserName = params.get('testName');
+    const testCommunity = params.get('testCommunity');
+
+    if (!testUserId || !testUserName) return null;
+
+    return {
+      entraId: `test-${testUserId}`,
+      email: `${testUserId}@test.local`,
+      name: testUserName,
+      community: testCommunity || 'TestCommunity',
+      isAdmin: false,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Authenticates a WebSocket upgrade request
  * Returns user if valid, null if invalid
+ *
+ * In development mode, also checks for test user query parameters.
  *
  * @param req Incoming HTTP request (upgrade request)
  * @returns AuthenticatedUser if valid, null if invalid
@@ -43,6 +91,15 @@ export function extractCommunityFromDocName(docName: string): string | null {
 export async function authenticateUpgradeRequest(
   req: IncomingMessage,
 ): Promise<AuthenticatedUser | null> {
+  // Development-only: Check for test mode via URL query parameters
+  if (isTestModeEnabled()) {
+    const testUser = parseTestUserFromUrl(req.url);
+    if (testUser) {
+      console.log('[Test Mode] WebSocket authenticated as test user:', testUser.name);
+      return testUser;
+    }
+  }
+
   const cookies = parseCookies(req.headers.cookie);
   const idToken = cookies['id_token'];
 
