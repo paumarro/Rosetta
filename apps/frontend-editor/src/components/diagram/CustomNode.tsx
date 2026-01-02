@@ -13,7 +13,7 @@ import {
   NODE_DIMENSIONS,
 } from '@/utils/nodeConnection';
 import { getNodeCompletion } from '@/utils/storage';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 
 // Handle configuration type
 type HandleConfig = {
@@ -31,7 +31,12 @@ const ALL_HANDLES: HandleConfig[] = [
 
 /**
  * Renders both source and target handles for a given position.
- * This enables bidirectional connections.
+ * This enables bidirectional connections on ReactFlow nodes.
+ * @param props - Component props
+ * @param props.id - Handle identifier ('t', 'r', 'b', 'l')
+ * @param props.position - Position of the handle on the node
+ * @param props.isVisible - Whether the handle should be visible
+ * @returns JSX fragment with source and target handles
  */
 const BidirectionalHandle = ({
   id,
@@ -41,7 +46,7 @@ const BidirectionalHandle = ({
   id: string;
   position: Position;
   isVisible: boolean;
-}) => (
+}): React.ReactElement => (
   <>
     <Handle
       type="source"
@@ -58,13 +63,19 @@ const BidirectionalHandle = ({
   </>
 );
 
+/**
+ * Custom ReactFlow node component for topics and subtopics.
+ * Handles rendering, editing state, completion state, and connection handles.
+ * @param props - ReactFlow node props including custom data
+ * @returns Topic or subtopic node component
+ */
 const TopicNode = ({
   id,
   data,
   selected,
   type,
   ...nodeProps
-}: TopicNodeProps) => {
+}: TopicNodeProps): React.ReactElement => {
   const {
     connectedUsers,
     isViewMode,
@@ -73,18 +84,43 @@ const TopicNode = ({
     openNodeModal,
     modalNodeId,
     learningPathId,
+    shakeNodeId,
+    clearShakeNode,
   } = useCollaborativeStore();
   const { isBeingEdited, editedBy } = useNodeState(id);
+
+  // Defensive check: ensure label exists (can be undefined during initial sync)
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  const label = (data?.label as string | undefined) ?? '';
 
   // Track completion state (scoped to diagram + node)
   const [isCompleted, setIsCompleted] = useState(() => {
     return getNodeCompletion(learningPathId, id);
   });
 
+  // Track shake animation state
+  const [isShaking, setIsShaking] = useState(false);
+  const nodeRef = useRef<HTMLDivElement>(null);
+
   // Re-read completion state when modal closes (user may have toggled completion)
   useEffect(() => {
     setIsCompleted(getNodeCompletion(learningPathId, id));
   }, [modalNodeId, learningPathId, id]);
+
+  // Trigger shake animation when this node is targeted for shake
+  useEffect(() => {
+    if (shakeNodeId === id) {
+      setIsShaking(true);
+      // Clear shake after animation completes
+      const timer = setTimeout(() => {
+        setIsShaking(false);
+        clearShakeNode();
+      }, 500);
+      return () => {
+        clearTimeout(timer);
+      };
+    }
+  }, [shakeNodeId, id, clearShakeNode]);
 
   // Find the user who is editing this node
   const editingUser = connectedUsers.find((user) => user.userName === editedBy);
@@ -104,7 +140,7 @@ const TopicNode = ({
   // Style based on the ReactFlow type and editing status
   const getNodeStyles = () => {
     // Get height class from centralized utility
-    const heightClass = getNodeHeightClass(data.label, type);
+    const heightClass = getNodeHeightClass(label, type);
 
     //Check if node is being edited - override all other styles
     // In view mode, don't show the white editing effect
@@ -148,7 +184,7 @@ const TopicNode = ({
   };
 
   // Get dynamic width class from centralized utility
-  const widthClass = getNodeWidthClass(data.label);
+  const widthClass = getNodeWidthClass(label);
 
   const handleNodeClick = () => {
     openNodeModal(id);
@@ -156,7 +192,6 @@ const TopicNode = ({
 
   // Split label into two lines if length > LABEL_THRESHOLD
   const splitLabelForDisplay = () => {
-    const label = data.label;
     const maxLength = NODE_DIMENSIONS.LABEL_MAX_LENGTH;
     const threshold = NODE_DIMENSIONS.LABEL_THRESHOLD;
 
@@ -215,7 +250,7 @@ const TopicNode = ({
       x: nodeProps.positionAbsoluteX || 0,
       y: nodeProps.positionAbsoluteY || 0,
     };
-    const currentCenter = getNodeCenter(currentPosition, data.label, type);
+    const currentCenter = getNodeCenter(currentPosition, label, type);
 
     // Find all topic nodes
     const topicNodes = nodes.filter((n) => n.type === 'topic');
@@ -270,7 +305,7 @@ const TopicNode = ({
     type,
     nodeProps.positionAbsoluteX,
     nodeProps.positionAbsoluteY,
-    data.label,
+    label,
     nodes,
   ]);
 
@@ -279,8 +314,10 @@ const TopicNode = ({
 
   return (
     <div
+      ref={nodeRef}
       className={`px-4 transition-colors cursor-pointer flex items-center justify-center
-        ${styles.base} ${styles.border} ${styles.hover} ${widthClass} ${styles.height}`}
+        ${styles.base} ${styles.border} ${styles.hover} ${widthClass} ${styles.height}
+        ${isShaking ? 'node-shake' : ''}`}
       data-view-mode={isViewMode}
       onClick={handleNodeClick}
     >
