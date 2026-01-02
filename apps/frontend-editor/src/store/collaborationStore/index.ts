@@ -39,6 +39,7 @@ import { createUISlice } from './slices/uiSlice';
 export type {
   CollaborativeUser,
   CollaborativeState,
+  NodeLock,
 } from '@/types/collaboration';
 
 // Re-export hooks

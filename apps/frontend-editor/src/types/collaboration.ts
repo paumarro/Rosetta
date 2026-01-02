@@ -10,6 +10,7 @@ import type { Awareness } from 'y-protocols/awareness';
 export interface CollaborativeUser {
   userId: string;
   userName: string;
+  photoURL?: string;
   cursor?: { x: number; y: number };
   selection?: string[];
   color?: string;
@@ -38,6 +39,16 @@ export interface DiagramSlice {
 }
 
 /**
+ * Node lock entry stored in Yjs nodeLocks map.
+ * Used to track which user is editing which node.
+ */
+export interface NodeLock {
+  userId: string;
+  userName: string;
+  timestamp: number;
+}
+
+/**
  * Collaboration Slice - Yjs, WebSocket, and user presence
  */
 export interface CollaborationSlice {
@@ -51,6 +62,8 @@ export interface CollaborationSlice {
   awareness: Awareness | null;
   awarenessCleanup: (() => void) | null;
   syncTimeoutId: NodeJS.Timeout | null;
+  /** Reactive state derived from Yjs nodeLocks map */
+  nodeLocks: Map<string, NodeLock>;
 
   initializeCollaboration: (
     learningPathId: string,
@@ -60,18 +73,30 @@ export interface CollaborationSlice {
   cleanup: () => void;
   updateCursor: (position: { x: number; y: number }) => void;
   updateSelection: (nodeIds: string[]) => void;
+  /** Acquires a lock on a node. Returns true if successful, false if locked by another user. */
+  acquireNodeLock: (nodeId: string) => boolean;
+  /** Releases the lock on a node. Only the lock owner can release. */
+  releaseNodeLock: (nodeId: string) => void;
+  /** Gets the current lock holder for a node, or null if unlocked. */
+  getNodeLockHolder: (nodeId: string) => NodeLock | null;
 }
 
 /**
- * UI Slice - Local UI state (not synced)
+ * UI Slice - Local UI state (not synced across users)
+ * Shake feedback is triggered when a user attempts to open a locked node.
  */
 export interface UISlice {
   modalNodeId: string | null;
   isViewMode: boolean;
+  /** Node ID to trigger shake animation on (set when lock acquisition fails) */
+  shakeNodeId: string | null;
 
+  /** Opens modal or triggers shake if node is locked by another user */
   openNodeModal: (nodeId: string) => void;
   closeNodeModal: () => void;
   setViewMode: (isViewMode: boolean) => void;
+  /** Clears the shake animation trigger */
+  clearShakeNode: () => void;
 }
 
 /**
