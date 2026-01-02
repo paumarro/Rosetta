@@ -4,10 +4,60 @@ import type {
   CollaborativeState,
   CollaborationSlice,
   CollaborativeUser,
+  NodeLock,
 } from '@/types/collaboration';
-import { AVATAR_COLORS, SYNC_TIMEOUT_MS } from '../constants';
+import {
+  AVATAR_COLORS,
+  SYNC_TIMEOUT_MS,
+  BACKEND_STATE_SYNC_DELAY_MS,
+  LOCK_STALE_THRESHOLD_MS,
+  AWARENESS_HEARTBEAT_INTERVAL_MS,
+} from '../constants';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
+import { isTestMode, getTestUserId } from '@/components/TestUserProvider';
+
+/**
+ * Builds WebSocket provider options with test mode params if applicable
+ * Uses y-websocket's params option which correctly appends query params
+ * AFTER the room name is added to the URL path
+ */
+function buildWebSocketOptions(user: CollaborativeUser): {
+  params?: Record<string, string>;
+} {
+  if (isTestMode()) {
+    const testUserId = getTestUserId();
+    if (testUserId) {
+      return {
+        params: {
+          testUser: testUserId,
+          testName: user.userName,
+          testCommunity: 'TestCommunity',
+        },
+      };
+    }
+  }
+  return {};
+}
+
+/**
+ * Builds fetch options with test mode headers if applicable
+ */
+function buildFetchOptions(user: CollaborativeUser): RequestInit {
+  if (isTestMode()) {
+    const testUserId = getTestUserId();
+    if (testUserId) {
+      return {
+        headers: {
+          'X-Test-User': testUserId,
+          'X-Test-Name': user.userName,
+          'X-Test-Community': 'TestCommunity',
+        },
+      };
+    }
+  }
+  return {};
+}
 
 export const createCollaborationSlice: StateCreator<
   CollaborativeState,
@@ -26,6 +76,7 @@ export const createCollaborationSlice: StateCreator<
   awareness: null,
   awarenessCleanup: null,
   syncTimeoutId: null,
+  nodeLocks: new Map<string, NodeLock>(),
 
   // Actions
   initializeCollaboration: (
@@ -76,7 +127,15 @@ export const createCollaborationSlice: StateCreator<
       const doc = new Y.Doc();
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${wsProtocol}//${window.location.host}/editor/ws`;
-      const provider = new WebsocketProvider(wsUrl, learningPathId, doc);
+      // Use y-websocket's params option which correctly appends query params
+      // AFTER the room name is added to the URL path
+      const wsOptions = buildWebSocketOptions(user);
+      const provider = new WebsocketProvider(
+        wsUrl,
+        learningPathId,
+        doc,
+        wsOptions,
+      );
 
       const yNodes = doc.getMap<Y.Map<unknown>>('nodes');
       const yEdges = doc.getMap<Y.Map<unknown>>('edges');
@@ -91,6 +150,7 @@ export const createCollaborationSlice: StateCreator<
             users.push({
               userId: state.userId as string,
               userName: state.userName as string,
+              photoURL: state.photoURL as string | undefined,
               color: state.color as string,
               cursor: state.cursor as { x: number; y: number },
               selection: state.selection as string[],
@@ -102,29 +162,51 @@ export const createCollaborationSlice: StateCreator<
       };
 
       // Handle awareness changes (user join/leave)
+      // Clean up locks when users leave awareness (e.g., close tab)
+      // The heartbeat mechanism keeps awareness alive while tab is open,
+      // so locks will only be cleaned up when user truly disconnects.
       const awarenessChangeHandler = (changes: {
         added: number[];
         updated: number[];
         removed: number[];
       }) => {
-        // Clean up editing states for disconnected users
+        // Clean up locks for users who left awareness
         if (changes.removed.length > 0 && !isViewMode) {
           const states = awareness.getStates();
-          const currentUserNames = new Set<string>();
+          const connectedUserIds = new Set<string>();
           states.forEach((state) => {
-            if ('userName' in state && state.userName) {
-              currentUserNames.add(state.userName as string);
+            if ('userId' in state && state.userId) {
+              connectedUserIds.add(state.userId as string);
             }
           });
 
-          yNodes.forEach((yNode) => {
-            const editedBy = yNode.get('editedBy') as string | null;
-            const isBeingEdited = yNode.get('isBeingEdited') as boolean;
-            if (isBeingEdited && editedBy && !currentUserNames.has(editedBy)) {
-              yNode.set('isBeingEdited', false);
-              yNode.set('editedBy', null);
+          // Release locks held by users no longer in awareness
+          const yNodeLocks = doc.getMap<NodeLock>('nodeLocks');
+          const locksToRemove: string[] = [];
+          yNodeLocks.forEach((lock, nodeId) => {
+            if (!connectedUserIds.has(lock.userId)) {
+              locksToRemove.push(nodeId);
             }
           });
+
+          if (locksToRemove.length > 0) {
+            locksToRemove.forEach((nodeId) => {
+              const lock = yNodeLocks.get(nodeId);
+              if (lock) {
+                console.log(
+                  `[NodeLock] Releasing lock on ${nodeId} (user ${lock.userName} left awareness)`,
+                );
+              }
+              yNodeLocks.delete(nodeId);
+
+              // Also clear the node's editing state for visual feedback
+              const yNode = yNodes.get(nodeId);
+              if (yNode) {
+                yNode.set('isBeingEdited', false);
+                yNode.set('editedBy', null);
+              }
+            });
+          }
         }
         updateConnectedUsers();
       };
@@ -143,7 +225,7 @@ export const createCollaborationSlice: StateCreator<
         window.removeEventListener('beforeunload', handleBeforeUnload);
       };
 
-      // Apply Yjs state to React state
+      // Apply Yjs state to React state (nodes/edges only, NOT title)
       const applyFromY = () => {
         const nodes = Array.from(yNodes.entries()).map(([id, yNode]) => ({
           id,
@@ -169,10 +251,8 @@ export const createCollaborationSlice: StateCreator<
           targetHandle: (yEdge.get('targetHandle') as string | null) ?? null,
         })) as DiagramEdge[];
 
-        const yMetadata = doc.getMap<string>('metadata');
-        const diagramName = yMetadata.get('name') || learningPathId;
-
-        set({ nodes, edges, title: diagramName });
+        // Only update nodes/edges, NOT title (title comes from API)
+        set({ nodes, edges });
       };
 
       // Handle initial sync
@@ -180,6 +260,12 @@ export const createCollaborationSlice: StateCreator<
         try {
           if (!isSynced) return;
           clearTimeout(syncTimeout);
+
+          // Wait for backend to apply persisted state before checking if initialization is needed
+          // The backend's bindState is async, so persisted state may arrive after sync event
+          await new Promise((resolve) =>
+            setTimeout(resolve, BACKEND_STATE_SYNC_DELAY_MS),
+          );
 
           // Assign user color
           const yUserColors = doc.getMap<string>('userColors');
@@ -206,28 +292,32 @@ export const createCollaborationSlice: StateCreator<
           awareness.setLocalState({
             userId: user.userId,
             userName: user.userName,
+            photoURL: user.photoURL,
             color: userColor,
             mode: isViewMode ? 'view' : 'edit',
           });
 
-          // Fetch initial diagram if empty
-          if (yNodes.size === 0) {
-            try {
-              const response = await fetch(
-                `/editor/diagrams/${learningPathId}`,
-              );
-              if (response.ok) {
-                const diagram = (await response.json()) as {
-                  nodes: DiagramNode[];
-                  edges: DiagramEdge[];
-                  name: string;
-                };
+          // ALWAYS fetch name from API (source of truth for name)
+          // Only fetch full diagram (nodes/edges) if Yjs is empty
+          try {
+            const response = await fetch(
+              `/editor/diagrams/${learningPathId}`,
+              buildFetchOptions(user),
+            );
+            if (response.ok) {
+              const diagram = (await response.json()) as {
+                nodes: DiagramNode[];
+                edges: DiagramEdge[];
+                name: string;
+              };
 
+              // ALWAYS set name in React state (source of truth)
+              set({ title: diagram.name || learningPathId });
+
+              // Only initialize with template if Yjs is COMPLETELY empty
+              // If Yjs has ANY data, use it (preserves all edits, including deletions)
+              if (yNodes.size === 0) {
                 doc.transact(() => {
-                  const yMetadata = doc.getMap<string>('metadata');
-                  // Always sync name from MongoDB (allows updates from backend)
-                  yMetadata.set('name', diagram.name);
-
                   diagram.nodes.forEach((node) => {
                     const yNode = new Y.Map<unknown>();
                     yNode.set('type', node.type);
@@ -247,16 +337,50 @@ export const createCollaborationSlice: StateCreator<
                     yEdges.set(edge.id, yEdge);
                   });
                 });
+                applyFromY(); // Sync template to React state
               } else {
-                console.error(
-                  `API returned error status: ${String(response.status)}`,
-                );
+                applyFromY(); // Sync existing Yjs data to React
               }
-            } catch (error) {
-              console.error('Failed to fetch initial diagram:', error);
+            } else {
+              console.error(
+                `API returned error status: ${String(response.status)}`,
+              );
+
+              // In test mode with 404, initialize with a default test diagram
+              if (
+                isTestMode() &&
+                response.status === 404 &&
+                yNodes.size === 0
+              ) {
+                console.log(
+                  '[Test Mode] Diagram not found, creating test diagram',
+                );
+                set({ title: `Test: ${learningPathId}` });
+
+                // Create a default test node so users have something to work with
+                const testNodeId = `test-node-${String(Date.now())}`;
+                doc.transact(() => {
+                  const yNode = new Y.Map<unknown>();
+                  yNode.set('type', 'topic');
+                  yNode.set('position', { x: 0, y: 0 });
+                  yNode.set('data', {
+                    label: 'Test Topic',
+                    description:
+                      'This is a test node for collaborative editing. Try opening this in another browser tab!',
+                    resources: [],
+                  });
+                  yNode.set('isBeingEdited', false);
+                  yNode.set('editedBy', null);
+                  yNodes.set(testNodeId, yNode);
+                });
+                applyFromY();
+              } else {
+                set({ title: learningPathId }); // Fallback
+              }
             }
-          } else {
-            applyFromY();
+          } catch (error) {
+            console.error('Failed to fetch diagram:', error);
+            set({ title: learningPathId }); // Fallback
           }
 
           set({ isInitializing: false });
@@ -267,12 +391,22 @@ export const createCollaborationSlice: StateCreator<
         }
       });
 
-      // Observe Yjs changes
+      // Observe Yjs changes for nodes/edges (NOT metadata - title comes from API)
       yNodes.observeDeep(() => {
         applyFromY();
       });
       yEdges.observeDeep(() => {
         applyFromY();
+      });
+
+      // Observe nodeLocks for reactive updates
+      const yNodeLocks = doc.getMap<NodeLock>('nodeLocks');
+      yNodeLocks.observe(() => {
+        const locks = new Map<string, NodeLock>();
+        yNodeLocks.forEach((lock, nodeId) => {
+          locks.set(nodeId, lock);
+        });
+        set({ nodeLocks: locks });
       });
 
       // Sync timeout
@@ -315,11 +449,34 @@ export const createCollaborationSlice: StateCreator<
         }
       });
 
+      // Start awareness heartbeat to keep connection alive
+      // Yjs Awareness has a 30-second timeout - we send a heartbeat every 15 seconds
+      const heartbeatInterval = setInterval(() => {
+        const currentState = awareness.getLocalState() as Record<
+          string,
+          unknown
+        > | null;
+        if (currentState) {
+          // Touch the state with a timestamp to trigger an awareness update
+          awareness.setLocalState({
+            ...currentState,
+            lastHeartbeat: Date.now(),
+          });
+        }
+      }, AWARENESS_HEARTBEAT_INTERVAL_MS);
+
+      // Store the heartbeat interval for cleanup
+      const originalCleanup = cleanupAwareness;
+      const cleanupWithHeartbeat = () => {
+        clearInterval(heartbeatInterval);
+        originalCleanup();
+      };
+
       set({
         ydoc: doc,
         yProvider: provider,
         awareness,
-        awarenessCleanup: cleanupAwareness,
+        awarenessCleanup: cleanupWithHeartbeat,
       });
     } catch (error) {
       const errorMessage =
@@ -365,6 +522,7 @@ export const createCollaborationSlice: StateCreator<
       learningPathId: 'default',
       isInitializing: false,
       modalNodeId: null,
+      nodeLocks: new Map(),
     });
   },
 
@@ -388,5 +546,91 @@ export const createCollaborationSlice: StateCreator<
       unknown
     > | null;
     awareness.setLocalState({ ...currentState, selection: nodeIds });
+  },
+
+  /**
+   * Attempts to acquire a lock on a node.
+   * Returns true if successful, false if the node is already locked by another user.
+   * Locks are stored in a dedicated Yjs map for atomic operations.
+   */
+  acquireNodeLock: (nodeId: string): boolean => {
+    const { ydoc, currentUser, isViewMode } = get();
+    if (!ydoc || !currentUser || isViewMode) return false;
+
+    const yNodeLocks = ydoc.getMap<NodeLock>('nodeLocks');
+    const existingLock = yNodeLocks.get(nodeId);
+
+    // Check if already locked by another user
+    if (existingLock && existingLock.userId !== currentUser.userId) {
+      const now = Date.now();
+      const lockAge = now - existingLock.timestamp;
+
+      // Only allow acquiring if the lock is stale (past timeout threshold)
+      // Locks persist across navigation/refresh, so we don't check connected status
+      if (lockAge > LOCK_STALE_THRESHOLD_MS) {
+        // Stale lock - can be forcibly released
+        console.log(
+          `[NodeLock] Releasing stale lock on ${nodeId} (age: ${String(Math.round(lockAge / 1000))}s, holder: ${existingLock.userName})`,
+        );
+      } else {
+        // Lock is still valid (within timeout) - cannot acquire
+        return false;
+      }
+    }
+
+    // Acquire the lock
+    const newLock: NodeLock = {
+      userId: currentUser.userId,
+      userName: currentUser.userName,
+      timestamp: Date.now(),
+    };
+    yNodeLocks.set(nodeId, newLock);
+
+    // Also update the node's isBeingEdited for visual feedback
+    const yNodes = ydoc.getMap<Y.Map<unknown>>('nodes');
+    const yNode = yNodes.get(nodeId);
+    if (yNode) {
+      yNode.set('isBeingEdited', true);
+      yNode.set('editedBy', currentUser.userName);
+    }
+
+    return true;
+  },
+
+  /**
+   * Releases a lock on a node.
+   * Only the lock owner can release their lock.
+   */
+  releaseNodeLock: (nodeId: string) => {
+    const { ydoc, currentUser, isViewMode } = get();
+    if (!ydoc || !currentUser || isViewMode) return;
+
+    const yNodeLocks = ydoc.getMap<NodeLock>('nodeLocks');
+    const existingLock = yNodeLocks.get(nodeId);
+
+    // Only release if we own the lock
+    if (existingLock && existingLock.userId === currentUser.userId) {
+      yNodeLocks.delete(nodeId);
+
+      // Also update the node's isBeingEdited for visual feedback
+      const yNodes = ydoc.getMap<Y.Map<unknown>>('nodes');
+      const yNode = yNodes.get(nodeId);
+      if (yNode) {
+        yNode.set('isBeingEdited', false);
+        yNode.set('editedBy', null);
+      }
+    }
+  },
+
+  /**
+   * Gets the current lock holder for a node.
+   * Returns null if the node is not locked.
+   */
+  getNodeLockHolder: (nodeId: string): NodeLock | null => {
+    const { ydoc } = get();
+    if (!ydoc) return null;
+
+    const yNodeLocks = ydoc.getMap<NodeLock>('nodeLocks');
+    return yNodeLocks.get(nodeId) ?? null;
   },
 });
