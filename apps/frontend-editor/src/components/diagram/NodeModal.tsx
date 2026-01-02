@@ -20,7 +20,12 @@ interface Resource {
   url: string;
 }
 
-export function NodeModal() {
+/**
+ * Modal dialog for viewing and editing node details.
+ * Supports view mode (read-only with completion tracking) and edit mode (full editing).
+ * @returns Modal dialog component or null if not open
+ */
+export function NodeModal(): React.ReactElement | null {
   // Get modal state from store
   const {
     modalNodeId,
@@ -236,7 +241,7 @@ export function NodeModal() {
                     ? 'h-full min-h-[20vh]'
                     : 'h-full min-h-[300px]',
                 )}
-                placeholder="Node description"
+                placeholder={`${modalNode.data.label} description`}
               />
             </div>
 

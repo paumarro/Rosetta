@@ -11,9 +11,7 @@ export const ConnectionContext = createContext<ConnectionState>({
   sourceHandleId: null,
 });
 
-/**
- * Centralized constants for node dimensions and sizing
- */
+/** Constants for node dimensions and sizing */
 export const NODE_DIMENSIONS = {
   LABEL_THRESHOLD: 16,
   LABEL_MAX_LENGTH: 30,
@@ -39,9 +37,7 @@ export const NODE_DIMENSIONS = {
   },
 } as const;
 
-/**
- * Centralized constants for ReactFlow editor configuration
- */
+/** ReactFlow editor configuration */
 export const EDITOR_CONFIG = {
   CURSOR_THROTTLE_MS: 50,
   SNAP_GRID: [15, 15] as [number, number],
@@ -56,15 +52,12 @@ export const EDITOR_CONFIG = {
   TITLE_OFFSET_Y: 100,
 } as const;
 
-/**
- * Gets the Tailwind height class for a node based on label length and type.
- * Returns h-[75px] for labels > 16 chars, otherwise type-specific height.
- */
+/** Returns Tailwind height class based on label length and node type */
 export function getNodeHeightClass(
-  label: string,
+  label: string | undefined,
   nodeType: string | undefined,
 ): string {
-  const labelLength = label.length;
+  const labelLength = label?.length ?? 0;
   const isLong = labelLength > NODE_DIMENSIONS.LABEL_THRESHOLD;
 
   if (nodeType === 'subtopic') {
@@ -78,9 +71,6 @@ export function getNodeHeightClass(
   }
 }
 
-/**
- * Maps handle ID to its position on the node
- */
 const handleIdToPosition: Record<string, Position> = {
   t: Position.Top,
   r: Position.Right,
@@ -88,10 +78,7 @@ const handleIdToPosition: Record<string, Position> = {
   l: Position.Left,
 };
 
-/**
- * Handler normal vectors - direction each handler "faces"
- * In canvas coordinates: X+ is right, Y+ is down
- */
+/** Handle normal vectors (direction each handle "faces"). X+ right, Y+ down */
 const handleNormals: Record<Position, { x: number; y: number }> = {
   [Position.Top]: { x: 0, y: -1 },
   [Position.Right]: { x: 1, y: 0 },
@@ -99,9 +86,7 @@ const handleNormals: Record<Position, { x: number; y: number }> = {
   [Position.Left]: { x: -1, y: 0 },
 };
 
-/**
- * Calculates the dot product of two 2D vectors
- */
+/** Dot product of two 2D vectors (positive if pointing similarly) */
 function dotProduct(
   v1: { x: number; y: number },
   v2: { x: number; y: number },
@@ -109,11 +94,7 @@ function dotProduct(
   return v1.x * v2.x + v1.y * v2.y;
 }
 
-/**
- * Gets node dimensions based on type and label length.
- * Uses centralized NODE_DIMENSIONS constants.
- * Can accept either a Node object or raw label/type values.
- */
+/** Gets node dimensions (accepts Node object or label string) */
 export function getNodeDimensions(
   nodeOrLabel: Node | string,
   nodeType?: string,
@@ -151,10 +132,7 @@ export function getNodeDimensions(
   return { width, height };
 }
 
-/**
- * Gets the center point of a node.
- * Can accept a Node object or position + label + type.
- */
+/** Gets center point of a node (accepts Node object or position + label) */
 export function getNodeCenter(
   nodeOrPosition: Node | { x: number; y: number },
   label?: string,
@@ -176,12 +154,7 @@ export function getNodeCenter(
   };
 }
 
-/**
- * Determines if a connection between two handlers is valid using vector mathematics.
- *
- * Uses dot product to verify that both handlers "face toward" each other,
- * preventing nonsensical connections (e.g., connecting left handle to node on the right).
- */
+/** Validates connection geometry - ensures handles face toward each other */
 export function isValidTargetHandle(
   sourceNode: Node,
   targetNode: Node,
@@ -217,10 +190,7 @@ export function isValidTargetHandle(
   return sourceFacesTarget > 0 && targetFacesSource > 0;
 }
 
-/**
- * Checks if two nodes are connected by any edge (bidirectional).
- * Returns true if there's any connection between nodeA and nodeB in either direction.
- */
+/** Checks if two nodes are connected (bidirectional) */
 export function areNodesConnected(
   edges: Edge[],
   nodeAId: string,
@@ -233,10 +203,7 @@ export function areNodesConnected(
   );
 }
 
-/**
- * Hook to determine which handles should be visible on a node during connection drag.
- * Consolidates handle visibility logic based on connection state.
- */
+/** Hook to determine handle visibility during connection drag */
 export function useHandleVisibility(
   nodeId: string,
   nodeType: string | undefined,
@@ -304,11 +271,9 @@ export function useHandleVisibility(
   }, [connectionState, nodeId, nodeType, nodePosition, nodeData, edges]);
 }
 
-/**
- * Gets the width class for a node based on its label length.
- * Consolidated from duplicate implementations.
- */
-export function getNodeWidthClass(label: string): string {
+/** Returns Tailwind width class based on label length */
+export function getNodeWidthClass(label: string | undefined): string {
+  if (!label) return 'w-[72px]';
   const textLength = label.length;
   if (textLength <= 5) {
     return 'w-[72px]';
