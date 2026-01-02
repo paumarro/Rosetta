@@ -24,6 +24,7 @@ interface AuthProviderProps {
   userStore: UseBoundStore<StoreApi<UserStoreState>>;
 }
 
+/** Provider that checks authentication on mount and exposes auth state */
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children, userStore }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -61,6 +62,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, userStore 
   );
 };
 
+/** Hook to access auth state. Must be used within AuthProvider. */
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {

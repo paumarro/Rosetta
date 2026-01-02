@@ -125,7 +125,7 @@ export default function CommunityHub() {
 
   return (
     <AppLayout>
-      <div className=" mx-25 mt-14 animate-in fade-in duration-700">
+      <div className=" mx-5 mt-14 animate-in fade-in duration-700">
         <div className="flex ">
           <div className="flex items-center gap-4">
             <Button
