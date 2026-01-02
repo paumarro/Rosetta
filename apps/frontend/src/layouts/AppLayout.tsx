@@ -6,7 +6,14 @@ interface AppLayoutProps {
   children: ReactNode;
 }
 
-export default function AppLayout({ children }: AppLayoutProps) {
+/**
+ * Main application layout wrapper component.
+ * Provides consistent header and sidebar structure across pages.
+ * @param props - Component props
+ * @param props.children - Page content to render within layout
+ * @returns Layout component with header and content area
+ */
+export default function AppLayout({ children }: AppLayoutProps): React.ReactElement {
   return (
     <div className="[--header-height:calc(theme(spacing.14))]">
       <SidebarProvider className="flex flex-col">

@@ -1,10 +1,3 @@
-/**
- * Storage Abstraction Layer
- *
- * Centralizes all localStorage operations with type-safe keys and error handling.
- */
-
-// Storage key constants
 const STORAGE_KEYS = {
   RECENTLY_VIEWED: 'rosetta_recently_viewed',
   nodeCompletion: (learningPathId: string, nodeId: string) =>
@@ -13,9 +6,7 @@ const STORAGE_KEYS = {
 
 const MAX_RECENTLY = 9;
 
-/**
- * Recently Viewed Diagrams
- */
+/** Adds path to recently viewed (most recent first, max 9) */
 export const addToRecentlyViewed = (pathId: string): void => {
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.RECENTLY_VIEWED);
@@ -36,9 +27,7 @@ export const addToRecentlyViewed = (pathId: string): void => {
   }
 };
 
-/**
- * Node Completion State
- */
+/** Gets node completion state from localStorage */
 export const getNodeCompletion = (
   learningPathId: string,
   nodeId: string,
@@ -52,6 +41,7 @@ export const getNodeCompletion = (
   }
 };
 
+/** Sets node completion state in localStorage */
 export const setNodeCompletion = (
   learningPathId: string,
   nodeId: string,

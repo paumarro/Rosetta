@@ -3,7 +3,13 @@ import { calculateNodeSide } from '@/utils/nodePosition';
 import * as Y from 'yjs';
 
 /**
- * Create a new Yjs node in the document
+ * Creates a new Yjs node in the collaborative document.
+ * Initializes the node with type, position, label, and editing state.
+ * @param ydoc - The Yjs document instance
+ * @param id - Unique identifier for the new node
+ * @param type - Node type ('topic' or 'subtopic')
+ * @param position - Initial position coordinates
+ * @param currentUser - Current user for attribution (nullable)
  */
 export const createYjsNode = (
   ydoc: Y.Doc,

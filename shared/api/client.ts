@@ -1,16 +1,12 @@
 import { getErrorMessage } from '../utils/error';
 
-/**
- * API client factory with configurable base URL
- */
+/** Creates an API client with credentials included by default */
 export function createApiClient(baseUrl: string = '') {
   const defaultOptions: RequestInit = {
     credentials: 'include',
   };
 
-  /**
-   * Make authenticated API request
-   */
+  /** Fetch with credentials, supports relative endpoints or full URLs */
   async function apiFetch(
     endpoint: string,
     options: RequestInit = {},
@@ -27,7 +23,4 @@ export function createApiClient(baseUrl: string = '') {
   };
 }
 
-/**
- * Default export for convenience
- */
 export const { apiFetch, getErrorMessage: getError } = createApiClient();

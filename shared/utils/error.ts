@@ -1,8 +1,6 @@
 import type { ErrorResponse } from '../types/error';
 
-/**
- * Extract error message from unknown error
- */
+/** Safely extracts error message from unknown error types */
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -13,9 +11,7 @@ export function getErrorMessage(error: unknown): string {
   return 'Unknown error';
 }
 
-/**
- * Parse error response from API
- */
+/** Parses API error response, falling back to status text if JSON parsing fails */
 export async function parseErrorResponse(
   response: Response,
 ): Promise<string> {
