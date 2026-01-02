@@ -19,7 +19,7 @@ const NotFound = () => {
         <h1 className="text-[200px] font-bold italic">404</h1>
         <p className="text-2xl  -mt-10 mb-4">We all get lost sometimes</p>
         <Button asChild variant={'outline'}>
-          <a href="/" className="">
+          <a className="" onClick={() => (window.location.href = '/')}>
             Path back Home
           </a>
         </Button>
