@@ -1,36 +1,21 @@
-/**
- * WebSocket Authentication Middleware
- *
- * Validates tokens locally and applies CBAC for WebSocket connections.
- * Used for Yjs collaborative editing.
- */
+/** WebSocket authentication middleware with local token validation and CBAC for Yjs collaboration */
 
 import { IncomingMessage } from 'http';
 import type { WebSocket } from 'ws';
 import authService, { type AuthenticatedUser } from '../services/authService.js';
 import { parseCookies } from '../utils/cookieParser.js';
 
-/**
- * Checks if test mode is enabled (development only).
- * @returns True if NODE_ENV is 'development'
- */
+/** Checks if test mode is enabled (NODE_ENV === 'development') */
 const isTestModeEnabled = (): boolean => {
   return process.env.NODE_ENV === 'development';
 };
 
-/**
- * Custom WebSocket type with user context
- */
+/** WebSocket extended with authenticated user context */
 export interface AuthenticatedWebSocket extends WebSocket {
   user?: AuthenticatedUser;
 }
 
-/**
- * Extracts community from document name.
- * Document name format: "community/diagramName" or just "diagramName".
- * @param docName - Document name string
- * @returns Community name or null if not in expected format
- */
+/** Extracts community from document name format "community/diagramName" */
 export function extractCommunityFromDocName(docName: string): string | null {
   if (!docName) return null;
 
@@ -43,13 +28,7 @@ export function extractCommunityFromDocName(docName: string): string | null {
   return null;
 }
 
-/**
- * Parses test user info from URL query parameters
- * Format: ?testUser=userId&testName=userName&testCommunity=community
- *
- * @param url Request URL with query parameters
- * @returns AuthenticatedUser if test params present, null otherwise
- */
+/** Parses test user from URL query parameters (testUser, testName, testCommunity) */
 function parseTestUserFromUrl(url: string | undefined): AuthenticatedUser | null {
   if (!url) return null;
 
@@ -79,15 +58,7 @@ function parseTestUserFromUrl(url: string | undefined): AuthenticatedUser | null
   }
 }
 
-/**
- * Authenticates a WebSocket upgrade request
- * Returns user if valid, null if invalid
- *
- * In development mode, also checks for test user query parameters.
- *
- * @param req Incoming HTTP request (upgrade request)
- * @returns AuthenticatedUser if valid, null if invalid
- */
+/** Authenticates WebSocket upgrade request from id_token cookie (supports test mode in development) */
 export async function authenticateUpgradeRequest(
   req: IncomingMessage,
 ): Promise<AuthenticatedUser | null> {
@@ -118,13 +89,7 @@ export async function authenticateUpgradeRequest(
   return authResult.user;
 }
 
-/**
- * Checks if user can access a document based on CBAC
- *
- * @param user Authenticated user
- * @param docName Document name (format: "community/diagramName")
- * @returns true if user can access, false otherwise
- */
+/** Checks if user can access document based on community extracted from document name */
 export function canAccessDocument(
   user: AuthenticatedUser,
   docName: string,
@@ -139,13 +104,7 @@ export function canAccessDocument(
   return authService.canAccessCommunity(user, community);
 }
 
-/**
- * Authenticates a WebSocket connection (legacy interface)
- *
- * @param conn WebSocket connection
- * @param req Incoming HTTP request (upgrade request)
- * @returns AuthenticatedUser if valid, null if invalid (connection will be closed)
- */
+/** Authenticates WebSocket connection and attaches user to connection (closes connection if invalid) */
 export async function authenticateWebSocket(
   conn: WebSocket,
   req: IncomingMessage,
