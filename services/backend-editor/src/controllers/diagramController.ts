@@ -4,22 +4,13 @@ import { DiagramBody, DiagramParams } from '../types/diagramTypes.js';
 import defaultDiagramTemplate from '../templates/defaultDiagram.json' with { type: 'json' };
 import { errors, sendError } from '../utils/errorResponse.js';
 
-/**
- * Retrieves all diagrams with basic metadata.
- * @param _req - Express request (unused)
- * @param res - Express response with array of diagram summaries
- */
+/** Retrieves all diagrams with basic metadata (name, createdAt, updatedAt) */
 export const getDiagrams = async (_req: Request, res: Response) => {
   const diagrams = await DiagramModel.find().select('name createdAt updatedAt');
   res.json(diagrams);
 };
 
-/**
- * Retrieves a diagram by name or learningPathId.
- * Searches by learningPathId first, then falls back to name.
- * @param req - Express request with name parameter
- * @param res - Express response with diagram data or error
- */
+/** Retrieves diagram by learningPathId first, then falls back to name */
 export const getDiagramByName = async (
   req: Request<DiagramParams>,
   res: Response,
@@ -42,12 +33,7 @@ export const getDiagramByName = async (
 };
 
 
-/**
- * Creates a diagram by learning path UUID with idempotency on E11000.
- * Returns existing diagram if already created (saga idempotency).
- * @param req - Express request with learningPathId and optional name in body
- * @param res - Express response with created or existing diagram
- */
+/** Creates diagram by learningPathId with idempotent handling of duplicate key errors (saga pattern) */
 export const createDiagramByLP = async (
   req: Request<object, object, { learningPathId: string; name?: string }>,
   res: Response,
@@ -89,12 +75,7 @@ export const createDiagramByLP = async (
 };
 
 
-/**
- * Deletes a diagram by learning path UUID (compensation action).
- * Used for saga rollback when learning path creation fails.
- * @param req - Express request with lpId parameter
- * @param res - Express response (204 on success, 404 if not found)
- */
+/** Deletes diagram by learningPathId (saga compensation action for rollback) */
 export const deleteDiagramByLP = async (
   req: Request<{ lpId: string }>,
   res: Response,
@@ -105,12 +86,7 @@ export const deleteDiagramByLP = async (
   return res.status(204).send();
 };
 
-/**
- * Updates diagram name by learning path UUID (service-to-service).
- * Called when the learning path title is updated in the main backend.
- * @param req - Express request with lpId parameter and name in body
- * @param res - Express response with updated diagram or error
- */
+/** Updates diagram name by learningPathId (called when learning path title changes in main backend) */
 export const updateDiagramByLP = async (
   req: Request<{ lpId: string }, object, { name: string }>,
   res: Response,

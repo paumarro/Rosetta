@@ -1,15 +1,4 @@
-/**
- * Community-Based Access Control (CBAC) Service
- *
- * Handles authorization logic:
- * - Maps Microsoft Entra ID groups to communities
- * - Checks admin status based on email
- * - Determines if user can access community resources
- *
- * Configuration via environment variables:
- * - COMMUNITY_GROUP_MAPPINGS: GROUP_ID_1:Community1,GROUP_ID_2:Community2
- * - ADMIN_EMAILS: admin1@example.com,admin2@example.com
- */
+/** Community-Based Access Control - Maps Entra ID groups to communities and manages admin access */
 
 export interface GroupToCommunityMapping {
   [groupId: string]: string;
@@ -19,11 +8,7 @@ class CBACService {
   private groupMappings: GroupToCommunityMapping | null = null;
   private adminEmails: Set<string> | null = null;
 
-  /**
-   * Parses group mappings from environment variable.
-   * Format: GROUP_ID_1:CommunityName1,GROUP_ID_2:CommunityName2
-   * @returns Cached or newly parsed group to community mappings
-   */
+  /** Parses and caches group-to-community mappings from COMMUNITY_GROUP_MAPPINGS env var */
   private getGroupMappings(): GroupToCommunityMapping {
     if (this.groupMappings) {
       return this.groupMappings;
@@ -48,10 +33,7 @@ class CBACService {
     return this.groupMappings;
   }
 
-  /**
-   * Parses admin emails from environment variable.
-   * @returns Cached or newly parsed set of admin emails (lowercase)
-   */
+  /** Parses and caches admin emails from ADMIN_EMAILS env var (normalized to lowercase) */
   private getAdminEmails(): Set<string> {
     if (this.adminEmails) {
       return this.adminEmails;
@@ -75,12 +57,7 @@ class CBACService {
     return this.adminEmails;
   }
 
-  /**
-   * Determines user's community from their group memberships.
-   * Returns the first matching community or null if no match.
-   * @param groupIds - Array of group IDs from token claims
-   * @returns Community name or null if no matching group found
-   */
+  /** Returns first matching community from user's group IDs, or null if none match */
   getCommunityFromGroups(groupIds: string[]): string | null {
     if (groupIds.length === 0) {
       return null;
@@ -97,11 +74,7 @@ class CBACService {
     return null;
   }
 
-  /**
-   * Checks if an email belongs to an admin.
-   * @param email - Email address to check
-   * @returns True if email is in the admin list
-   */
+  /** Checks if email belongs to an admin */
   isAdmin(email: string): boolean {
     if (!email) {
       return false;
@@ -111,14 +84,7 @@ class CBACService {
     return admins.has(email.toLowerCase().trim());
   }
 
-  /**
-   * Checks if user can access a specific community's resources.
-   * User can access if they are an admin OR belong to that community.
-   * @param userCommunity - User's community membership (nullable)
-   * @param targetCommunity - Community to check access for
-   * @param isAdmin - Whether user has admin privileges
-   * @returns True if user can access the target community
-   */
+  /** Checks if user can access target community (grants access to admins or matching community members) */
   canAccessCommunity(
     userCommunity: string | null,
     targetCommunity: string,
@@ -135,10 +101,7 @@ class CBACService {
     return userCommunity === targetCommunity;
   }
 
-  /**
-   * Refreshes cached mappings (useful for testing or config updates).
-   * Clears group mappings and admin emails caches.
-   */
+  /** Clears cached group mappings and admin emails */
   refreshCache(): void {
     this.groupMappings = null;
     this.adminEmails = null;
