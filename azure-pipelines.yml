@@ -166,7 +166,12 @@ stages:
             displayName: 'Install Node.js'
             inputs:
               versionSpec: '20.x'
-          
+
+          - script: |
+              cd shared
+              npm install
+            displayName: 'Install shared package dependencies'
+
           - script: |
               cd apps/frontend
               npm ci
@@ -204,7 +209,12 @@ stages:
             displayName: 'Install Node.js'
             inputs:
               versionSpec: '20.x'
-          
+
+          - script: |
+              cd shared
+              npm install
+            displayName: 'Install shared package dependencies'
+
           - script: |
               cd apps/frontend-editor
               npm ci
