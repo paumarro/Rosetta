@@ -41,7 +41,6 @@ export default function Home() {
   return (
     <AppLayout>
       <div className="flex flex-col mt-8 items-start text-left">
-
         {loading ? (
           <p className="text-muted-foreground">Loading communities...</p>
         ) : (
