@@ -21,7 +21,7 @@ pr:
 # Define variables
 variables:
   - name: azureSubscription
-    value: 'DevOps-Carbyte-Academy'
+    value: 'carbyte-Carbyte-Academy-Registration-Dev'
   - name: resourceGroup
     value: 'rg-rosetta'
   - name: containerRegistry
