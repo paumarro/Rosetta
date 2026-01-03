@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/Avatar';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { useCollaborativeStore } from '@/store/collaborationStore';
 

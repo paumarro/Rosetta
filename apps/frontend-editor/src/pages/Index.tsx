@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Button } from '../components/ui/button';
+import { Button } from '../components/ui/Button';
 import logo from '../assets/Rosetta-Editor.png';
 import bottomImage from '../assets/Dotted-Bg.png';
 import pointer from '../assets/Pointer.png';
