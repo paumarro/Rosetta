@@ -16,18 +16,7 @@ interface OrganizeDropdownProps {
   onClose: () => void;
 }
 
-/**
- * Dropdown component for filtering and sorting learning paths.
- * Provides filter options (all, recently viewed, bookmarked) and sort options.
- * @param props - Component props
- * @param props.isOpen - Whether the dropdown is currently open
- * @param props.filter - Current active filter type
- * @param props.order - Current sort order
- * @param props.onFilterChange - Callback when filter changes
- * @param props.onSortChange - Callback when sort order changes
- * @param props.onClose - Callback to close the dropdown
- * @returns Animated dropdown with filter and sort options
- */
+/** Animated dropdown for filtering (all, recently viewed, bookmarked) and sorting learning paths */
 export function OrganizeDropdown({
   isOpen,
   filter,

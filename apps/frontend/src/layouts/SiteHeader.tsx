@@ -17,11 +17,7 @@ import RosettaLogo from '@/assets/rosetta-logo.png';
 import CarbyteLogo from '@/assets/carbyte-logo.png';
 import { User } from './User';
 
-/**
- * Site header component with logo and user navigation.
- * Displays the Rosetta and Carbyte logos with user menu.
- * @returns Header component
- */
+/** Site header with Rosetta and Carbyte logos and user menu */
 export function SiteHeader(): React.ReactElement {
   const handleLogoClick = (e: React.MouseEvent<HTMLImageElement>) => {
     e.preventDefault();

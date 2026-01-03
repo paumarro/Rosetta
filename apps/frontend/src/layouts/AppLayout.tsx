@@ -6,13 +6,7 @@ interface AppLayoutProps {
   children: ReactNode;
 }
 
-/**
- * Main application layout wrapper component.
- * Provides consistent header and sidebar structure across pages.
- * @param props - Component props
- * @param props.children - Page content to render within layout
- * @returns Layout component with header and content area
- */
+/** Main application layout wrapper with consistent header and sidebar structure */
 export default function AppLayout({ children }: AppLayoutProps): React.ReactElement {
   return (
     <div className="[--header-height:calc(theme(spacing.14))]">
