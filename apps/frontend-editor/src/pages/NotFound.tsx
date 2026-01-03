@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
-import { Button } from '../components/ui/button';
+import { Button } from '../components/ui/Button';
 import bottomImage from '../assets/Dotted-Bg.png';
 
 const NotFound = () => {

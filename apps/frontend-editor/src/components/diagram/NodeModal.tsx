@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { useCollaborativeStore } from '@/store/collaborationStore';
 import {
@@ -9,8 +9,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+} from '@/components/ui/Dialog';
+import { Input } from '@/components/ui/Input';
 import { cn } from '@shared/utils';
 import { getNodeCompletion, setNodeCompletion } from '@/utils/storage';
 

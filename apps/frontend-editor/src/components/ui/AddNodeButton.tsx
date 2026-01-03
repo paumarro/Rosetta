@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { useCollaborativeStore } from '@/store/collaborationStore';
 import { Plus, RectangleHorizontal } from 'lucide-react';
 import {
