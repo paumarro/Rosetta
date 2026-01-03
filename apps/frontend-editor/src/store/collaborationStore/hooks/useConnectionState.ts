@@ -3,13 +3,7 @@ import { OnConnectStart, OnConnectEnd, Node } from '@xyflow/react';
 import { ConnectionState } from '@/utils/nodeConnection';
 import { DiagramNode } from '@/types/reactflow';
 
-/**
- * Hook to manage connection drag state for ReactFlow.
- * Tracks the source node and handle when a user starts dragging a connection.
- * Used to determine which target handles should be visible during connection.
- * @param nodes - Array of diagram nodes to search for source node
- * @returns Connection state and event handlers for connect start/end
- */
+/** Manages ReactFlow connection drag state to track source node and determine visible target handles */
 export function useConnectionState(nodes: DiagramNode[]) {
   const [connectionState, setConnectionState] = useState<ConnectionState>({
     sourceNode: null,
