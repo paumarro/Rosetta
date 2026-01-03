@@ -14,7 +14,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { ArrowUpLeft } from 'lucide-react';
 import AddNodeButton from '@/components/ui/AddNodeButton';
-import AvatarDemo from '@/components/ui/AvatarDemo';
+import AvatarStack from '@/components/ui/AvatarStack';
 import EditButton from '@/components/ui/EditButton';
 import Cursors from '@/components/ui/Cursors';
 import TopicNode from '../components/diagram/CustomNode';
@@ -357,7 +357,7 @@ export default function DiagramEditor({
             </Panel>
             {!isViewMode && (
               <Panel position="top-right" className="!top-5 !right-5">
-                <AvatarDemo />
+                <AvatarStack />
               </Panel>
             )}
             {isViewMode ? (
