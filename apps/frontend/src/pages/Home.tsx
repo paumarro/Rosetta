@@ -42,7 +42,9 @@ export default function Home() {
     <AppLayout>
       <div className="flex flex-col mt-8 items-start text-left">
         {loading ? (
-          <p className="text-muted-foreground">Loading communities...</p>
+          <p className="text-muted-foreground">
+            Loading available communities...
+          </p>
         ) : (
           <div className=" flex flex-col w-full divide-y divide-gray-300 overflow-hidden animate-in fade-in duration-700">
             {communities.map((community) => (
