@@ -114,9 +114,9 @@ export const TestUserProvider: React.FC<TestUserProviderProps> = ({
   return (
     <>
       {/* Test Mode Indicator */}
-      <div className="fixed top-2 left-1/2 -translate-x-1/2 z-50 bg-amber-500 text-black px-3 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-2">
-        <span className="w-2 h-2 bg-green-600 rounded-full animate-pulse" />
-        TEST MODE — {userStore.user?.Name}
+      <div className="fixed top-10 left-1/2 -translate-x-1/2 z-50 bg-white text-black-700 px-4 py-2 rounded-full text-xs font-semibold shadow-lg flex items-center gap-2">
+        <span className="w-2 h-2 bg-amber-600 rounded-full animate-pulse" />
+        TEST MODE
       </div>
       {children}
     </>
