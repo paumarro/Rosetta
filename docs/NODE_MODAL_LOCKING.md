@@ -187,3 +187,4 @@ Constants can be adjusted in `src/store/collaborationStore/constants.ts`:
 - Verify the `.node-shake` CSS class is applied to the node
 - Check browser dev tools for animation properties
 
+
