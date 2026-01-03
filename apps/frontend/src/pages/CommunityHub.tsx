@@ -98,7 +98,11 @@ export default function CommunityHub() {
     }
   };
 
-  const handleUpdatePath = async (pathId: string, title: string, description: string) => {
+  const handleUpdatePath = async (
+    pathId: string,
+    title: string,
+    description: string,
+  ) => {
     try {
       const updatedPath = await updateLearningPath(pathId, title, description);
       // Update local state with the updated path

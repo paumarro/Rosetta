@@ -109,7 +109,11 @@ export const useLearningPathStore = create<LearningPathStore>((set, get) => ({
     }
   },
 
-  updateLearningPath: async (id: string, title: string, description: string) => {
+  updateLearningPath: async (
+    id: string,
+    title: string,
+    description: string,
+  ) => {
     try {
       const response = await apiFetch(`/api/learning-paths/${id}`, {
         method: 'PUT',

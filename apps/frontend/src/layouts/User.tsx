@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Bookmark, LogOut, User as UserIcon } from 'lucide-react';
 import { useUserStore } from '@/store/userStore';
 
-const AUTH_URL = import.meta.env.VITE_AUTH_URL || '';
+const AUTH_URL = (import.meta.env.VITE_AUTH_URL as string | undefined) || '';
 
 export function User() {
   const { user, clearUser } = useUserStore();
@@ -34,7 +34,7 @@ export function User() {
 
   const userImage = user.PhotoURL || '/api/user/photo';
   const initials = user.Name.split(' ')
-    .map((n) => n[0])
+    .map((n: string) => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2);

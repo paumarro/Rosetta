@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { create } from 'zustand';
 import * as Y from 'yjs';
 import type { NodeChange, EdgeChange } from '@xyflow/react';
@@ -15,7 +15,11 @@ function createTestStore(options: {
     id: string;
     type: string;
     position: { x: number; y: number };
-    data: Record<string, unknown>;
+    data?: {
+      label?: string;
+      side?: 0 | 1 | 2 | 3;
+      [key: string]: unknown;
+    };
   }>;
   initialEdges?: Array<{
     id: string;
@@ -33,7 +37,11 @@ function createTestStore(options: {
     const yNode = new Y.Map<unknown>();
     yNode.set('type', node.type);
     yNode.set('position', node.position);
-    yNode.set('data', node.data);
+    yNode.set('data', {
+      label: node.data?.label ?? '',
+      side: node.data?.side ?? 0,
+      ...node.data,
+    });
     yNode.set('isBeingEdited', false);
     yNode.set('editedBy', null);
     yNodes.set(node.id, yNode);
@@ -62,7 +70,17 @@ function createTestStore(options: {
     ydoc,
     isViewMode: options.isViewMode ?? false,
     currentUser: options.currentUser ?? null,
-    nodes: options.initialNodes ?? [],
+    nodes:
+      options.initialNodes?.map((node) => ({
+        ...node,
+        data: {
+          label: node.data?.label ?? '',
+          side: node.data?.side ?? 0,
+          ...node.data,
+        },
+        isBeingEdited: false,
+        editedBy: null,
+      })) ?? [],
     edges: options.initialEdges ?? [],
   }));
 
@@ -315,7 +333,7 @@ describe('Diagram Slice', () => {
       const { store, yEdges } = createTestStore({});
 
       store.getState().onConnect({
-        source: null,
+        source: null as unknown as string,
         target: 'n2',
         sourceHandle: null,
         targetHandle: null,
@@ -398,9 +416,9 @@ describe('Diagram Slice', () => {
       });
 
       // Should not throw
-      expect(() =>
-        store.getState().setNodeBeingEdited('nonexistent', true),
-      ).not.toThrow();
+      expect(() => {
+        store.getState().setNodeBeingEdited('nonexistent', true);
+      }).not.toThrow();
     });
   });
 

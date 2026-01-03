@@ -10,16 +10,16 @@
     "test": "echo 'Test to be implemented..🧪'",
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint ./src/**/*.{ts, tsx} --fix",
-    "format": "prettier --write ./**/*.{ts, tsx, json}",
+    "lint": "eslint ./src/**/*.{ts,tsx} --fix",
+    "format": "prettier --write ./**/*.{ts,tsx,json}",
     "preview": "vite preview",
     "prepare": "husky || true"
   },
   "lint-staged": {
-    "./src/**/*.{ts, tsx}": [
+    "./src/**/*.{ts,tsx}": [
       "eslint --fix"
     ],
-    "./**/*.{ts, tsx, json}": [
+    "./**/*.{ts,tsx,json}": [
       "prettier --write"
     ]
   },
