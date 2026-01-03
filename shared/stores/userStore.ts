@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create, type StateCreator } from 'zustand';
 import type { User, UpdateUserData } from '../types/user';
 import { getErrorMessage } from '../utils/error';
 
@@ -23,7 +23,7 @@ export function createUserStore(options: CreateUserStoreOptions = {}) {
     apiBaseUrl = '',
   } = options;
 
-  return create<UserStore>((set) => ({
+  const storeCreator: StateCreator<UserStore> = (set) => ({
     user: null,
     isLoading: false,
     error: null,
@@ -87,5 +87,7 @@ export function createUserStore(options: CreateUserStoreOptions = {}) {
     clearUser: () => {
       set({ user: null, error: null, isLoading: false });
     },
-  }));
+  });
+
+  return create<UserStore>(storeCreator);
 }
