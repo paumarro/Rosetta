@@ -20,7 +20,6 @@ pr:
 
 # Define variables
 variables:
-  - group: rosetta-variables  # Variable group in Azure DevOps
   - name: dockerRegistryServiceConnection
     value: 'your-acr-connection'  # Update with your Azure Container Registry connection
   - name: imageRepository
