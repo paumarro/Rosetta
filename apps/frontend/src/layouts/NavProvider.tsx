@@ -13,13 +13,7 @@ export interface NavigationState {
   breadcrumbs: RouteItem[];
 }
 
-/**
- * Provider component that manages navigation state based on current route.
- * Automatically updates current route and breadcrumbs when location changes.
- * @param props - Component props
- * @param props.children - Child components to render within navigation context
- * @returns Provider component with navigation context
- */
+/** Manages navigation state based on current route and automatically updates breadcrumbs */
 export function NavigationProvider({ children }: { children: ReactNode }): React.ReactElement {
   const location = useLocation();
   const [navigationState, setNavigationState] = useState<NavigationState>({

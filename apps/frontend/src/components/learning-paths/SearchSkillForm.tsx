@@ -11,17 +11,7 @@ interface SearchFormProps
   inputClassName?: string;
 }
 
-/**
- * Search form component for filtering skills/learning paths.
- * Triggers search on Enter key press.
- * @param props - Component props
- * @param props.inputValue - Current search input value
- * @param props.onInputChange - Callback when input value changes
- * @param props.onSearch - Callback when search is triggered
- * @param props.placeholder - Input placeholder text
- * @param props.inputClassName - Additional CSS classes for input
- * @returns Search input form component
- */
+/** Search form for filtering skills/learning paths (triggers search on Enter key) */
 export function SearchSkillForm({
   inputValue,
   onInputChange,
