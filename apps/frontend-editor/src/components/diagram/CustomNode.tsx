@@ -334,7 +334,7 @@ const TopicNode = ({
           <UserAvatar
             userName={editingUser.userName}
             photoURL={editingUser.photoURL}
-            color={editingUser.color}
+            color={editingUser.color ?? '#000000'}
             className="w-8 h-8"
             fallbackClassName="text-xs text-white"
           />

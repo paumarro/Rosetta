@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { create } from 'zustand';
-import * as Y from 'yjs';
 import type {
   CollaborativeState,
   CollaborationSlice,
@@ -24,13 +23,16 @@ function createMockAwareness() {
     getStates: () => new Map(),
     on: (event: string, handler: (args: unknown) => void) => {
       if (!listeners.has(event)) listeners.set(event, new Set());
-      listeners.get(event)!.add(handler);
+      const eventListeners = listeners.get(event);
+      if (eventListeners) eventListeners.add(handler);
     },
     off: (event: string, handler: (args: unknown) => void) => {
       listeners.get(event)?.delete(handler);
     },
     _emit: (event: string, args: unknown) => {
-      listeners.get(event)?.forEach((handler) => handler(args));
+      listeners.get(event)?.forEach((handler) => {
+        handler(args);
+      });
     },
   };
 }
@@ -95,7 +97,9 @@ describe('Collaboration Slice', () => {
       const store = createTestStore({ awareness: null });
 
       // Should not throw
-      expect(() => store.getState().updateCursor({ x: 0, y: 0 })).not.toThrow();
+      expect(() => {
+        store.getState().updateCursor({ x: 0, y: 0 });
+      }).not.toThrow();
     });
   });
 
@@ -135,7 +139,9 @@ describe('Collaboration Slice', () => {
     it('handles missing awareness gracefully', () => {
       const store = createTestStore({ awareness: null });
 
-      expect(() => store.getState().updateSelection(['n1'])).not.toThrow();
+      expect(() => {
+        store.getState().updateSelection(['n1']);
+      }).not.toThrow();
     });
   });
 
@@ -152,8 +158,7 @@ describe('Collaboration Slice', () => {
 
       const store = createTestStore({
         awareness: mockAwareness as unknown as CollaborationSlice['awareness'],
-        yProvider:
-          mockProvider as unknown as CollaborationSlice['yProvider'],
+        yProvider: mockProvider as unknown as CollaborationSlice['yProvider'],
         ydoc: mockYdoc as unknown as CollaborationSlice['ydoc'],
         awarenessCleanup: mockCleanup,
         isConnected: true,
@@ -184,8 +189,7 @@ describe('Collaboration Slice', () => {
       const mockCleanup = vi.fn();
 
       const store = createTestStore({
-        yProvider:
-          mockProvider as unknown as CollaborationSlice['yProvider'],
+        yProvider: mockProvider as unknown as CollaborationSlice['yProvider'],
         ydoc: mockYdoc as unknown as CollaborationSlice['ydoc'],
         awarenessCleanup: mockCleanup,
       });
@@ -233,12 +237,13 @@ describe('Collaboration Slice', () => {
       };
 
       const store = createTestStore({
-        yProvider:
-          mockProvider as unknown as CollaborationSlice['yProvider'],
+        yProvider: mockProvider as unknown as CollaborationSlice['yProvider'],
       });
 
       // Should not throw
-      expect(() => store.getState().cleanup()).not.toThrow();
+      expect(() => {
+        store.getState().cleanup();
+      }).not.toThrow();
     });
   });
 });

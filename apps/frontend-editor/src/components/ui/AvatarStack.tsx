@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from '@/components/ui/Avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { useCollaborativeStore } from '@/store/collaborationStore';
 
@@ -32,7 +32,7 @@ export default function AvatarStack() {
             <UserAvatar
               userName={user.userName}
               photoURL={user.photoURL}
-              color={user.color}
+              color={user.color ?? '#000000'}
               className="w-10 h-10"
               fallbackClassName="text-sm"
             />

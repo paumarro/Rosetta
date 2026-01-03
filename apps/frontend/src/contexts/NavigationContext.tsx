@@ -12,7 +12,7 @@ export const NavigationContext = createContext<NavigationContextType>({
     currentRoute: null,
     breadcrumbs: [],
   },
-  setNavigation: () => { },
+  setNavigation: () => {},
 });
 
 /** Accesses navigation context with current route and breadcrumbs */

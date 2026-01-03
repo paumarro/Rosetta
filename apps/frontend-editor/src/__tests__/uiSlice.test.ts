@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { create } from 'zustand';
-import type { CollaborativeState, UISlice, NodeLock } from '@/types/collaboration';
+import type {
+  CollaborativeState,
+  UISlice,
+  NodeLock,
+} from '@/types/collaboration';
 import { createUISlice } from '@/store/collaborationStore/slices/uiSlice';
 
 /**
@@ -23,7 +27,9 @@ function createTestStore(options: {
     getNodeLockHolder: (nodeId: string) => NodeLock | null;
   };
 
-  const acquireNodeLockMock = vi.fn(() => options.mockAcquireLockResult ?? true);
+  const acquireNodeLockMock = vi.fn(
+    () => options.mockAcquireLockResult ?? true,
+  );
   const releaseNodeLockMock = vi.fn();
   const getNodeLockHolderMock = vi.fn(() => options.mockLockHolder ?? null);
 
@@ -40,7 +46,12 @@ function createTestStore(options: {
     getNodeLockHolder: getNodeLockHolderMock,
   }));
 
-  return { store, acquireNodeLockMock, releaseNodeLockMock, getNodeLockHolderMock };
+  return {
+    store,
+    acquireNodeLockMock,
+    releaseNodeLockMock,
+    getNodeLockHolderMock,
+  };
 }
 
 describe('UI Slice - Modal Locking', () => {
@@ -54,11 +65,12 @@ describe('UI Slice - Modal Locking', () => {
 
   describe('openNodeModal', () => {
     it('opens modal when node is not locked', () => {
-      const { store, acquireNodeLockMock, getNodeLockHolderMock } = createTestStore({
-        currentUser: { userId: 'u1', userName: 'Alice' },
-        mockLockHolder: null,
-        mockAcquireLockResult: true,
-      });
+      const { store, acquireNodeLockMock, getNodeLockHolderMock } =
+        createTestStore({
+          currentUser: { userId: 'u1', userName: 'Alice' },
+          mockLockHolder: null,
+          mockAcquireLockResult: true,
+        });
 
       store.getState().openNodeModal('n1');
 
@@ -69,14 +81,15 @@ describe('UI Slice - Modal Locking', () => {
     });
 
     it('triggers shake when another user holds the lock', () => {
-      const { store, acquireNodeLockMock, getNodeLockHolderMock } = createTestStore({
-        currentUser: { userId: 'u1', userName: 'Alice' },
-        mockLockHolder: {
-          userId: 'u2',
-          userName: 'Bob',
-          timestamp: Date.now(),
-        },
-      });
+      const { store, acquireNodeLockMock, getNodeLockHolderMock } =
+        createTestStore({
+          currentUser: { userId: 'u1', userName: 'Alice' },
+          mockLockHolder: {
+            userId: 'u2',
+            userName: 'Bob',
+            timestamp: Date.now(),
+          },
+        });
 
       store.getState().openNodeModal('n1');
 
@@ -125,15 +138,16 @@ describe('UI Slice - Modal Locking', () => {
     });
 
     it('allows opening modal in view mode without lock checks', () => {
-      const { store, acquireNodeLockMock, getNodeLockHolderMock } = createTestStore({
-        isViewMode: true,
-        currentUser: { userId: 'u1', userName: 'Alice' },
-        mockLockHolder: {
-          userId: 'u2',
-          userName: 'Bob',
-          timestamp: Date.now(),
-        },
-      });
+      const { store, acquireNodeLockMock, getNodeLockHolderMock } =
+        createTestStore({
+          isViewMode: true,
+          currentUser: { userId: 'u1', userName: 'Alice' },
+          mockLockHolder: {
+            userId: 'u2',
+            userName: 'Bob',
+            timestamp: Date.now(),
+          },
+        });
 
       store.getState().openNodeModal('n1');
 
@@ -148,7 +162,7 @@ describe('UI Slice - Modal Locking', () => {
 
   describe('closeNodeModal', () => {
     it('releases lock when closing modal in edit mode', () => {
-      const { store, releaseNodeLockMock, acquireNodeLockMock } = createTestStore({
+      const { store, releaseNodeLockMock } = createTestStore({
         currentUser: { userId: 'u1', userName: 'Alice' },
         mockAcquireLockResult: true,
       });

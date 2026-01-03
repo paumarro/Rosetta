@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { useCollaborativeStore } from '@/store/collaborationStore';
 import {
@@ -9,8 +9,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/Dialog';
-import { Input } from '@/components/ui/Input';
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { cn } from '@shared/utils';
 import { getNodeCompletion, setNodeCompletion } from '@/utils/storage';
 
@@ -160,7 +160,7 @@ export function NodeModal(): React.ReactElement | null {
           'sm:max-w-lg md:max-w-xl lg:max-w-5xl p-17',
           'overflow-hidden',
         )}
-        onOpenAutoFocus={(e) => {
+        onOpenAutoFocus={(e: Event) => {
           e.preventDefault();
         }}
       >
