@@ -1,9 +1,4 @@
-/**
- * Express Authentication Middleware for REST API
- *
- * Validates tokens locally using OIDC and enriches with CBAC data.
- * No external auth-service dependency.
- */
+/** Express authentication middleware with local OIDC validation and CBAC enrichment */
 
 import { Request, Response, NextFunction } from 'express';
 import authService, {
@@ -11,21 +6,12 @@ import authService, {
 } from '../services/authService.js';
 import { parseCookies } from '../utils/cookieParser.js';
 
-/**
- * Checks if test mode is enabled (development only).
- * @returns True if NODE_ENV is 'development'
- */
+/** Checks if test mode is enabled (NODE_ENV === 'development') */
 const isTestModeEnabled = (): boolean => {
   return process.env.NODE_ENV === 'development';
 };
 
-/**
- * Parses test user info from request headers or query params.
- * Headers: X-Test-User, X-Test-Name, X-Test-Community
- * Query: testUser, testName, testCommunity
- * @param req - Express request object
- * @returns AuthenticatedUser if test params present, null otherwise
- */
+/** Parses test user from headers (X-Test-*) or query params (testUser, testName, testCommunity) */
 function parseTestUser(req: Request): AuthenticatedUser | null {
   // Check headers first
   const testUserId =
@@ -49,19 +35,12 @@ function parseTestUser(req: Request): AuthenticatedUser | null {
   };
 }
 
-/**
- * Extends Express Request with authenticated user information
- */
+/** Express Request extended with authenticated user information */
 export interface AuthenticatedRequest extends Request {
   user?: AuthenticatedUser;
 }
 
-/**
- * Extracts id_token from request (cookies or Authorization header).
- * Checks Authorization header first, then falls back to cookie.
- * @param req - Express request object
- * @returns Token string or null if not found
- */
+/** Extracts id_token from Authorization header (Bearer) or id_token cookie */
 function extractToken(req: Request): string | null {
   // Try Authorization header first
   const authHeader = req.headers.authorization;
@@ -74,14 +53,7 @@ function extractToken(req: Request): string | null {
   return cookies['id_token'] || null;
 }
 
-/**
- * Authentication middleware for Express routes.
- * Validates token locally and attaches user with CBAC info to request.
- * In development mode, also checks for test user headers/params.
- * @param req - Express request object
- * @param res - Express response object
- * @param next - Express next function
- */
+/** Validates token and attaches authenticated user with CBAC info to request (supports test mode in development) */
 export async function authenticateRequest(
   req: Request,
   res: Response,
@@ -125,13 +97,7 @@ export async function authenticateRequest(
   next();
 }
 
-/**
- * CBAC Middleware - Requires user to have access to a specific community.
- * Must be used AFTER authenticateRequest middleware.
- * Extracts community from URL parameter (e.g., /editor/:community/:diagramName).
- * @param communityParam - URL parameter name containing community (default: 'community')
- * @returns Express middleware function
- */
+/** CBAC middleware requiring user access to community from URL parameter (use after authenticateRequest) */
 export function requireCommunityAccess(communityParam: string = 'community') {
   return (req: Request, res: Response, next: NextFunction): void => {
     const user = (req as AuthenticatedRequest).user;
@@ -168,11 +134,7 @@ export function requireCommunityAccess(communityParam: string = 'community') {
   };
 }
 
-/**
- * Extracts community from diagram name (format: "community/diagramName").
- * @param name - Diagram name string
- * @returns Community name or null if not in expected format
- */
+/** Extracts community from diagram name format "community/diagramName" */
 function extractCommunityFromName(name: string): string | null {
   if (!name || !name.includes('/')) {
     return null;
@@ -181,13 +143,7 @@ function extractCommunityFromName(name: string): string | null {
   return parts[0] || null;
 }
 
-/**
- * CBAC Middleware for diagram routes.
- * Extracts community from diagram name parameter and validates access.
- * Must be used AFTER authenticateRequest middleware.
- * @param nameParam - URL parameter name containing diagram name (default: 'name')
- * @returns Express middleware function
- */
+/** CBAC middleware extracting community from diagram name parameter and validating access (use after authenticateRequest) */
 export function requireDiagramAccess(nameParam: string = 'name') {
   return (req: Request, res: Response, next: NextFunction): void => {
     const user = (req as AuthenticatedRequest).user;

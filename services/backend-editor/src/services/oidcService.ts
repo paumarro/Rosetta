@@ -1,9 +1,4 @@
-/**
- * OIDC Service - Local token validation using Microsoft Entra ID
- *
- * Validates tokens locally using JWKS (JSON Web Key Set) from Microsoft.
- * No external auth-service dependency required.
- */
+/** Local OIDC token validation using Microsoft Entra ID JWKS */
 
 import * as jose from 'jose';
 
@@ -44,11 +39,7 @@ class OIDCService {
     }
   }
 
-  /**
-   * Initializes JWKS (JSON Web Key Set) for token verification.
-   * Lazily initialized on first validation request.
-   * @returns Promise resolving to JWKS verification function
-   */
+  /** Lazily initializes JWKS for token verification */
   private async getJWKS(): Promise<jose.JWTVerifyGetKey> {
     if (!this.jwks) {
       const jwksUrl = `https://login.microsoftonline.com/${this.tenantId}/discovery/v2.0/keys`;
@@ -57,12 +48,7 @@ class OIDCService {
     return this.jwks;
   }
 
-  /**
-   * Validates an OIDC token from Microsoft Entra ID.
-   * Verifies signature, issuer, audience, and expiration.
-   * @param token - JWT access token to validate
-   * @returns Validation result with claims or error message
-   */
+  /** Validates OIDC token signature, issuer, audience, and expiration */
   async validateToken(token: string): Promise<ValidationResult> {
     if (!token) {
       return { valid: false, error: 'No token provided' };
