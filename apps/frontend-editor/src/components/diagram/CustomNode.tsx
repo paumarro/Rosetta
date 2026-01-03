@@ -4,7 +4,7 @@ import {
   useCollaborativeStore,
   useNodeState,
 } from '@/store/collaborationStore';
-import { Avatar, AvatarFallback } from '@/components/ui/Avatar';
+import { UserAvatar } from '@/components/ui/UserAvatar';
 import {
   useHandleVisibility,
   getNodeWidthClass,
@@ -29,15 +29,7 @@ const ALL_HANDLES: HandleConfig[] = [
   { id: 'l', position: Position.Left },
 ];
 
-/**
- * Renders both source and target handles for a given position.
- * This enables bidirectional connections on ReactFlow nodes.
- * @param props - Component props
- * @param props.id - Handle identifier ('t', 'r', 'b', 'l')
- * @param props.position - Position of the handle on the node
- * @param props.isVisible - Whether the handle should be visible
- * @returns JSX fragment with source and target handles
- */
+/** Renders bidirectional source and target handles for ReactFlow node connections */
 const BidirectionalHandle = ({
   id,
   position,
@@ -63,12 +55,7 @@ const BidirectionalHandle = ({
   </>
 );
 
-/**
- * Custom ReactFlow node component for topics and subtopics.
- * Handles rendering, editing state, completion state, and connection handles.
- * @param props - ReactFlow node props including custom data
- * @returns Topic or subtopic node component
- */
+/** Custom ReactFlow node for topics and subtopics with editing state, completion tracking, and connection handles */
 const TopicNode = ({
   id,
   data,
@@ -344,18 +331,13 @@ const TopicNode = ({
       {/* Editing indicator - hidden in view mode */}
       {isBeingEdited && editingUser && !isViewMode && (
         <div className="absolute -right-3.5 top-1/2 -translate-y-1/2">
-          <Avatar className="w-8 h-8" userColor={editingUser.color}>
-            <AvatarFallback
-              className="text-xs text-white"
-              userColor={editingUser.color}
-            >
-              {editingUser.userName
-                .split(' ')
-                .map((word) => word[0])
-                .join('')
-                .toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <UserAvatar
+            userName={editingUser.userName}
+            photoURL={editingUser.photoURL}
+            color={editingUser.color}
+            className="w-8 h-8"
+            fallbackClassName="text-xs text-white"
+          />
         </div>
       )}
     </div>
