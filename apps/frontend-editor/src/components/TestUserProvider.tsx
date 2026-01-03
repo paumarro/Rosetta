@@ -4,6 +4,7 @@
  * Bypasses EntraID authentication and generates unique test users per browser tab.
  * Only available when import.meta.env.DEV is true.
  */
+/* eslint-disable react/prop-types */
 
 import { useEffect, useState, ReactNode } from 'react';
 import { useUserStore } from '@/store/userStore';
@@ -61,7 +62,6 @@ export const TestUserProvider: React.FC<TestUserProviderProps> = ({
   children,
 }) => {
   const [isReady, setIsReady] = useState(false);
-  const userStore = useUserStore();
 
   useEffect(() => {
     // Generate or retrieve test user identity

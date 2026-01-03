@@ -111,7 +111,11 @@ export default function CreateLearningPath({
         created.learningPathId || created.ID || created.id || pathName;
 
       // Include community in editor URL using canonical ID when available
-      window.location.href = buildEditorUrl(DEV_EDITOR_FE_URL, communityname, resolvedId);
+      window.location.href = buildEditorUrl(
+        DEV_EDITOR_FE_URL,
+        communityname,
+        resolvedId,
+      );
     } catch (err) {
       if (err instanceof Error) {
         console.error('Error submitting form:', err.message);
