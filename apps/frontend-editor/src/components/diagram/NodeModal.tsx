@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { useCollaborativeStore } from '@/store/collaborationStore';
@@ -20,11 +20,7 @@ interface Resource {
   url: string;
 }
 
-/**
- * Modal dialog for viewing and editing node details.
- * Supports view mode (read-only with completion tracking) and edit mode (full editing).
- * @returns Modal dialog component or null if not open
- */
+/** Modal dialog for viewing and editing node details with view mode (read-only + completion) and edit mode */
 export function NodeModal(): React.ReactElement | null {
   // Get modal state from store
   const {
@@ -46,6 +42,11 @@ export function NodeModal(): React.ReactElement | null {
   const [editDescription, setEditDescription] = useState('');
   const [editResources, setEditResources] = useState<Resource[]>([]);
 
+  // Track which node the form was initialized for (prevents re-init on Yjs updates)
+  const initializedNodeIdRef = useRef<string | null>(null);
+  // Capture original data to preserve fields like 'side' and 'parentId' when saving
+  const originalNodeDataRef = useRef<Record<string, unknown> | null>(null);
+
   // Derive modal data from store
   const modalNode = useMemo(() => {
     if (!modalNodeId) return null;
@@ -54,18 +55,33 @@ export function NodeModal(): React.ReactElement | null {
 
   const isOpen = modalNodeId !== null && modalNode !== null;
 
-  // Initialize form state when modal opens
+  // Initialize form state only once when modal opens for a new node
   useEffect(() => {
-    if (modalNode) {
-      setEditLabel(modalNode.data.label || '');
-      setEditDescription(modalNode.data.description || '');
-      setEditResources(modalNode.data.resources || []);
-      setIsResourcesExpanded(false);
+    if (modalNode && initializedNodeIdRef.current !== modalNode.id) {
+      // Capture original data for use when saving
+      originalNodeDataRef.current = { ...modalNode.data };
 
-      // Load completion state
+      const label = modalNode.data.label;
+      const description = modalNode.data.description;
+      const resources = modalNode.data.resources;
+
+      setEditLabel(typeof label === 'string' ? label : '');
+      setEditDescription(typeof description === 'string' ? description : '');
+      setEditResources(Array.isArray(resources) ? resources : []);
+      setIsResourcesExpanded(false);
       setIsCompleted(getNodeCompletion(learningPathId, modalNode.id));
+
+      initializedNodeIdRef.current = modalNode.id;
     }
   }, [modalNode, learningPathId]);
+
+  // Reset when modal closes
+  useEffect(() => {
+    if (!modalNodeId) {
+      initializedNodeIdRef.current = null;
+      originalNodeDataRef.current = null;
+    }
+  }, [modalNodeId]);
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
@@ -99,8 +115,10 @@ export function NodeModal(): React.ReactElement | null {
 
   const handleSaveEdit = () => {
     if (modalNode) {
+      // Use captured original data as base to preserve fields like 'side', 'parentId'
+      const baseData = originalNodeDataRef.current ?? modalNode.data;
       const updatedData = {
-        ...modalNode.data,
+        ...baseData,
         label: editLabel,
         description: editDescription,
         resources: editResources,
