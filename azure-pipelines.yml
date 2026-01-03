@@ -20,12 +20,14 @@ pr:
 
 # Define variables
 variables:
-  - name: dockerRegistryServiceConnection
-    value: 'your-acr-connection'  # Update with your Azure Container Registry connection
-  - name: imageRepository
-    value: 'rosetta'
+  - name: azureSubscription
+    value: 'CarByte-Academy'  # Azure RM service connection name - update if different
+  - name: resourceGroup
+    value: 'rg-rosetta'
   - name: containerRegistry
-    value: 'your-registry.azurecr.io'  # Update with your ACR
+    value: 'rosettaacr.azurecr.io'
+  - name: acrName
+    value: 'rosettaacr'
   - name: dockerfilePathBackend
     value: 'services/backend/Dockerfile'
   - name: dockerfilePathBackendEditor
@@ -233,172 +235,93 @@ stages:
           vmImage: 'ubuntu-latest'
         steps:
           - checkout: self
-          
-          # Backend
-          - task: Docker@2
-            displayName: 'Build and Push Backend'
+
+          - task: AzureCLI@2
+            displayName: 'Login to ACR and Build/Push Images'
             inputs:
-              command: buildAndPush
-              repository: '$(imageRepository)/backend'
-              dockerfile: '$(dockerfilePathBackend)'
-              containerRegistry: '$(dockerRegistryServiceConnection)'
-              tags: |
-                $(tag)
-                latest
-          
-          # Backend Editor
-          - task: Docker@2
-            displayName: 'Build and Push Backend Editor'
-            inputs:
-              command: buildAndPush
-              repository: '$(imageRepository)/backend-editor'
-              dockerfile: '$(dockerfilePathBackendEditor)'
-              containerRegistry: '$(dockerRegistryServiceConnection)'
-              tags: |
-                $(tag)
-                latest
-          
-          # Auth Service
-          - task: Docker@2
-            displayName: 'Build and Push Auth Service'
-            inputs:
-              command: buildAndPush
-              repository: '$(imageRepository)/auth-service'
-              dockerfile: '$(dockerfilePathAuthService)'
-              containerRegistry: '$(dockerRegistryServiceConnection)'
-              tags: |
-                $(tag)
-                latest
-          
-          # Frontend
-          - task: Docker@2
-            displayName: 'Build and Push Frontend'
-            inputs:
-              command: buildAndPush
-              repository: '$(imageRepository)/frontend'
-              dockerfile: '$(dockerfilePathFrontend)'
-              containerRegistry: '$(dockerRegistryServiceConnection)'
-              tags: |
-                $(tag)
-                latest
-          
-          # Frontend Editor
-          - task: Docker@2
-            displayName: 'Build and Push Frontend Editor'
-            inputs:
-              command: buildAndPush
-              repository: '$(imageRepository)/frontend-editor'
-              dockerfile: '$(dockerfilePathFrontendEditor)'
-              containerRegistry: '$(dockerRegistryServiceConnection)'
-              tags: |
-                $(tag)
-                latest
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                # Login to Azure Container Registry
+                az acr login --name $(acrName)
+
+                # Build and push backend
+                docker build -t $(containerRegistry)/backend:$(Build.BuildId) -t $(containerRegistry)/backend:latest -f services/backend/Dockerfile .
+                docker push $(containerRegistry)/backend:$(Build.BuildId)
+                docker push $(containerRegistry)/backend:latest
+
+                # Build and push backend-editor
+                docker build -t $(containerRegistry)/backend-editor:$(Build.BuildId) -t $(containerRegistry)/backend-editor:latest -f services/backend-editor/Dockerfile .
+                docker push $(containerRegistry)/backend-editor:$(Build.BuildId)
+                docker push $(containerRegistry)/backend-editor:latest
+
+                # Build and push auth-service
+                docker build -t $(containerRegistry)/auth-service:$(Build.BuildId) -t $(containerRegistry)/auth-service:latest -f services/auth-service/Dockerfile .
+                docker push $(containerRegistry)/auth-service:$(Build.BuildId)
+                docker push $(containerRegistry)/auth-service:latest
+
+                # Build and push frontend
+                docker build -t $(containerRegistry)/frontend:$(Build.BuildId) -t $(containerRegistry)/frontend:latest -f apps/frontend/Dockerfile .
+                docker push $(containerRegistry)/frontend:$(Build.BuildId)
+                docker push $(containerRegistry)/frontend:latest
+
+                # Build and push frontend-editor
+                docker build -t $(containerRegistry)/frontend-editor:$(Build.BuildId) -t $(containerRegistry)/frontend-editor:latest -f apps/frontend-editor/Dockerfile .
+                docker push $(containerRegistry)/frontend-editor:$(Build.BuildId)
+                docker push $(containerRegistry)/frontend-editor:latest
 
   # ============================================
-  # STAGE 3: DEPLOY TO DEV
+  # STAGE 3: DEPLOY TO CONTAINER APPS
   # ============================================
-  - stage: DeployDev
-    displayName: 'Deploy to Development'
+  - stage: Deploy
+    displayName: 'Deploy to Container Apps'
     dependsOn: BuildDockerImages
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
-      - deployment: DeployDevEnvironment
-        displayName: 'Deploy to Dev'
+      - job: DeployContainerApps
+        displayName: 'Update Container Apps'
         pool:
           vmImage: 'ubuntu-latest'
-        environment: 'rosetta-dev'
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - checkout: self
-                
-                - task: AzureWebAppContainer@1
-                  displayName: 'Deploy Backend'
-                  inputs:
-                    azureSubscription: 'your-azure-subscription'
-                    appName: 'rosetta-backend-dev'
-                    containers: '$(containerRegistry)/$(imageRepository)/backend:$(tag)'
-                
-                - task: AzureWebAppContainer@1
-                  displayName: 'Deploy Backend Editor'
-                  inputs:
-                    azureSubscription: 'your-azure-subscription'
-                    appName: 'rosetta-backend-editor-dev'
-                    containers: '$(containerRegistry)/$(imageRepository)/backend-editor:$(tag)'
-                
-                - task: AzureWebAppContainer@1
-                  displayName: 'Deploy Auth Service'
-                  inputs:
-                    azureSubscription: 'your-azure-subscription'
-                    appName: 'rosetta-auth-dev'
-                    containers: '$(containerRegistry)/$(imageRepository)/auth-service:$(tag)'
-                
-                - task: AzureWebAppContainer@1
-                  displayName: 'Deploy Frontend'
-                  inputs:
-                    azureSubscription: 'your-azure-subscription'
-                    appName: 'rosetta-frontend-dev'
-                    containers: '$(containerRegistry)/$(imageRepository)/frontend:$(tag)'
-                
-                - task: AzureWebAppContainer@1
-                  displayName: 'Deploy Frontend Editor'
-                  inputs:
-                    azureSubscription: 'your-azure-subscription'
-                    appName: 'rosetta-editor-dev'
-                    containers: '$(containerRegistry)/$(imageRepository)/frontend-editor:$(tag)'
+        steps:
+          - checkout: self
 
-  # ============================================
-  # STAGE 4: DEPLOY TO PRODUCTION
-  # ============================================
-  - stage: DeployProd
-    displayName: 'Deploy to Production'
-    dependsOn: DeployDev
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-    jobs:
-      - deployment: DeployProdEnvironment
-        displayName: 'Deploy to Production'
-        pool:
-          vmImage: 'ubuntu-latest'
-        environment: 'rosetta-prod'
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - checkout: self
-                
-                - task: AzureWebAppContainer@1
-                  displayName: 'Deploy Backend'
-                  inputs:
-                    azureSubscription: 'your-azure-subscription'
-                    appName: 'rosetta-backend-prod'
-                    containers: '$(containerRegistry)/$(imageRepository)/backend:$(tag)'
-                
-                - task: AzureWebAppContainer@1
-                  displayName: 'Deploy Backend Editor'
-                  inputs:
-                    azureSubscription: 'your-azure-subscription'
-                    appName: 'rosetta-backend-editor-prod'
-                    containers: '$(containerRegistry)/$(imageRepository)/backend-editor:$(tag)'
-                
-                - task: AzureWebAppContainer@1
-                  displayName: 'Deploy Auth Service'
-                  inputs:
-                    azureSubscription: 'your-azure-subscription'
-                    appName: 'rosetta-auth-prod'
-                    containers: '$(containerRegistry)/$(imageRepository)/auth-service:$(tag)'
-                
-                - task: AzureWebAppContainer@1
-                  displayName: 'Deploy Frontend'
-                  inputs:
-                    azureSubscription: 'your-azure-subscription'
-                    appName: 'rosetta-frontend-prod'
-                    containers: '$(containerRegistry)/$(imageRepository)/frontend:$(tag)'
-                
-                - task: AzureWebAppContainer@1
-                  displayName: 'Deploy Frontend Editor'
-                  inputs:
-                    azureSubscription: 'your-azure-subscription'
-                    appName: 'rosetta-editor-prod'
-                    containers: '$(containerRegistry)/$(imageRepository)/frontend-editor:$(tag)'
+          - task: AzureCLI@2
+            displayName: 'Deploy to Azure Container Apps'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                # Update backend
+                az containerapp update \
+                  --name backend \
+                  --resource-group $(resourceGroup) \
+                  --image $(containerRegistry)/backend:$(Build.BuildId)
+
+                # Update backend-editor
+                az containerapp update \
+                  --name backend-editor \
+                  --resource-group $(resourceGroup) \
+                  --image $(containerRegistry)/backend-editor:$(Build.BuildId)
+
+                # Update auth-service
+                az containerapp update \
+                  --name auth-service \
+                  --resource-group $(resourceGroup) \
+                  --image $(containerRegistry)/auth-service:$(Build.BuildId)
+
+                # Update frontend
+                az containerapp update \
+                  --name frontend \
+                  --resource-group $(resourceGroup) \
+                  --image $(containerRegistry)/frontend:$(Build.BuildId)
+
+                # Update frontend-editor
+                az containerapp update \
+                  --name frontend-editor \
+                  --resource-group $(resourceGroup) \
+                  --image $(containerRegistry)/frontend-editor:$(Build.BuildId)
+
+                echo "All Container Apps updated successfully!"
 
