@@ -21,7 +21,7 @@ export default function App() {
             }
           />
 
-          {/* Community sections */}
+          {/* Community section */}
           <Route path="/hub">
             <Route
               path=":communityname"
