@@ -13,7 +13,7 @@ import {
   NODE_DIMENSIONS,
 } from '@/utils/nodeConnection';
 import { getNodeCompletion } from '@/utils/storage';
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo, useState, useEffect, useRef, memo } from 'react';
 
 // Handle configuration type
 type HandleConfig = {
@@ -63,17 +63,16 @@ const TopicNode = ({
   type,
   ...nodeProps
 }: TopicNodeProps): React.ReactElement => {
-  const {
-    connectedUsers,
-    isViewMode,
-    nodes,
-    edges,
-    openNodeModal,
-    modalNodeId,
-    learningPathId,
-    shakeNodeId,
-    clearShakeNode,
-  } = useCollaborativeStore();
+  // Use granular selectors to minimize re-renders
+  const connectedUsers = useCollaborativeStore((state) => state.connectedUsers);
+  const isViewMode = useCollaborativeStore((state) => state.isViewMode);
+  const nodes = useCollaborativeStore((state) => state.nodes);
+  const edges = useCollaborativeStore((state) => state.edges);
+  const openNodeModal = useCollaborativeStore((state) => state.openNodeModal);
+  const modalNodeId = useCollaborativeStore((state) => state.modalNodeId);
+  const learningPathId = useCollaborativeStore((state) => state.learningPathId);
+  const shakeNodeId = useCollaborativeStore((state) => state.shakeNodeId);
+  const clearShakeNode = useCollaborativeStore((state) => state.clearShakeNode);
   const { isBeingEdited, editedBy } = useNodeState(id);
 
   // Defensive check: ensure label exists (can be undefined during initial sync)
@@ -344,4 +343,17 @@ const TopicNode = ({
   );
 };
 
-export default TopicNode;
+// Memoize component to prevent unnecessary re-renders
+// Only re-render when critical props change
+export default memo(TopicNode, (prevProps, nextProps) => {
+  // Return true if props are equal (skip re-render)
+  // Return false if props differ (trigger re-render)
+  return (
+    prevProps.id === nextProps.id &&
+    prevProps.data === nextProps.data &&
+    prevProps.selected === nextProps.selected &&
+    prevProps.type === nextProps.type &&
+    prevProps.positionAbsoluteX === nextProps.positionAbsoluteX &&
+    prevProps.positionAbsoluteY === nextProps.positionAbsoluteY
+  );
+});

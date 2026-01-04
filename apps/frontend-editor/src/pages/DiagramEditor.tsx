@@ -45,19 +45,21 @@ export default function DiagramEditor({
   community,
   mode = 'edit',
 }: DiagramEditorProps) {
-  const {
-    initializeCollaboration,
-    isInitializing,
-    cleanup,
-    nodes: storeNodes,
-    edges: storeEdges,
-    title,
-    onNodeChange,
-    onEdgeChange,
-    onConnect,
-    updateCursor,
-    modalNodeId,
-  } = useCollaborativeStore();
+  // Use granular selectors to minimize re-renders
+  // Component only re-renders when specific properties change
+  const initializeCollaboration = useCollaborativeStore(
+    (state) => state.initializeCollaboration,
+  );
+  const isInitializing = useCollaborativeStore((state) => state.isInitializing);
+  const cleanup = useCollaborativeStore((state) => state.cleanup);
+  const storeNodes = useCollaborativeStore((state) => state.nodes);
+  const storeEdges = useCollaborativeStore((state) => state.edges);
+  const title = useCollaborativeStore((state) => state.title);
+  const onNodeChange = useCollaborativeStore((state) => state.onNodeChange);
+  const onEdgeChange = useCollaborativeStore((state) => state.onEdgeChange);
+  const onConnect = useCollaborativeStore((state) => state.onConnect);
+  const updateCursor = useCollaborativeStore((state) => state.updateCursor);
+  const modalNodeId = useCollaborativeStore((state) => state.modalNodeId);
 
   const { user, isLoading } = useUserStore();
 
