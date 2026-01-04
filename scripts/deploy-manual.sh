@@ -11,9 +11,18 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the repository root (parent of scripts directory)
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# Change to repository root to ensure relative paths work
+cd "${REPO_ROOT}"
+
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}Manual Docker Build & Push Script${NC}"
 echo -e "${BLUE}========================================${NC}"
+echo -e "${YELLOW}Working directory: ${REPO_ROOT}${NC}"
 
 # Variables
 ACR_NAME="rosettaacr"
