@@ -460,8 +460,12 @@ mkdir -p "$RESULTS_DIR"
 METRICS_FILE="$RESULTS_DIR/metrics-$(date +%Y%m%d-%H%M%S).json"
 # URL-encode the room name to handle the / character
 ENCODED_ROOM_NAME=$(printf %s "$ROOM_NAME" | jq -sRr @uri)
+# Get test type from environment or default to "unknown"
+TEST_TYPE=${TEST_TYPE:-"unknown"}
+# URL-encode the test type
+ENCODED_TEST_TYPE=$(printf %s "$TEST_TYPE" | jq -sRr @uri)
 
-if curl -s "http://localhost:$BACKEND_PORT/api/metrics/summary?room=$ENCODED_ROOM_NAME" > "$METRICS_FILE" 2>/dev/null; then
+if curl -s "http://localhost:$BACKEND_PORT/api/metrics/summary?room=$ENCODED_ROOM_NAME&testType=$ENCODED_TEST_TYPE" > "$METRICS_FILE" 2>/dev/null; then
   echo -e "${GREEN}✓ Metrics collected${NC}"
   echo ""
 

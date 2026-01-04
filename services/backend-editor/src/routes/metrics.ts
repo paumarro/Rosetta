@@ -118,12 +118,18 @@ router.get('/', (req: Request, res: Response) => {
  */
 router.get('/summary', (req: Request, res: Response) => {
   try {
-    const { room } = req.query;
+    const { room, testType } = req.query;
     const roomKey = (room as string) || 'default';
+    const testTypeValue = (testType as string) || 'unknown';
     const metrics = metricsStore.get(roomKey) || [];
 
     if (metrics.length === 0) {
-      return res.json({ room: roomKey, count: 0, summary: null });
+      return res.json({
+        room: roomKey,
+        testType: testTypeValue,
+        count: 0,
+        summary: null,
+      });
     }
 
     // Calculate averages
@@ -154,7 +160,7 @@ router.get('/summary', (req: Request, res: Response) => {
       },
     };
 
-    res.json({ room: roomKey, summary });
+    res.json({ room: roomKey, testType: testTypeValue, summary });
   } catch (error) {
     console.error('Error calculating summary:', error);
     res.status(500).json({ error: 'Failed to calculate summary' });
