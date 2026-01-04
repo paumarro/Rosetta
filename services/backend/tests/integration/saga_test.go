@@ -281,7 +281,7 @@ func TestIntegration_CreateLP_FullSagaFlow(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// Execute full saga
 	lp, err := svc.CreateLearningPath(
@@ -334,7 +334,7 @@ func TestIntegration_CreateLP_PostgreSQLFails_CompensationDeletesMongoDiagram(t 
 	}
 	require.NoError(t, db.Create(&existingLP).Error)
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// Execute - MongoDB succeeds but PostgreSQL fails due to duplicate title
 	lp, err := svc.CreateLearningPath(
@@ -371,7 +371,7 @@ func TestIntegration_CreateLP_MongoDBFails_NoOrphanInPostgres(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// Execute
 	lp, err := svc.CreateLearningPath(
@@ -407,7 +407,7 @@ func TestIntegration_CreateLP_ConcurrentRequests_OnlyOneSucceeds(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	const numRequests = 5
 	var wg sync.WaitGroup
@@ -457,7 +457,7 @@ func TestIntegration_DeleteLP_FullSagaFlow(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// First create an LP
 	lp, err := svc.CreateLearningPath(
@@ -498,7 +498,7 @@ func TestIntegration_DeleteLP_MongoDBFails_LPRestored(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// First create an LP
 	lp, err := svc.CreateLearningPath(
@@ -552,7 +552,7 @@ func TestIntegration_DeleteLP_DiagramAlreadyDeleted_TreatedAsSuccess(t *testing.
 	}
 	require.NoError(t, db.Create(&lp).Error)
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// Execute delete - MongoDB will return 404, but should be treated as success
 	err := svc.DeleteLearningPath(context.Background(), lpID.String(), "token")
@@ -576,7 +576,7 @@ func TestIntegration_CreateLP_IdempotentRetry(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// Create first LP
 	lp1, err := svc.CreateLearningPath(
@@ -619,7 +619,7 @@ func TestIntegration_CreateLP_SkillsCreatedAndAssociated(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// Create LP with skills
 	lp, err := svc.CreateLearningPath(
@@ -661,7 +661,7 @@ func TestIntegration_CreateLP_ExistingSkillsReused(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// Create first LP with some skills
 	_, err := svc.CreateLearningPath(
@@ -704,7 +704,7 @@ func TestIntegration_DeleteLP_SkillsRemainForOtherLPs(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// Create two LPs with shared skill
 	lp1, err := svc.CreateLearningPath(
@@ -777,7 +777,7 @@ func TestIntegration_CreateLP_CompensationFails_BothErrorsReported(t *testing.T)
 	// Make compensation (DELETE) also fail
 	mongoServer.failOnDelete = true
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// Execute - MongoDB create succeeds, PostgreSQL fails, compensation fails
 	lp, err := svc.CreateLearningPath(
@@ -810,7 +810,7 @@ func TestIntegration_DeleteLP_InvalidUUIDFormat(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// Execute with invalid UUID format
 	err := svc.DeleteLearningPath(context.Background(), "not-a-valid-uuid", "token")
@@ -829,7 +829,7 @@ func TestIntegration_CreateLP_SpecialCharactersInTitle(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	specialTitle := `Test "quotes" & <tags> 'apostrophes'`
 
@@ -860,7 +860,7 @@ func TestIntegration_CreateLP_ContextCancellation(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// Create context that will be cancelled
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
@@ -898,7 +898,7 @@ func TestIntegration_UpdateLP_FullSagaFlow(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// Pre-create a learning path with diagram
 	lp, err := svc.CreateLearningPath(
@@ -956,7 +956,7 @@ func TestIntegration_UpdateLP_MongoDBFails_RollbackPostgreSQL(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// Pre-create a learning path
 	lp, err := svc.CreateLearningPath(
@@ -1011,7 +1011,7 @@ func TestIntegration_UpdateLP_NotFound(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// Try to update non-existent LP
 	randomID := uuid.New().String()
@@ -1039,7 +1039,7 @@ func TestIntegration_UpdateLP_InvalidUUID(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// Try to update with invalid UUID
 	updatedLP, err := svc.UpdateLearningPath(
@@ -1067,7 +1067,7 @@ func TestIntegration_UpdateLP_ConcurrentUpdates_DataConsistency(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// Pre-create a learning path
 	lp, err := svc.CreateLearningPath(
@@ -1144,7 +1144,7 @@ func TestIntegration_CreateLP_MissingAuthToken_Returns401(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// Execute with empty auth token
 	lp, err := svc.CreateLearningPath(
@@ -1178,7 +1178,7 @@ func TestIntegration_UpdateLP_MissingAuthToken_Returns401(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// Create LP with valid token first
 	lp, err := svc.CreateLearningPath(
@@ -1218,7 +1218,7 @@ func TestIntegration_DeleteLP_MissingAuthToken_Returns401(t *testing.T) {
 	ts := httptest.NewServer(mongoServer)
 	defer ts.Close()
 
-	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL+"/api")
+	svc := service.NewLearningPathServiceWithClient(db, ts.Client(), ts.URL)
 
 	// Create LP with valid token first
 	lp, err := svc.CreateLearningPath(
