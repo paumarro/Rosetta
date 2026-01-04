@@ -20,7 +20,7 @@ pr:
 
 variables:
   - name: azureSubscription
-    value: '076663e1-eb60-4e0e-8a07-45dc414dffd0'
+    value: 'DevOps-Carbyte-Academy'
   - name: resourceGroup
     value: 'rg-rosetta'
   - name: containerRegistry
@@ -29,8 +29,6 @@ variables:
     value: 'rosettaacr'
   - name: tag
     value: '$(Build.BuildId)'
-  - name: SKIP_AZURE_STAGES
-    value: 'true'  # Set to 'false' when Azure service connection is authorized
 
 stages:
   # ============================================
@@ -322,17 +320,10 @@ stages:
   # ============================================
   # STAGE 3: BUILD DOCKER IMAGES
   # ============================================
-  # NOTE: Requires Azure service connection authorization
-  # To skip: Set SKIP_AZURE_STAGES=true in pipeline variables
   - stage: BuildDockerImages
     displayName: 'Build Docker Images'
     dependsOn: PerformanceTests
-    condition: |
-      and(
-        succeeded(),
-        eq(variables['Build.SourceBranch'], 'refs/heads/main'),
-        ne(variables['SKIP_AZURE_STAGES'], 'true')
-      )
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - job: BuildAndPushImages
         displayName: 'Build and Push All Images'
@@ -369,17 +360,10 @@ stages:
   # ============================================
   # STAGE 4: DEPLOY TO CONTAINER APPS
   # ============================================
-  # NOTE: Requires Azure service connection authorization
-  # To skip: Set SKIP_AZURE_STAGES=true in pipeline variables
   - stage: Deploy
     displayName: 'Deploy to Container Apps'
     dependsOn: BuildDockerImages
-    condition: |
-      and(
-        succeeded(),
-        eq(variables['Build.SourceBranch'], 'refs/heads/main'),
-        ne(variables['SKIP_AZURE_STAGES'], 'true')
-      )
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - job: DeployContainerApps
         displayName: 'Update Container Apps'
