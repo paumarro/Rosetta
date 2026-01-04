@@ -513,15 +513,7 @@ npm install -D vitest @testing-library/react @testing-library/jest-dom jsdom msw
 
 ### E2E Tests
 
-| Tool | Purpose |
-|------|---------|
-| `playwright` | Cross-browser E2E testing |
-
-**Installation**:
-```bash
-npm install -D @playwright/test
-npx playwright install
-```
+E2E testing is not currently configured. Consider adding browser automation tools for end-to-end testing if needed.
 
 ---
 
@@ -650,7 +642,7 @@ jobs:
       - name: Start services
         run: docker-compose -f docker-compose.test.yml up -d
       - name: Run E2E tests
-        run: npx playwright test
+        run: echo "E2E tests not configured"
 ```
 
 ### Coverage Requirements
