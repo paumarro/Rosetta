@@ -1,0 +1,29 @@
+{
+  "name": "rosetta-load-testing",
+  "version": "1.0.0",
+  "description": "Load testing suite for Rosetta collaborative diagramming",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "./run-load-test.sh",
+    "test:quick": "BOT_COUNT=5 TEST_DURATION=30 INITIAL_NODE_COUNT=3 ./run-load-test.sh",
+    "test:medium": "BOT_COUNT=20 TEST_DURATION=60 INITIAL_NODE_COUNT=10 ./run-load-test.sh",
+    "test:heavy": "BOT_COUNT=50 TEST_DURATION=120 INITIAL_NODE_COUNT=20 ./run-load-test.sh",
+    "test:stress": "BOT_COUNT=100 TEST_DURATION=60 INITIAL_NODE_COUNT=30 ./run-load-test.sh",
+    "test:create": "BOT_COUNT=20 TEST_DURATION=60 CREATE_NODE_PROBABILITY=0.40 DELETE_NODE_PROBABILITY=0.05 MOVE_PROBABILITY=0.30 LABEL_UPDATE_PROBABILITY=0.20 ./run-load-test.sh",
+    "test:modify": "BOT_COUNT=15 TEST_DURATION=60 INITIAL_NODE_COUNT=20 CREATE_NODE_PROBABILITY=0.0 DELETE_NODE_PROBABILITY=0.0 MOVE_PROBABILITY=0.60 LABEL_UPDATE_PROBABILITY=0.40 ./run-load-test.sh",
+    "test:endurance": "BOT_COUNT=30 TEST_DURATION=600 INITIAL_NODE_COUNT=15 ./run-load-test.sh",
+    "test:ci": "SKIP_SERVER_START=true BOT_COUNT=20 TEST_DURATION=60 ./run-load-test.sh",
+    "bots": "node swarm-bot.js",
+    "bots:quick": "CLIENT_COUNT=5 DURATION_MS=30000 node swarm-bot.js",
+    "bots:heavy": "CLIENT_COUNT=50 UPDATE_INTERVAL_MS=1000 DURATION_MS=120000 node swarm-bot.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "y-websocket": "^2.0.4",
+    "yjs": "^13.6.20"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
