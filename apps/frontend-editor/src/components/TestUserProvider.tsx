@@ -125,17 +125,6 @@ export const TestUserProvider: React.FC<TestUserProviderProps> = ({
 
 export default TestUserProvider;
 
-/**
- * Helper to check if we're in test mode
- */
-export function isTestMode(): boolean {
-  return sessionStorage.getItem('rosetta_test_mode') === 'true';
-}
-
-/**
- * Get test user ID if in test mode
- */
-export function getTestUserId(): string | null {
-  if (!isTestMode()) return null;
-  return sessionStorage.getItem(TEST_USER_ID_KEY);
-}
+// Re-export test mode utilities for backward compatibility
+// eslint-disable-next-line react-refresh/only-export-components
+export { isTestMode, getTestUserId } from '@/utils/testMode';
