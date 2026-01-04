@@ -29,6 +29,8 @@ variables:
     value: 'rosettaacr'
   - name: tag
     value: '$(Build.BuildId)'
+  - name: SKIP_AZURE_STAGES
+    value: 'true'  # Set to 'false' when Azure service connection is authorized
 
 stages:
   # ============================================
@@ -320,10 +322,17 @@ stages:
   # ============================================
   # STAGE 3: BUILD DOCKER IMAGES
   # ============================================
+  # NOTE: Requires Azure service connection authorization
+  # To skip: Set SKIP_AZURE_STAGES=true in pipeline variables
   - stage: BuildDockerImages
     displayName: 'Build Docker Images'
     dependsOn: PerformanceTests
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    condition: |
+      and(
+        succeeded(),
+        eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+        ne(variables['SKIP_AZURE_STAGES'], 'true')
+      )
     jobs:
       - job: BuildAndPushImages
         displayName: 'Build and Push All Images'
@@ -360,10 +369,17 @@ stages:
   # ============================================
   # STAGE 4: DEPLOY TO CONTAINER APPS
   # ============================================
+  # NOTE: Requires Azure service connection authorization
+  # To skip: Set SKIP_AZURE_STAGES=true in pipeline variables
   - stage: Deploy
     displayName: 'Deploy to Container Apps'
     dependsOn: BuildDockerImages
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    condition: |
+      and(
+        succeeded(),
+        eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+        ne(variables['SKIP_AZURE_STAGES'], 'true')
+      )
     jobs:
       - job: DeployContainerApps
         displayName: 'Update Container Apps'
