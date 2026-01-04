@@ -1,0 +1,25 @@
+# Development Dockerfile for Frontend Editor (Load Testing)
+FROM node:20-alpine
+
+# Install curl for healthcheck
+RUN apk add --no-cache curl
+
+WORKDIR /app
+
+# Copy shared package files
+COPY shared/package*.json ./shared/
+RUN cd shared && npm install
+
+# Copy frontend package files
+COPY apps/frontend-editor/package*.json ./
+RUN npm ci
+
+# Copy source code
+COPY shared/ ./shared/
+COPY apps/frontend-editor/ ./
+
+# Expose Vite dev server
+EXPOSE 5173
+
+# Run Vite dev server on all interfaces
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
