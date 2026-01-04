@@ -27,15 +27,15 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       proxy: {
         '/api': {
-          target: env.VITE_FE_URL,
+          target: env.VITE_FE_URL || 'http://localhost:8080',
           changeOrigin: false,
         },
-        // Proxy /editor/* to backend-editor for WebSocket and API calls
-        // Required for test mode when accessing dev server directly
+        // Proxy /editor/* to backend-editor for API calls
+        // Rewrites /editor/api/metrics -> /api/metrics
         '/editor': {
           target: 'http://localhost:3001',
           changeOrigin: true,
-          ws: true, // Enable WebSocket proxying
+          rewrite: (path) => path.replace(/^\/editor/, ''),
         },
       },
     },
