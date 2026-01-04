@@ -110,7 +110,7 @@ func (s *LearningPathService) createDiagramInMongo(ctx context.Context, lpID, ti
 		"name":           title,
 	})
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/diagrams/by-lp", s.EditorURL), bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/api/diagrams/by-lp", s.EditorURL), bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -213,7 +213,7 @@ func (s *LearningPathService) deleteDiagramByLP(ctx context.Context, lpID, authT
 	cleanupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	req, _ := http.NewRequestWithContext(cleanupCtx, http.MethodDelete, fmt.Sprintf("%s/diagrams/by-lp/%s", s.EditorURL, lpID), nil)
+	req, _ := http.NewRequestWithContext(cleanupCtx, http.MethodDelete, fmt.Sprintf("%s/api/diagrams/by-lp/%s", s.EditorURL, lpID), nil)
 	// Zero Trust: Authenticate with user token for audit trail
 	if authToken != "" {
 		req.Header.Set("Authorization", "Bearer "+authToken)
@@ -234,7 +234,7 @@ func (s *LearningPathService) deleteDiagramByLP(ctx context.Context, lpID, authT
 func (s *LearningPathService) updateDiagramName(ctx context.Context, lpID, name, authToken string) error {
 	body, _ := json.Marshal(map[string]string{"name": name})
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, fmt.Sprintf("%s/diagrams/by-lp/%s", s.EditorURL, lpID), bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, fmt.Sprintf("%s/api/diagrams/by-lp/%s", s.EditorURL, lpID), bytes.NewReader(body))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
