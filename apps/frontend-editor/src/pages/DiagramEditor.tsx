@@ -17,6 +17,7 @@ import AddNodeButton from '@/components/ui/AddNodeButton';
 import AvatarStack from '@/components/ui/AvatarStack';
 import EditButton from '@/components/ui/EditButton';
 import Cursors from '@/components/ui/Cursors';
+import PerformanceMonitor from '@/components/PerformanceMonitor';
 import TopicNode from '../components/diagram/CustomNode';
 import { NodeModal } from '../components/diagram/NodeModal';
 import {
@@ -88,8 +89,10 @@ export default function DiagramEditor({
       photoURL: user.PhotoURL || '/api/user/photo',
     };
 
-    initializeCollaboration(pathId, currentUser, isViewMode);
-  }, [pathId, user, initializeCollaboration, isViewMode, isLoading]);
+    // Construct full document name with community prefix for CBAC
+    const documentName = community ? `${community}/${pathId}` : pathId;
+    initializeCollaboration(documentName, currentUser, isViewMode);
+  }, [pathId, community, user, initializeCollaboration, isViewMode, isLoading]);
 
   useEffect(() => {
     if (hasAddedToRecentRef.current) {
@@ -387,6 +390,7 @@ export default function DiagramEditor({
         </ConnectionContext.Provider>
       </div>
       <NodeModal />
+      <PerformanceMonitor roomName={pathId || 'default'} />
     </div>
   );
 }
