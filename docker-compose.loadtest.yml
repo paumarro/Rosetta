@@ -1,0 +1,87 @@
+# Docker Compose for Load Testing
+# Provides isolated, reproducible load testing environment
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: loadtest-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=rosetta-editor
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Backend Editor Service
+  backend-editor:
+    build:
+      context: .
+      dockerfile: services/backend-editor/Dockerfile
+    container_name: loadtest-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - MONGO_URL=mongodb://mongodb:27017/rosetta-editor
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+
+  # Frontend Editor Service
+  frontend-editor:
+    build:
+      context: .
+      dockerfile: apps/frontend-editor/Dockerfile.dev
+    container_name: loadtest-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_BACKEND_URL=http://backend-editor:3001
+    depends_on:
+      backend-editor:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5173"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 60s
+
+  # Load Testing Bots
+  loadtest:
+    build:
+      context: .
+      dockerfile: scripts/load-test/Dockerfile
+    container_name: loadtest-runner
+    environment:
+      - WS_URL=ws://backend-editor:3001
+      - ROOM_NAME=TestCommunity/perf-test-room
+      - BOT_COUNT=20
+      - TEST_DURATION=60
+      - INITIAL_NODE_COUNT=10
+      - SKIP_SERVER_START=true
+    depends_on:
+      backend-editor:
+        condition: service_healthy
+      frontend-editor:
+        condition: service_healthy
+    volumes:
+      # Mount for collecting test results
+      - ./test-results:/app/test-results
+    command: npm run test:ci
+
+networks:
+  default:
+    name: loadtest-network
