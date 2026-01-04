@@ -186,16 +186,29 @@ const TopicNode = ({
       return { firstLine: label, secondLine: null };
     }
 
-    // Find smart break point: look for last space within reasonable range
-    const searchStart = Math.max(0, threshold - 4); // Search from position 12-16
+    // Find smart break point: look for last space before threshold
+    // Search from threshold backwards to find the nearest word boundary
+    // Expand search range to avoid mid-word breaks
+    const searchStart = Math.max(0, Math.floor(threshold * 0.5)); // Start from ~50% of threshold
     const searchEnd = Math.min(label.length, threshold);
     let breakPoint = -1;
 
-    // Look for last space in the search range
+    // Look for last space in the expanded search range
     for (let i = searchEnd - 1; i >= searchStart; i--) {
       if (label[i] === ' ') {
         breakPoint = i;
         break;
+      }
+    }
+
+    // If no space found in the range, look for any space before threshold
+    // This ensures we break between words whenever possible
+    if (breakPoint === -1) {
+      for (let i = threshold - 1; i >= 0; i--) {
+        if (label[i] === ' ') {
+          breakPoint = i;
+          break;
+        }
       }
     }
 
@@ -208,9 +221,10 @@ const TopicNode = ({
       firstLine = label.substring(0, breakPoint);
       secondLine = label.substring(breakPoint + 1);
     } else {
-      // No space found - break mid-word with hyphen
-      firstLine = label.substring(0, threshold - 1) + '-';
-      secondLine = label.substring(threshold - 1);
+      // No space found at all - break at threshold without hyphen
+      // This is a last resort for labels with no spaces
+      firstLine = label.substring(0, threshold);
+      secondLine = label.substring(threshold);
     }
 
     // Handle truncation if total length exceeds maxLength
@@ -298,12 +312,16 @@ const TopicNode = ({
   const styles = getNodeStyles();
   const { firstLine, secondLine } = splitLabelForDisplay();
 
+  // Only allow hover scale if node is not locked and not completed
+  const canHoverScale = !isBeingEdited && !isCompleted;
+
   return (
     <div
       ref={nodeRef}
-      className={`px-4 transition-colors cursor-pointer flex items-center justify-center
+      className={`px-4 transition-all cursor-pointer flex items-center justify-center
         ${styles.base} ${styles.border} ${styles.hover} ${widthClass} ${styles.height}
-        ${isShaking ? 'node-shake' : ''}`}
+        ${isShaking ? 'node-shake' : ''}
+        ${canHoverScale ? 'hover:scale-105' : ''}`}
       data-view-mode={isViewMode}
       onClick={handleNodeClick}
     >

@@ -197,7 +197,8 @@ export const createDiagramSlice: StateCreator<
     const yNodes = ydoc.getMap<Y.Map<unknown>>('nodes');
     const yNode = yNodes.get(nodeId);
     if (yNode) {
-      yNode.set('data', data);
+      const currentData = (yNode.get('data') as Record<string, unknown>) || {};
+      yNode.set('data', { ...currentData, ...data });
     }
   },
 });

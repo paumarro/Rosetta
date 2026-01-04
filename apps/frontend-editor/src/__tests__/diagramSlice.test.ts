@@ -179,7 +179,9 @@ describe('Diagram Slice', () => {
       store.getState().updateNodeData('n1', { label: 'Modified' });
 
       const yNode = yNodes.get('n1');
-      expect(yNode?.get('data')).toEqual({ label: 'Original' });
+      const data = yNode?.get('data') as Record<string, unknown>;
+      // Verify label was NOT modified (view mode blocks updates)
+      expect(data.label).toBe('Original');
     });
 
     it('allows node selection changes in view mode', () => {
@@ -446,6 +448,43 @@ describe('Diagram Slice', () => {
       expect(data.label).toBe('Updated');
       expect(data.description).toBe('New description');
       expect(data.resources).toEqual(['link1']);
+    });
+
+    it('preserves existing fields when updating node data (PATCH semantics)', () => {
+      const { store, yNodes } = createTestStore({
+        initialNodes: [
+          {
+            id: 'n1',
+            type: 'topic',
+            position: { x: 100, y: 0 },
+            data: {
+              label: 'Original',
+              description: 'Old desc',
+              side: 'right',
+              parentId: 'parent-1',
+              customField: 'preserved',
+            },
+          },
+        ],
+      });
+
+      // Update only label and description
+      store.getState().updateNodeData('n1', {
+        label: 'Updated',
+        description: 'New description',
+      });
+
+      const yNode = yNodes.get('n1');
+      const data = yNode?.get('data') as Record<string, unknown>;
+
+      // Updated fields
+      expect(data.label).toBe('Updated');
+      expect(data.description).toBe('New description');
+
+      // Preserved fields (PATCH semantics)
+      expect(data.side).toBe('right');
+      expect(data.parentId).toBe('parent-1');
+      expect(data.customField).toBe('preserved');
     });
   });
 });

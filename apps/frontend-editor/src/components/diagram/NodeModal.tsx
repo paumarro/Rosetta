@@ -115,10 +115,9 @@ export function NodeModal(): React.ReactElement | null {
 
   const handleSaveEdit = () => {
     if (modalNode) {
-      // Use captured original data as base to preserve fields like 'side', 'parentId'
-      const baseData = originalNodeDataRef.current ?? modalNode.data;
+      // Only pass the fields that changed - updateNodeData will merge with current Yjs data
+      // This ensures all existing fields (like 'side', 'parentId') are preserved
       const updatedData = {
-        ...baseData,
         label: editLabel,
         description: editDescription,
         resources: editResources,

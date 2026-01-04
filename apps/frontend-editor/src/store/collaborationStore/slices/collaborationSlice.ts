@@ -328,11 +328,14 @@ export const createCollaborationSlice: StateCreator<
               // ALWAYS set name in React state (source of truth)
               set({ title: diagram.name || learningPathId });
 
-              // Only initialize with template if Yjs is COMPLETELY empty
-              // If Yjs has ANY data, use it (preserves all edits, including deletions)
-              if (yNodes.size === 0) {
-                doc.transact(() => {
-                  diagram.nodes.forEach((node) => {
+              // Initialize template nodes that don't already exist in Yjs.
+              // This preserves any persisted edits while filling in missing nodes.
+              // Using has() check instead of size === 0 prevents race conditions
+              // where persisted data arrives after sync but before this code runs.
+              doc.transact(() => {
+                diagram.nodes.forEach((node) => {
+                  // Only add if node doesn't already exist (don't overwrite persisted edits)
+                  if (!yNodes.has(node.id)) {
                     const yNode = new Y.Map<unknown>();
                     yNode.set('type', node.type);
                     yNode.set('position', node.position);
@@ -340,21 +343,22 @@ export const createCollaborationSlice: StateCreator<
                     yNode.set('isBeingEdited', node.isBeingEdited || false);
                     yNode.set('editedBy', node.editedBy || null);
                     yNodes.set(node.id, yNode);
-                  });
+                  }
+                });
 
-                  diagram.edges.forEach((edge) => {
+                diagram.edges.forEach((edge) => {
+                  // Only add if edge doesn't already exist
+                  if (!yEdges.has(edge.id)) {
                     const yEdge = new Y.Map<unknown>();
                     yEdge.set('source', edge.source);
                     yEdge.set('target', edge.target);
                     yEdge.set('sourceHandle', edge.sourceHandle ?? null);
                     yEdge.set('targetHandle', edge.targetHandle ?? null);
                     yEdges.set(edge.id, yEdge);
-                  });
+                  }
                 });
-                applyFromY(); // Sync template to React state
-              } else {
-                applyFromY(); // Sync existing Yjs data to React
-              }
+              });
+              applyFromY(); // Sync Yjs data to React state
             } else {
               console.error(
                 `API returned error status: ${String(response.status)}`,

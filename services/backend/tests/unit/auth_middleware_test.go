@@ -345,5 +345,3 @@ func TestAuthToken_SpecialCharacters(t *testing.T) {
 		})
 	}
 }
-
-}
