@@ -48,6 +48,7 @@ SKIP_SERVER_START=${SKIP_SERVER_START:-false}
 BACKEND_PID=""
 FRONTEND_PID=""
 BOT_PID=""
+MONGODB_STARTED=false
 
 # Cleanup function
 cleanup() {
@@ -71,6 +72,12 @@ cleanup() {
       kill $BACKEND_PID 2>/dev/null || true
       wait $BACKEND_PID 2>/dev/null || true
     fi
+  fi
+
+  # Note: We don't stop MongoDB as it might be used by other services
+  if [ "$MONGODB_STARTED" = "true" ]; then
+    echo -e "${YELLOW}Note: MongoDB container was started and is still running${NC}"
+    echo "Stop it manually with: docker stop docker-mongodb-1"
   fi
 
   echo -e "${GREEN}Cleanup complete${NC}"
@@ -106,6 +113,63 @@ wait_for_service() {
   return 1
 }
 
+# Helper function to check and start MongoDB
+ensure_mongodb_running() {
+  echo -e "\n${BLUE}[0/4] Checking MongoDB${NC}"
+
+  # Check if MongoDB is running on port 27017
+  if lsof -i :27017 -sTCP:LISTEN >/dev/null 2>&1; then
+    echo -e "${GREEN}✓ MongoDB is already running${NC}"
+    return 0
+  fi
+
+  echo -e "${YELLOW}MongoDB not running, attempting to start...${NC}"
+
+  # Try to start existing Docker container
+  if docker ps -a --filter "name=docker-mongodb-1" --format "{{.Names}}" | grep -q "docker-mongodb-1"; then
+    echo "Starting MongoDB Docker container (docker-mongodb-1)..."
+    if docker start docker-mongodb-1 >/dev/null 2>&1; then
+      MONGODB_STARTED=true
+      sleep 2
+      if lsof -i :27017 -sTCP:LISTEN >/dev/null 2>&1; then
+        echo -e "${GREEN}✓ MongoDB started successfully${NC}"
+        return 0
+      fi
+    fi
+  fi
+
+  # Try alternative container name
+  if docker ps -a --filter "name=loadtest-mongodb" --format "{{.Names}}" | grep -q "loadtest-mongodb"; then
+    echo "Starting MongoDB Docker container (loadtest-mongodb)..."
+    if docker start loadtest-mongodb >/dev/null 2>&1; then
+      MONGODB_STARTED=true
+      sleep 2
+      if lsof -i :27017 -sTCP:LISTEN >/dev/null 2>&1; then
+        echo -e "${GREEN}✓ MongoDB started successfully${NC}"
+        return 0
+      fi
+    fi
+  fi
+
+  # If no container found, try to create one
+  echo "No existing MongoDB container found, creating new one..."
+  if docker run -d --name docker-mongodb-1 -p 27017:27017 mongo:7 >/dev/null 2>&1; then
+    MONGODB_STARTED=true
+    echo "Waiting for MongoDB to be ready..."
+    sleep 5
+    if lsof -i :27017 -sTCP:LISTEN >/dev/null 2>&1; then
+      echo -e "${GREEN}✓ MongoDB started successfully${NC}"
+      return 0
+    fi
+  fi
+
+  echo -e "${RED}✗ Failed to start MongoDB${NC}"
+  echo -e "${YELLOW}Please start MongoDB manually:${NC}"
+  echo "  - Docker: docker start docker-mongodb-1"
+  echo "  - Or use Docker Compose: docker-compose -f docker-compose.loadtest.yml up"
+  return 1
+}
+
 ###############################################################################
 # Main Script
 ###############################################################################
@@ -123,6 +187,16 @@ cd "$PROJECT_ROOT"
 if [ ! -d "scripts/load-test/node_modules" ]; then
   echo -e "${YELLOW}Load testing dependencies not found. Installing...${NC}"
   ./scripts/load-test/install-deps.sh
+fi
+
+###############################################################################
+# Step 0: Ensure MongoDB is Running
+###############################################################################
+
+if [ "$SKIP_SERVER_START" = "false" ]; then
+  if ! ensure_mongodb_running; then
+    exit 1
+  fi
 fi
 
 ###############################################################################
