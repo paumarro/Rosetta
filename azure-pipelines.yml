@@ -1,5 +1,5 @@
-# Azure Pipeline for Rosetta Monorepo
-# Builds and tests all services and applications
+# Improved Azure Pipeline with Proper Load Testing Isolation
+# This is the recommended implementation following CI/CD best practices
 
 trigger:
   branches:
@@ -18,7 +18,6 @@ pr:
       - main
       - dev
 
-# Define variables
 variables:
   - name: azureSubscription
     value: 'carbyte-Carbyte-Academy-Registration-Dev'
@@ -28,30 +27,16 @@ variables:
     value: 'rosettaacr.azurecr.io'
   - name: acrName
     value: 'rosettaacr'
-  - name: dockerfilePathBackend
-    value: 'services/backend/Dockerfile'
-  - name: dockerfilePathBackendEditor
-    value: 'services/backend-editor/Dockerfile'
-  - name: dockerfilePathAuthService
-    value: 'services/auth-service/Dockerfile'
-  - name: dockerfilePathFrontend
-    value: 'apps/frontend/Dockerfile'
-  - name: dockerfilePathFrontendEditor
-    value: 'apps/frontend-editor/Dockerfile'
   - name: tag
     value: '$(Build.BuildId)'
 
-# Define stages
 stages:
   # ============================================
-  # STAGE 1: BUILD & TEST
+  # STAGE 1: BUILD & UNIT TEST (Fast Feedback)
   # ============================================
   - stage: BuildAndTest
-    displayName: 'Build and Test All Services'
+    displayName: 'Build and Unit Tests'
     jobs:
-      # -------------------------------------
-      # Backend (Go)
-      # -------------------------------------
       - job: BuildBackend
         displayName: 'Build Backend (Go)'
         pool:
@@ -59,46 +44,19 @@ stages:
         steps:
           - checkout: self
             fetchDepth: 1
-          
+
           - task: GoTool@0
             displayName: 'Install Go'
             inputs:
               version: '1.21'
-          
+
           - script: |
               cd services/backend
               go mod download
-              go mod verify
-            displayName: 'Download Go dependencies'
-          
-          - script: |
-              cd services/backend
               go test ./... -v -coverprofile=coverage.out
-            displayName: 'Run Go tests'
-          
-          - script: |
-              cd services/backend
               go build -o main ./cmd/main.go
-            displayName: 'Build Go binary'
-          
-          - task: PublishTestResults@2
-            displayName: 'Publish test results'
-            inputs:
-              testResultsFormat: 'JUnit'
-              testResultsFiles: '**/test-results.xml'
-              failTaskOnFailedTests: true
-            condition: succeededOrFailed()
-          
-          - task: PublishCodeCoverageResults@2
-            displayName: 'Publish code coverage'
-            inputs:
-              codeCoverageTool: 'Cobertura'
-              summaryFileLocation: 'services/backend/coverage.out'
-            condition: succeededOrFailed()
+            displayName: 'Test and build backend'
 
-      # -------------------------------------
-      # Auth Service (Go)
-      # -------------------------------------
       - job: BuildAuthService
         displayName: 'Build Auth Service (Go)'
         pool:
@@ -106,22 +64,19 @@ stages:
         steps:
           - checkout: self
             fetchDepth: 1
-          
+
           - task: GoTool@0
             displayName: 'Install Go'
             inputs:
               version: '1.21'
-          
+
           - script: |
               cd services/auth-service
               go mod download
               go test ./... -v
               go build -o main ./cmd/main.go
-            displayName: 'Build auth service'
+            displayName: 'Test and build auth service'
 
-      # -------------------------------------
-      # Backend Editor (Node.js)
-      # -------------------------------------
       - job: BuildBackendEditor
         displayName: 'Build Backend Editor (Node.js)'
         pool:
@@ -129,31 +84,19 @@ stages:
         steps:
           - checkout: self
             fetchDepth: 1
-          
+
           - task: NodeTool@0
             displayName: 'Install Node.js'
             inputs:
               versionSpec: '20.x'
-          
+
           - script: |
               cd services/backend-editor
               npm ci
-            displayName: 'Install dependencies'
-          
-          - script: |
-              cd services/backend-editor
               npm run build
-            displayName: 'Build TypeScript'
-          
-          - script: |
-              cd services/backend-editor
               npm test
-            displayName: 'Run tests'
-            condition: succeededOrFailed()
+            displayName: 'Test and build backend-editor'
 
-      # -------------------------------------
-      # Frontend (React)
-      # -------------------------------------
       - job: BuildFrontend
         displayName: 'Build Frontend (React)'
         pool:
@@ -161,42 +104,20 @@ stages:
         steps:
           - checkout: self
             fetchDepth: 1
-          
+
           - task: NodeTool@0
             displayName: 'Install Node.js'
             inputs:
               versionSpec: '20.x'
 
           - script: |
-              cd shared
-              npm install
-            displayName: 'Install shared package dependencies'
-
-          - script: |
-              cd apps/frontend
+              cd shared && npm install
+              cd ../apps/frontend
               npm ci
-            displayName: 'Install dependencies'
-          
-          - script: |
-              cd apps/frontend
               npm run build
-            displayName: 'Build React app'
-          
-          - script: |
-              cd apps/frontend
               npm run lint
-            displayName: 'Run linting'
-            condition: succeededOrFailed()
-          
-          - task: PublishBuildArtifacts@1
-            displayName: 'Publish frontend build'
-            inputs:
-              pathToPublish: 'apps/frontend/dist'
-              artifactName: 'frontend-build'
+            displayName: 'Build and lint frontend'
 
-      # -------------------------------------
-      # Frontend Editor (React)
-      # -------------------------------------
       - job: BuildFrontendEditor
         displayName: 'Build Frontend Editor (React)'
         pool:
@@ -204,39 +125,161 @@ stages:
         steps:
           - checkout: self
             fetchDepth: 1
-          
+
           - task: NodeTool@0
             displayName: 'Install Node.js'
             inputs:
               versionSpec: '20.x'
 
           - script: |
-              cd shared
-              npm install
-            displayName: 'Install shared package dependencies'
-
-          - script: |
-              cd apps/frontend-editor
+              cd shared && npm install
+              cd ../apps/frontend-editor
               npm ci
-            displayName: 'Install dependencies'
-          
-          - script: |
-              cd apps/frontend-editor
               npm run build
-            displayName: 'Build React app'
-          
-          - task: PublishBuildArtifacts@1
-            displayName: 'Publish editor build'
-            inputs:
-              pathToPublish: 'apps/frontend-editor/dist'
-              artifactName: 'frontend-editor-build'
+            displayName: 'Build frontend-editor'
 
   # ============================================
-  # STAGE 2: BUILD DOCKER IMAGES
+  # STAGE 2: PERFORMANCE TESTS (Isolated)
+  # ============================================
+  - stage: PerformanceTests
+    displayName: 'Performance & Load Tests'
+    dependsOn: BuildAndTest
+    condition: succeeded()
+
+    jobs:
+      # Quick smoke test - runs on all branches
+      - job: LoadTestQuick
+        displayName: 'Load Test - Quick (5 bots, 30s)'
+        condition: always()
+        pool:
+          vmImage: 'ubuntu-latest'
+
+        steps:
+          - checkout: self
+            fetchDepth: 1
+
+          - script: |
+              docker-compose -f docker-compose.loadtest.yml build
+            displayName: 'Build test environment'
+
+          - script: |
+              export BOT_COUNT=5
+              export TEST_DURATION=30
+              export INITIAL_NODE_COUNT=3
+
+              docker-compose -f docker-compose.loadtest.yml up \
+                --abort-on-container-exit \
+                --exit-code-from loadtest
+            displayName: 'Run quick load test'
+            timeoutInMinutes: 10
+
+          - script: |
+              docker-compose -f docker-compose.loadtest.yml down -v
+            displayName: 'Cleanup'
+            condition: always()
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish results'
+            inputs:
+              pathToPublish: 'test-results'
+              artifactName: 'load-test-quick-results'
+            condition: succeededOrFailed()
+
+      # Medium test - runs on main branch
+      - job: LoadTestMedium
+        displayName: 'Load Test - Medium (20 bots, 60s)'
+        condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+        pool:
+          vmImage: 'ubuntu-latest'
+
+        steps:
+          - checkout: self
+            fetchDepth: 1
+
+          - script: |
+              docker-compose -f docker-compose.loadtest.yml build
+            displayName: 'Build test environment'
+
+          - script: |
+              export BOT_COUNT=20
+              export TEST_DURATION=60
+              export INITIAL_NODE_COUNT=10
+
+              docker-compose -f docker-compose.loadtest.yml up \
+                --abort-on-container-exit \
+                --exit-code-from loadtest
+            displayName: 'Run medium load test'
+            timeoutInMinutes: 15
+
+          - script: |
+              # Collect container logs for debugging
+              docker-compose -f docker-compose.loadtest.yml logs > container-logs.txt
+            displayName: 'Collect container logs'
+            condition: always()
+
+          - script: |
+              docker-compose -f docker-compose.loadtest.yml down -v
+            displayName: 'Cleanup'
+            condition: always()
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish results'
+            inputs:
+              pathToPublish: 'test-results'
+              artifactName: 'load-test-medium-results'
+            condition: succeededOrFailed()
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish container logs'
+            inputs:
+              pathToPublish: 'container-logs.txt'
+              artifactName: 'load-test-medium-logs'
+            condition: succeededOrFailed()
+
+      # Heavy test - manual trigger only
+      - job: LoadTestHeavy
+        displayName: 'Load Test - Heavy (50 bots, 120s)'
+        condition: eq(variables['Build.Reason'], 'Manual')
+        pool:
+          vmImage: 'ubuntu-latest'
+
+        steps:
+          - checkout: self
+            fetchDepth: 1
+
+          - script: |
+              docker-compose -f docker-compose.loadtest.yml build
+            displayName: 'Build test environment'
+
+          - script: |
+              export BOT_COUNT=50
+              export TEST_DURATION=120
+              export INITIAL_NODE_COUNT=20
+
+              docker-compose -f docker-compose.loadtest.yml up \
+                --abort-on-container-exit \
+                --exit-code-from loadtest
+            displayName: 'Run heavy load test'
+            timeoutInMinutes: 20
+
+          - script: |
+              docker-compose -f docker-compose.loadtest.yml down -v
+            displayName: 'Cleanup'
+            condition: always()
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish results'
+            inputs:
+              pathToPublish: 'test-results'
+              artifactName: 'load-test-heavy-results'
+            condition: succeededOrFailed()
+
+  # ============================================
+  # STAGE 3: BUILD DOCKER IMAGES
   # ============================================
   - stage: BuildDockerImages
     displayName: 'Build Docker Images'
-    dependsOn: BuildAndTest
+    dependsOn: PerformanceTests
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - job: BuildAndPushImages
@@ -253,36 +296,26 @@ stages:
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
-                # Login to Azure Container Registry
                 az acr login --name $(acrName)
 
-                # Build and push backend
-                docker build -t $(containerRegistry)/backend:$(Build.BuildId) -t $(containerRegistry)/backend:latest -f services/backend/Dockerfile .
-                docker push $(containerRegistry)/backend:$(Build.BuildId)
-                docker push $(containerRegistry)/backend:latest
+                # Build and push all images
+                docker build -t $(containerRegistry)/backend:$(tag) -f services/backend/Dockerfile .
+                docker push $(containerRegistry)/backend:$(tag)
 
-                # Build and push backend-editor
-                docker build -t $(containerRegistry)/backend-editor:$(Build.BuildId) -t $(containerRegistry)/backend-editor:latest -f services/backend-editor/Dockerfile .
-                docker push $(containerRegistry)/backend-editor:$(Build.BuildId)
-                docker push $(containerRegistry)/backend-editor:latest
+                docker build -t $(containerRegistry)/backend-editor:$(tag) -f services/backend-editor/Dockerfile .
+                docker push $(containerRegistry)/backend-editor:$(tag)
 
-                # Build and push auth-service
-                docker build -t $(containerRegistry)/auth-service:$(Build.BuildId) -t $(containerRegistry)/auth-service:latest -f services/auth-service/Dockerfile .
-                docker push $(containerRegistry)/auth-service:$(Build.BuildId)
-                docker push $(containerRegistry)/auth-service:latest
+                docker build -t $(containerRegistry)/auth-service:$(tag) -f services/auth-service/Dockerfile .
+                docker push $(containerRegistry)/auth-service:$(tag)
 
-                # Build and push frontend
-                docker build -t $(containerRegistry)/frontend:$(Build.BuildId) -t $(containerRegistry)/frontend:latest -f apps/frontend/Dockerfile .
-                docker push $(containerRegistry)/frontend:$(Build.BuildId)
-                docker push $(containerRegistry)/frontend:latest
+                docker build -t $(containerRegistry)/frontend:$(tag) -f apps/frontend/Dockerfile .
+                docker push $(containerRegistry)/frontend:$(tag)
 
-                # Build and push frontend-editor
-                docker build -t $(containerRegistry)/frontend-editor:$(Build.BuildId) -t $(containerRegistry)/frontend-editor:latest -f apps/frontend-editor/Dockerfile .
-                docker push $(containerRegistry)/frontend-editor:$(Build.BuildId)
-                docker push $(containerRegistry)/frontend-editor:latest
+                docker build -t $(containerRegistry)/frontend-editor:$(tag) -f apps/frontend-editor/Dockerfile .
+                docker push $(containerRegistry)/frontend-editor:$(tag)
 
   # ============================================
-  # STAGE 3: DEPLOY TO CONTAINER APPS
+  # STAGE 4: DEPLOY
   # ============================================
   - stage: Deploy
     displayName: 'Deploy to Container Apps'
@@ -303,35 +336,8 @@ stages:
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
-                # Update backend
-                az containerapp update \
-                  --name backend \
-                  --resource-group $(resourceGroup) \
-                  --image $(containerRegistry)/backend:$(Build.BuildId)
-
-                # Update backend-editor
-                az containerapp update \
-                  --name backend-editor \
-                  --resource-group $(resourceGroup) \
-                  --image $(containerRegistry)/backend-editor:$(Build.BuildId)
-
-                # Update auth-service
-                az containerapp update \
-                  --name auth-service \
-                  --resource-group $(resourceGroup) \
-                  --image $(containerRegistry)/auth-service:$(Build.BuildId)
-
-                # Update frontend
-                az containerapp update \
-                  --name frontend \
-                  --resource-group $(resourceGroup) \
-                  --image $(containerRegistry)/frontend:$(Build.BuildId)
-
-                # Update frontend-editor
-                az containerapp update \
-                  --name frontend-editor \
-                  --resource-group $(resourceGroup) \
-                  --image $(containerRegistry)/frontend-editor:$(Build.BuildId)
-
-                echo "All Container Apps updated successfully!"
-
+                az containerapp update --name backend --resource-group $(resourceGroup) --image $(containerRegistry)/backend:$(tag)
+                az containerapp update --name backend-editor --resource-group $(resourceGroup) --image $(containerRegistry)/backend-editor:$(tag)
+                az containerapp update --name auth-service --resource-group $(resourceGroup) --image $(containerRegistry)/auth-service:$(tag)
+                az containerapp update --name frontend --resource-group $(resourceGroup) --image $(containerRegistry)/frontend:$(tag)
+                az containerapp update --name frontend-editor --resource-group $(resourceGroup) --image $(containerRegistry)/frontend-editor:$(tag)
