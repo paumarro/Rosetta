@@ -194,9 +194,8 @@ export function NodeModal(): React.ReactElement | null {
           <div className="flex-1 overflow-y-auto min-h-0 -mx-1 px-1">
             {/* Description */}
             {modalNode.data.description && (
-              <DialogDescription className="leading-relaxed rounded-none text-left text-base pb-4 text-black">
+              <DialogDescription className="leading-relaxed rounded-none text-left text-base pb-4 text-black whitespace-pre-line">
                 {modalNode.data.description}
-                <br />
               </DialogDescription>
             )}
 
