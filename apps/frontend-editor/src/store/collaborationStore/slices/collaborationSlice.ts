@@ -126,11 +126,13 @@ export const createCollaborationSlice: StateCreator<
     try {
       const doc = new Y.Doc();
 
-      // Determine WebSocket URL based on environment
-      // In dev mode, connect directly to backend on port 3001
-      // In production, use nginx proxy at /editor/ws
-      const wsUrl = import.meta.env.DEV
-        ? 'ws://localhost:3001'
+      // Determine WebSocket URL based on how the app is accessed
+      // If accessed via Vite dev server (port 5173): use Vite proxy
+      // If accessed via nginx (port 80 or other): use nginx proxy
+      // Production: use current host
+      const isViteDevServer = window.location.port === '5173';
+      const wsUrl = isViteDevServer
+        ? 'ws://localhost:5173/editor/ws'
         : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/editor/ws`;
 
       // Use y-websocket's params option which correctly appends query params
@@ -306,9 +308,14 @@ export const createCollaborationSlice: StateCreator<
 
           // ALWAYS fetch name from API (source of truth for name)
           // Only fetch full diagram (nodes/edges) if Yjs is empty
+          // Extract UUID from learningPathId (may include community prefix: "Community/uuid")
+          const diagramId = learningPathId.includes('/')
+            ? learningPathId.split('/').pop()!
+            : learningPathId;
+
           try {
             const response = await fetch(
-              `/editor/diagrams/${learningPathId}`,
+              `/editor/diagrams/${diagramId}`,
               buildFetchOptions(user),
             );
             if (response.ok) {

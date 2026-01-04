@@ -390,7 +390,9 @@ export default function DiagramEditor({
         </ConnectionContext.Provider>
       </div>
       <NodeModal />
-      <PerformanceMonitor roomName={pathId || 'default'} />
+      <PerformanceMonitor
+        roomName={community ? `${community}/${pathId}` : pathId}
+      />
     </div>
   );
 }
