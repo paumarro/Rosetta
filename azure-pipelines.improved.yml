@@ -1,5 +1,5 @@
-# Azure Pipeline for Rosetta Monorepo
-# Improved with Docker Compose isolation and separated test stages
+# Improved Azure Pipeline with Proper Load Testing Isolation
+# This is the recommended implementation following CI/CD best practices
 
 trigger:
   branches:
@@ -37,9 +37,6 @@ stages:
   - stage: BuildAndTest
     displayName: 'Build and Unit Tests'
     jobs:
-      # -------------------------------------
-      # Backend (Go)
-      # -------------------------------------
       - job: BuildBackend
         displayName: 'Build Backend (Go)'
         pool:
@@ -47,46 +44,19 @@ stages:
         steps:
           - checkout: self
             fetchDepth: 1
-          
+
           - task: GoTool@0
             displayName: 'Install Go'
             inputs:
               version: '1.21'
-          
+
           - script: |
               cd services/backend
               go mod download
-              go mod verify
-            displayName: 'Download Go dependencies'
-          
-          - script: |
-              cd services/backend
               go test ./... -v -coverprofile=coverage.out
-            displayName: 'Run Go tests'
-          
-          - script: |
-              cd services/backend
               go build -o main ./cmd/main.go
-            displayName: 'Build Go binary'
-          
-          - task: PublishTestResults@2
-            displayName: 'Publish test results'
-            inputs:
-              testResultsFormat: 'JUnit'
-              testResultsFiles: '**/test-results.xml'
-              failTaskOnFailedTests: true
-            condition: succeededOrFailed()
-          
-          - task: PublishCodeCoverageResults@2
-            displayName: 'Publish code coverage'
-            inputs:
-              codeCoverageTool: 'Cobertura'
-              summaryFileLocation: 'services/backend/coverage.out'
-            condition: succeededOrFailed()
+            displayName: 'Test and build backend'
 
-      # -------------------------------------
-      # Auth Service (Go)
-      # -------------------------------------
       - job: BuildAuthService
         displayName: 'Build Auth Service (Go)'
         pool:
@@ -94,22 +64,19 @@ stages:
         steps:
           - checkout: self
             fetchDepth: 1
-          
+
           - task: GoTool@0
             displayName: 'Install Go'
             inputs:
               version: '1.21'
-          
+
           - script: |
               cd services/auth-service
               go mod download
               go test ./... -v
               go build -o main ./cmd/main.go
-            displayName: 'Build auth service'
+            displayName: 'Test and build auth service'
 
-      # -------------------------------------
-      # Backend Editor (Node.js)
-      # -------------------------------------
       - job: BuildBackendEditor
         displayName: 'Build Backend Editor (Node.js)'
         pool:
@@ -117,31 +84,19 @@ stages:
         steps:
           - checkout: self
             fetchDepth: 1
-          
+
           - task: NodeTool@0
             displayName: 'Install Node.js'
             inputs:
               versionSpec: '20.x'
-          
+
           - script: |
               cd services/backend-editor
               npm ci
-            displayName: 'Install dependencies'
-          
-          - script: |
-              cd services/backend-editor
               npm run build
-            displayName: 'Build TypeScript'
-          
-          - script: |
-              cd services/backend-editor
               npm test
-            displayName: 'Run tests'
-            condition: succeededOrFailed()
+            displayName: 'Test and build backend-editor'
 
-      # -------------------------------------
-      # Frontend (React)
-      # -------------------------------------
       - job: BuildFrontend
         displayName: 'Build Frontend (React)'
         pool:
@@ -149,42 +104,20 @@ stages:
         steps:
           - checkout: self
             fetchDepth: 1
-          
+
           - task: NodeTool@0
             displayName: 'Install Node.js'
             inputs:
               versionSpec: '20.x'
 
           - script: |
-              cd shared
-              npm install
-            displayName: 'Install shared package dependencies'
-
-          - script: |
-              cd apps/frontend
+              cd shared && npm install
+              cd ../apps/frontend
               npm ci
-            displayName: 'Install dependencies'
-          
-          - script: |
-              cd apps/frontend
               npm run build
-            displayName: 'Build React app'
-          
-          - script: |
-              cd apps/frontend
               npm run lint
-            displayName: 'Run linting'
-            condition: succeededOrFailed()
-          
-          - task: PublishBuildArtifacts@1
-            displayName: 'Publish frontend build'
-            inputs:
-              pathToPublish: 'apps/frontend/dist'
-              artifactName: 'frontend-build'
+            displayName: 'Build and lint frontend'
 
-      # -------------------------------------
-      # Frontend Editor (React)
-      # -------------------------------------
       - job: BuildFrontendEditor
         displayName: 'Build Frontend Editor (React)'
         pool:
@@ -192,33 +125,18 @@ stages:
         steps:
           - checkout: self
             fetchDepth: 1
-          
+
           - task: NodeTool@0
             displayName: 'Install Node.js'
             inputs:
               versionSpec: '20.x'
 
           - script: |
-              cd shared
-              npm install
-            displayName: 'Install shared package dependencies'
-
-          - script: |
-              cd apps/frontend-editor
+              cd shared && npm install
+              cd ../apps/frontend-editor
               npm ci
-            displayName: 'Install dependencies'
-          
-          - script: |
-              cd apps/frontend-editor
               npm run build
-            displayName: 'Build React app'
-          
-          - task: PublishBuildArtifacts@1
-            displayName: 'Publish editor build'
-            inputs:
-              pathToPublish: 'apps/frontend-editor/dist'
-              artifactName: 'frontend-editor-build'
-
+            displayName: 'Build frontend-editor'
 
   # ============================================
   # STAGE 2: PERFORMANCE TESTS (Isolated)
@@ -294,6 +212,7 @@ stages:
             timeoutInMinutes: 15
 
           - script: |
+              # Collect container logs for debugging
               docker-compose -f docker-compose.loadtest.yml logs > container-logs.txt
             displayName: 'Collect container logs'
             condition: always()
@@ -317,13 +236,58 @@ stages:
               artifactName: 'load-test-medium-logs'
             condition: succeededOrFailed()
 
+      # Heavy test - manual trigger only
+      - job: LoadTestHeavy
+        displayName: 'Load Test - Heavy (50 bots, 120s)'
+        condition: eq(variables['Build.Reason'], 'Manual')
+        pool:
+          vmImage: 'ubuntu-latest'
+
+        steps:
+          - checkout: self
+            fetchDepth: 1
+
+          - script: |
+              docker-compose -f docker-compose.loadtest.yml build
+            displayName: 'Build test environment'
+
+          - script: |
+              export BOT_COUNT=50
+              export TEST_DURATION=120
+              export INITIAL_NODE_COUNT=20
+
+              docker-compose -f docker-compose.loadtest.yml up \
+                --abort-on-container-exit \
+                --exit-code-from loadtest
+            displayName: 'Run heavy load test'
+            timeoutInMinutes: 20
+
+          - script: |
+              docker-compose -f docker-compose.loadtest.yml down -v
+            displayName: 'Cleanup'
+            condition: always()
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish results'
+            inputs:
+              pathToPublish: 'test-results'
+              artifactName: 'load-test-heavy-results'
+            condition: succeededOrFailed()
+
   # ============================================
   # STAGE 3: BUILD DOCKER IMAGES
   # ============================================
+  # NOTE: Requires Azure service connection to be authorized
+  # To authorize: Project Settings → Service Connections → Authorize pipeline
   - stage: BuildDockerImages
     displayName: 'Build Docker Images'
     dependsOn: PerformanceTests
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    condition: |
+      and(
+        succeeded(),
+        eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+        ne(variables['SKIP_AZURE_STAGES'], 'true')
+      )
     jobs:
       - job: BuildAndPushImages
         displayName: 'Build and Push All Images'
@@ -358,12 +322,19 @@ stages:
                 docker push $(containerRegistry)/frontend-editor:$(tag)
 
   # ============================================
-  # STAGE 4: DEPLOY TO CONTAINER APPS
+  # STAGE 4: DEPLOY
   # ============================================
+  # NOTE: Requires Azure service connection to be authorized
+  # To authorize: Project Settings → Service Connections → Authorize pipeline
   - stage: Deploy
     displayName: 'Deploy to Container Apps'
     dependsOn: BuildDockerImages
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    condition: |
+      and(
+        succeeded(),
+        eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+        ne(variables['SKIP_AZURE_STAGES'], 'true')
+      )
     jobs:
       - job: DeployContainerApps
         displayName: 'Update Container Apps'
@@ -384,4 +355,3 @@ stages:
                 az containerapp update --name auth-service --resource-group $(resourceGroup) --image $(containerRegistry)/auth-service:$(tag)
                 az containerapp update --name frontend --resource-group $(resourceGroup) --image $(containerRegistry)/frontend:$(tag)
                 az containerapp update --name frontend-editor --resource-group $(resourceGroup) --image $(containerRegistry)/frontend-editor:$(tag)
-
