@@ -15,7 +15,7 @@ import {
 } from '../constants';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
-import { isTestMode, getTestUserId } from '@/components/TestUserProvider';
+import { isTestMode, getTestUserId } from '@/utils/testMode';
 
 /**
  * Builds WebSocket provider options with test mode params if applicable
@@ -125,11 +125,18 @@ export const createCollaborationSlice: StateCreator<
 
     try {
       const doc = new Y.Doc();
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${wsProtocol}//${window.location.host}/editor/ws`;
+
+      // Determine WebSocket URL based on environment
+      // In dev mode, connect directly to backend on port 3001
+      // In production, use nginx proxy at /editor/ws
+      const wsUrl = import.meta.env.DEV
+        ? 'ws://localhost:3001'
+        : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/editor/ws`;
+
       // Use y-websocket's params option which correctly appends query params
       // AFTER the room name is added to the URL path
       const wsOptions = buildWebSocketOptions(user);
+
       const provider = new WebsocketProvider(
         wsUrl,
         learningPathId,
