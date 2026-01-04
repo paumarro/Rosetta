@@ -34,7 +34,8 @@
     "mongoose": "^8.16.2",
     "ws": "^8.18.3",
     "y-mongodb": "^0.1.11",
-    "y-websocket": "1.5.4"
+    "y-websocket": "^2.1.0",
+    "yjs": "^13.6.29"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.0",
