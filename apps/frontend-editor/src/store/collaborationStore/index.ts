@@ -53,3 +53,9 @@ export const useCollaborativeStore = create<CollaborativeState>()(
     ...createUISlice(...args),
   })),
 );
+
+// Expose store globally for testing/debugging in development
+if (import.meta.env.DEV || window.location.pathname.includes('/test/')) {
+  (window as any).collaborativeStore = useCollaborativeStore;
+  console.log('[Dev/Test] Collaborative store exposed to window.collaborativeStore');
+}
