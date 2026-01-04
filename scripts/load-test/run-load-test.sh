@@ -49,35 +49,61 @@ BACKEND_PID=""
 FRONTEND_PID=""
 BOT_PID=""
 MONGODB_STARTED=false
+MONGODB_CONTAINER_NAME=""
 
 # Cleanup function
 cleanup() {
   echo -e "\n${YELLOW}Cleaning up...${NC}"
 
+  # Stop bots
   if [ ! -z "$BOT_PID" ]; then
     echo "Stopping bots (PID: $BOT_PID)..."
     kill $BOT_PID 2>/dev/null || true
-    wait $BOT_PID 2>/dev/null || true
+    sleep 1
+    kill -9 $BOT_PID 2>/dev/null || true
   fi
+  # Fallback: kill any remaining bot processes
+  pkill -9 -f "swarm-bot.js" 2>/dev/null || true
 
   if [ "$SKIP_SERVER_START" = "false" ]; then
+    # Stop frontend
     if [ ! -z "$FRONTEND_PID" ]; then
       echo "Stopping frontend (PID: $FRONTEND_PID)..."
       kill $FRONTEND_PID 2>/dev/null || true
-      wait $FRONTEND_PID 2>/dev/null || true
+      sleep 1
+      kill -9 $FRONTEND_PID 2>/dev/null || true
     fi
+    # Fallback: kill Vite processes on frontend port
+    lsof -ti:$FRONTEND_PORT | xargs kill -9 2>/dev/null || true
 
+    # Stop backend
     if [ ! -z "$BACKEND_PID" ]; then
       echo "Stopping backend (PID: $BACKEND_PID)..."
       kill $BACKEND_PID 2>/dev/null || true
-      wait $BACKEND_PID 2>/dev/null || true
+      sleep 1
+      kill -9 $BACKEND_PID 2>/dev/null || true
     fi
+    # Fallback: kill processes on backend port
+    lsof -ti:$BACKEND_PORT | xargs kill -9 2>/dev/null || true
   fi
 
-  # Note: We don't stop MongoDB as it might be used by other services
-  if [ "$MONGODB_STARTED" = "true" ]; then
-    echo -e "${YELLOW}Note: MongoDB container was started and is still running${NC}"
-    echo "Stop it manually with: docker stop docker-mongodb-1"
+  # Stop loadtest-mongodb container if it was started by this script
+  if [ "$MONGODB_CONTAINER_NAME" = "loadtest-mongodb" ]; then
+    echo "Stopping loadtest-mongodb container..."
+    docker stop loadtest-mongodb >/dev/null 2>&1 || true
+    docker rm loadtest-mongodb >/dev/null 2>&1 || true
+    echo -e "${GREEN}✓ loadtest-mongodb container stopped and removed${NC}"
+  elif [ "$MONGODB_STARTED" = "true" ]; then
+    # For other containers, just warn (they might be used by other services)
+    echo -e "${YELLOW}Note: MongoDB container ($MONGODB_CONTAINER_NAME) was started and is still running${NC}"
+    echo "Stop it manually with: docker stop $MONGODB_CONTAINER_NAME"
+  fi
+  
+  # Always try to stop loadtest-mongodb if it exists (in case it was started outside this script)
+  if docker ps -a --filter "name=loadtest-mongodb" --format "{{.Names}}" | grep -q "loadtest-mongodb"; then
+    echo "Stopping any remaining loadtest-mongodb container..."
+    docker stop loadtest-mongodb >/dev/null 2>&1 || true
+    docker rm loadtest-mongodb >/dev/null 2>&1 || true
   fi
 
   echo -e "${GREEN}Cleanup complete${NC}"
@@ -117,56 +143,60 @@ wait_for_service() {
 ensure_mongodb_running() {
   echo -e "\n${BLUE}[0/4] Checking MongoDB${NC}"
 
-  # Check if MongoDB is running on port 27017
-  if lsof -i :27017 -sTCP:LISTEN >/dev/null 2>&1; then
-    echo -e "${GREEN}✓ MongoDB is already running${NC}"
-    return 0
-  fi
-
-  echo -e "${YELLOW}MongoDB not running, attempting to start...${NC}"
-
-  # Try to start existing Docker container
-  if docker ps -a --filter "name=docker-mongodb-1" --format "{{.Names}}" | grep -q "docker-mongodb-1"; then
-    echo "Starting MongoDB Docker container (docker-mongodb-1)..."
-    if docker start docker-mongodb-1 >/dev/null 2>&1; then
-      MONGODB_STARTED=true
-      sleep 2
-      if lsof -i :27017 -sTCP:LISTEN >/dev/null 2>&1; then
-        echo -e "${GREEN}✓ MongoDB started successfully${NC}"
-        return 0
-      fi
-    fi
-  fi
-
-  # Try alternative container name
-  if docker ps -a --filter "name=loadtest-mongodb" --format "{{.Names}}" | grep -q "loadtest-mongodb"; then
-    echo "Starting MongoDB Docker container (loadtest-mongodb)..."
-    if docker start loadtest-mongodb >/dev/null 2>&1; then
-      MONGODB_STARTED=true
-      sleep 2
-      if lsof -i :27017 -sTCP:LISTEN >/dev/null 2>&1; then
-        echo -e "${GREEN}✓ MongoDB started successfully${NC}"
-        return 0
-      fi
-    fi
-  fi
-
-  # If no container found, try to create one
-  echo "No existing MongoDB container found, creating new one..."
-  if docker run -d --name docker-mongodb-1 -p 27017:27017 mongo:7 >/dev/null 2>&1; then
-    MONGODB_STARTED=true
-    echo "Waiting for MongoDB to be ready..."
-    sleep 5
+  # Check if loadtest-mongodb is already running
+  if docker ps --filter "name=loadtest-mongodb" --format "{{.Names}}" | grep -q "loadtest-mongodb"; then
+    # Verify it's listening on port 27017
     if lsof -i :27017 -sTCP:LISTEN >/dev/null 2>&1; then
-      echo -e "${GREEN}✓ MongoDB started successfully${NC}"
+      echo -e "${GREEN}✓ loadtest-mongodb is already running${NC}"
+      MONGODB_CONTAINER_NAME="loadtest-mongodb"
       return 0
     fi
   fi
 
-  echo -e "${RED}✗ Failed to start MongoDB${NC}"
-  echo -e "${YELLOW}Please start MongoDB manually:${NC}"
-  echo "  - Docker: docker start docker-mongodb-1"
-  echo "  - Or use Docker Compose: docker-compose -f docker-compose.loadtest.yml up"
+  # Check if port 27017 is in use by another container
+  if lsof -i :27017 -sTCP:LISTEN >/dev/null 2>&1; then
+    # Find which container is using the port by checking docker ps output
+    # Look for containers with port mapping 27017:27017 or *:27017->27017
+    CONFLICTING_CONTAINER=$(docker ps --format "table {{.Names}}\t{{.Ports}}" | grep -E "27017" | grep -v "loadtest-mongodb" | head -1 | awk '{print $1}' || echo "")
+    
+    if [ ! -z "$CONFLICTING_CONTAINER" ]; then
+      echo -e "${YELLOW}⚠ Port 27017 is in use by container: $CONFLICTING_CONTAINER${NC}"
+      echo -e "${YELLOW}Stopping conflicting container to use loadtest-mongodb...${NC}"
+      docker stop "$CONFLICTING_CONTAINER" >/dev/null 2>&1 || true
+      sleep 2
+    fi
+  fi
+
+  # Try to start existing loadtest-mongodb container
+  if docker ps -a --filter "name=loadtest-mongodb" --format "{{.Names}}" | grep -q "loadtest-mongodb"; then
+    echo "Starting existing loadtest-mongodb container..."
+    if docker start loadtest-mongodb >/dev/null 2>&1; then
+      MONGODB_STARTED=true
+      MONGODB_CONTAINER_NAME="loadtest-mongodb"
+      echo "Waiting for MongoDB to be ready..."
+      sleep 3
+      if lsof -i :27017 -sTCP:LISTEN >/dev/null 2>&1; then
+        echo -e "${GREEN}✓ loadtest-mongodb started successfully${NC}"
+        return 0
+      fi
+    fi
+  fi
+
+  # Create new loadtest-mongodb container
+  echo "Creating new loadtest-mongodb container..."
+  if docker run -d --name loadtest-mongodb -p 27017:27017 mongo:7 >/dev/null 2>&1; then
+    MONGODB_STARTED=true
+    MONGODB_CONTAINER_NAME="loadtest-mongodb"
+    echo "Waiting for MongoDB to be ready..."
+    sleep 5
+    if lsof -i :27017 -sTCP:LISTEN >/dev/null 2>&1; then
+      echo -e "${GREEN}✓ loadtest-mongodb started successfully${NC}"
+      return 0
+    fi
+  fi
+
+  echo -e "${RED}✗ Failed to start loadtest-mongodb${NC}"
+  echo -e "${YELLOW}Please check Docker and try again${NC}"
   return 1
 }
 
@@ -218,7 +248,7 @@ if [ "$SKIP_SERVER_START" = "false" ]; then
 
     # Start backend in background
     cd services/backend-editor
-    npm run dev > ../../backend.log 2>&1 &
+    npm run dev > "../../scripts/load-test/results/backend.log" 2>&1 &
     BACKEND_PID=$!
     cd ../..
 
@@ -244,7 +274,8 @@ if [ "$SKIP_SERVER_START" = "false" ]; then
     echo "Starting frontend-editor on port $FRONTEND_PORT..."
 
     # Start frontend in background
-    (cd apps/frontend-editor && npm run dev) > frontend.log 2>&1 &
+    # Note: Vite config defaults to localhost:3001 for backend-editor, which works for load testing
+    (cd apps/frontend-editor && npm run dev) > "scripts/load-test/results/frontend.log" 2>&1 &
     FRONTEND_PID=$!
 
     echo "Frontend PID: $FRONTEND_PID"
@@ -331,7 +362,7 @@ export CREATE_EDGE_PROBABILITY=$CREATE_EDGE_PROBABILITY
 export LOCK_PROBABILITY=$LOCK_PROBABILITY
 
 # Start bots in background
-node scripts/load-test/swarm-bot.js > bots.log 2>&1 &
+node scripts/load-test/swarm-bot.js > "scripts/load-test/results/bots.log" 2>&1 &
 BOT_PID=$!
 
 echo "Bots PID: $BOT_PID"
@@ -419,10 +450,19 @@ echo -e "${GREEN}✓ All bot processes stopped${NC}"
 echo -e "\n${BLUE}[6/6] Collecting Performance Metrics${NC}"
 echo ""
 
+# Create results directory if it doesn't exist
+# Use absolute path to ensure results are always in scripts/load-test/results
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+RESULTS_DIR="$SCRIPT_DIR/results"
+mkdir -p "$RESULTS_DIR"
+
 # Fetch metrics from backend API
-METRICS_FILE="load-test-metrics-$(date +%Y%m%d-%H%M%S).json"
-if curl -s "http://localhost:$BACKEND_PORT/api/metrics/summary?room=perf-test-room" > "$METRICS_FILE" 2>/dev/null; then
-  echo -e "${GREEN}✓ Metrics collected successfully${NC}"
+METRICS_FILE="$RESULTS_DIR/metrics-$(date +%Y%m%d-%H%M%S).json"
+# URL-encode the room name to handle the / character
+ENCODED_ROOM_NAME=$(printf %s "$ROOM_NAME" | jq -sRr @uri)
+
+if curl -s "http://localhost:$BACKEND_PORT/api/metrics/summary?room=$ENCODED_ROOM_NAME" > "$METRICS_FILE" 2>/dev/null; then
+  echo -e "${GREEN}✓ Metrics collected${NC}"
   echo ""
 
   # Display formatted summary in terminal
@@ -488,18 +528,14 @@ TEST_EXIT_CODE=0
 # Display bot statistics
 echo ""
 echo -e "${BLUE}Bot Activity Summary:${NC}"
-if [ -f "bots.log" ]; then
-  tail -20 bots.log | grep -E "(Total|Messages|Errors|Bots)" || echo "No bot statistics available"
+if [ -f "$RESULTS_DIR/bots.log" ]; then
+  tail -20 "$RESULTS_DIR/bots.log" | grep -E "(Total|Messages|Errors|Bots)" || echo "No bot statistics available"
 fi
 
 # Display test report location
 echo ""
-echo -e "${BLUE}Detailed Reports:${NC}"
-echo "  - Bot Logs: bots.log"
-if [ "$SKIP_SERVER_START" = "false" ]; then
-  echo "  - Backend Logs: backend.log"
-  echo "  - Frontend Logs: frontend.log"
-fi
+echo -e "${BLUE}Test Results:${NC}"
+echo "  Location: $RESULTS_DIR/"
 
 ###############################################################################
 # Final Cleanup: Delete all test data
