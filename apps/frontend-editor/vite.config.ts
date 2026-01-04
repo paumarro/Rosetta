@@ -26,16 +26,27 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0', // Bind to all network interfaces (allows Docker to connect)
       port: 5173,
       proxy: {
+        // Proxy /api/* requests to the main backend service (port 8080)
+        // Note: Backend service must be running for /api/user/photo and other API endpoints
+        // ECONNREFUSED errors are expected if the backend isn't running
         '/api': {
           target: env.VITE_FE_URL || 'http://localhost:8080',
           changeOrigin: false,
         },
-        // Proxy /editor/* to backend-editor for API calls
-        // Rewrites /editor/api/metrics -> /api/metrics
-        '/editor': {
-          target: 'http://localhost:3001',
+        // WebSocket endpoint for collaborative editing
+        // Rewrites /editor/ws -> / (root WebSocket endpoint)
+        '/editor/ws': {
+          target: env.VITE_EDITOR_API_URL || 'http://localhost:3001',
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/editor/, ''),
+          ws: true,
+          rewrite: (path) => path.replace(/^\/editor\/ws/, ''),
+        },
+        // All other /editor/* requests (diagrams, metrics, etc)
+        // Rewrites /editor/metrics -> /api/metrics
+        '/editor': {
+          target: env.VITE_EDITOR_API_URL || 'http://localhost:3001',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/editor/, '/api'),
         },
       },
     },
