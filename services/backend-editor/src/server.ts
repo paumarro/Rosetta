@@ -21,6 +21,9 @@ const { MongodbPersistence } = yMongo as unknown as {
   MongodbPersistence: new (url: string, collection: string) => MongodbPersistenceType;
 };
 
+// MongoDB persistence instance (shared globally)
+export let mdbPersistence: MongodbPersistenceType;
+
 const app = createApp();
 const server = createServer(app);
 
@@ -33,11 +36,18 @@ const mongoUrl =
   process.env.MONGODB_URI ||
   'mongodb://localhost:27017/rosetta-editor';
 const mdb = new MongodbPersistence(mongoUrl, 'yjs-documents');
+mdbPersistence = mdb; // Export for cleanup endpoint
 
 // Register MongoDB persistence with y-websocket
 // See: https://github.com/fadiquader/y-mongodb#readme
 setPersistence({
   bindState: async (docName: string, ydoc: Y.Doc) => {
+    // Skip persistence for test rooms to avoid Yjs version conflicts
+    if (docName.startsWith('TestCommunity/')) {
+      console.log(`[Test Mode] Skipping persistence for test room: ${docName}`);
+      return;
+    }
+
     // Load persisted document from MongoDB
     const persistedYdoc = await mdb.getYDoc(docName);
 
@@ -69,8 +79,10 @@ server.on('upgrade', (req: IncomingMessage, socket, head) => {
   void (async () => {
     try {
       // Extract document name from URL path for CBAC check
+      // Strip query parameters to ensure all connections to the same room share the same document
       const urlPath = req.url || '/';
-      const docName = decodeURIComponent(urlPath.slice(1));
+      const pathWithoutQuery = urlPath.split('?')[0];
+      let docName = decodeURIComponent(pathWithoutQuery.slice(1));
 
       // Authenticate user using local OIDC validation
       const user = await authenticateUpgradeRequest(req);
